@@ -1,6 +1,6 @@
 # Mobile Adapters
 
-Adapter layer for making bolt.diy work on Android (Capacitor WebView) and other non-desktop environments.
+Adapter layer for making VELDRA work on Android (Capacitor WebView) and other non-desktop environments. VELDRA is derived from the upstream bolt.diy project; technical compatibility boundaries remain documented separately.
 
 ## Structure
 

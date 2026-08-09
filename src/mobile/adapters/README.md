@@ -1,6 +1,6 @@
 # Mobile Adapters
 
-This directory contains adapter abstractions that let bolt.diy run on
+This directory contains adapter abstractions that let VELDRA run on
 both desktop browsers (full WebContainer) and Android (Capacitor WebView,
 no WebContainer).
 
@@ -26,7 +26,7 @@ The original adapter layer lives at `app/lib/adapters/` and provides:
 
 The `src/mobile/adapters/runtime/` layer is a **higher-level** abstraction
 that builds on top of the existing platform detection. It adds explicit
-methods for the operations bolt.diy's stores need:
+methods for the operations VELDRA's stores need:
 
 - `installDependencies()` — npm/pnpm/yarn install
 - `startDevServer()` — long-running dev server process

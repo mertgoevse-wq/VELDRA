@@ -11,7 +11,7 @@
  *   - Preview is not available (no dev server can run)
  *   - All AI/chat features work normally
  *
- * This allows bolt.diy to run as a chat + code editor on Android,
+ * This allows VELDRA to run as a chat + code editor on Android,
  * with file management and AI code generation fully functional.
  */
 

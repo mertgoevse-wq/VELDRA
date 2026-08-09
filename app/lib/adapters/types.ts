@@ -2,11 +2,11 @@
  * Platform Adapter Interface
  *
  * Abstracts the WebContainer / terminal / filesystem / preview functionality
- * so bolt.diy can run on:
+ * so VELDRA can run on:
  *   - Desktop browsers (full WebContainer support)
  *   - Android WebView via Capacitor (fallback / degraded mode)
  *
- * The adapter pattern lets us keep all core bolt.diy features compiling
+ * The adapter pattern lets us keep all core VELDRA features compiling
  * while providing Android-compatible fallbacks where WebContainer is
  * unsupported.
  */

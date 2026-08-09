@@ -1,5 +1,5 @@
 /**
- * RuntimeAdapter — High-level abstraction for bolt.diy's runtime layer.
+ * RuntimeAdapter — High-level abstraction for VELDRA's runtime layer.
  *
  * Every store, hook, and component that currently talks to
  * @webcontainer/api directly should eventually route through this
@@ -11,7 +11,7 @@
  *
  * The interface is intentionally a superset of the existing
  * PlatformAdapter in app/lib/adapters/types.ts.  It adds explicit
- * methods for the operations bolt.diy's action-runner, file-store,
+ * methods for the operations VELDRA's action-runner, file-store,
  * terminal-store, and preview-store need:
  *
  *   - boot / shutdown

@@ -217,7 +217,7 @@ export const EditorPanel = memo(
 
     /*
      * Desktop layout: resizable PanelGroup with file tree sidebar, editor, and terminal.
-     * This is the original bolt.diy layout — unchanged.
+     * This preserves the original upstream desktop layout — unchanged.
      */
     return (
       <PanelGroup direction="vertical">
