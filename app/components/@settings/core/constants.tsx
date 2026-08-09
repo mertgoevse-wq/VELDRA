@@ -1,5 +1,5 @@
 import type { TabType } from './types';
-import { User, Settings, Bell, Star, Database, Cloud, Laptop, Github, Wrench, List, Cpu } from 'lucide-react';
+import { User, Settings, Bell, Star, Database, Cloud, Laptop, Github, Wrench, List, Cpu, Image } from 'lucide-react';
 
 // GitLab icon component
 const GitLabIcon = () => (
@@ -54,6 +54,7 @@ export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string
   'event-logs': List,
   runtime: Cpu,
   mcp: Wrench,
+  'image-studio': Image,
 };
 
 export const TAB_LABELS: Record<TabType, string> = {
@@ -72,6 +73,7 @@ export const TAB_LABELS: Record<TabType, string> = {
   'event-logs': 'Event Logs',
   runtime: 'Runtime Mode',
   mcp: 'MCP Servers',
+  'image-studio': 'Image Studio',
 };
 
 export const TAB_DESCRIPTIONS: Record<TabType, string> = {
@@ -90,6 +92,7 @@ export const TAB_DESCRIPTIONS: Record<TabType, string> = {
   'event-logs': 'View system events and logs',
   runtime: 'Configure runtime mode (WebContainer, Android fallback, or remote)',
   mcp: 'Configure MCP (Model Context Protocol) servers',
+  'image-studio': 'Generate and manage project image assets',
 };
 
 export const DEFAULT_TAB_CONFIG = [
@@ -107,6 +110,7 @@ export const DEFAULT_TAB_CONFIG = [
   { id: 'event-logs', visible: true, window: 'user' as const, order: 10 },
   { id: 'runtime', visible: true, window: 'user' as const, order: 11 },
   { id: 'mcp', visible: true, window: 'user' as const, order: 12 },
+  { id: 'image-studio', visible: true, window: 'user' as const, order: 13 },
 
   // User Window Tabs (In dropdown, initially hidden)
 ];

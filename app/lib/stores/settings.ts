@@ -348,9 +348,18 @@ const getInitialTabConfiguration = (): TabWindowConfig => {
       return defaultConfig;
     }
 
-    // Ensure proper typing of loaded configuration
+    // Merge new default tabs into an existing configuration without changing
+    // the user's existing order or visibility choices.
+    const savedTabs = parsed.userTabs.filter(
+      (tab: TabVisibilityConfig): tab is UserTabConfig => tab.window === 'user',
+    );
+    const savedTabIds = new Set(savedTabs.map((tab) => tab.id));
+    const missingDefaultTabs = defaultConfig.userTabs
+      .filter((tab) => !savedTabIds.has(tab.id))
+      .map((tab, index) => ({ ...tab, order: savedTabs.length + index }));
+
     return {
-      userTabs: parsed.userTabs.filter((tab: TabVisibilityConfig): tab is UserTabConfig => tab.window === 'user'),
+      userTabs: [...savedTabs, ...missingDefaultTabs],
     };
   } catch (error) {
     console.warn('Failed to parse tab configuration:', error);

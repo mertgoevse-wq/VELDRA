@@ -18,7 +18,8 @@ export type TabType =
   | 'supabase'
   | 'event-logs'
   | 'runtime'
-  | 'mcp';
+  | 'mcp'
+  | 'image-studio';
 
 export type WindowType = 'user' | 'developer';
 
@@ -83,6 +84,7 @@ export const TAB_LABELS: Record<TabType, string> = {
   'event-logs': 'Event Logs',
   runtime: 'Runtime Mode',
   mcp: 'MCP Servers',
+  'image-studio': 'Image Studio',
 };
 
 export const categoryLabels: Record<SettingCategory, string> = {

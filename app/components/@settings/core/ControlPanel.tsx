@@ -30,6 +30,7 @@ import CloudProvidersTab from '~/components/@settings/tabs/providers/cloud/Cloud
 import LocalProvidersTab from '~/components/@settings/tabs/providers/local/LocalProvidersTab';
 import McpTab from '~/components/@settings/tabs/mcp/McpTab';
 import RuntimeModeTab from '~/components/@settings/tabs/runtime/RuntimeModeTab';
+import ImageStudioTab from '~/components/@settings/tabs/image-studio/ImageStudioTab';
 
 interface ControlPanelProps {
   open: boolean;
@@ -154,6 +155,8 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return <McpTab />;
       case 'runtime':
         return <RuntimeModeTab />;
+      case 'image-studio':
+        return <ImageStudioTab />;
 
       default:
         return null;

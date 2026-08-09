@@ -911,7 +911,9 @@ export class FilesStore {
   async createFile(filePath: string, content: string | Uint8Array = '') {
     if (this.#isFallbackMode) {
       const isBinary = content instanceof Uint8Array;
-      const contentToWrite = isBinary ? new TextDecoder().decode(content) : (content as string);
+      // Keep binary content as base64 in the in-memory and IndexedDB-backed
+      // file map. Decoding arbitrary bytes as UTF-8 corrupts image assets.
+      const contentToWrite = isBinary ? Buffer.from(content).toString('base64') : (content as string);
 
       this.files.setKey(filePath, {
         type: 'file',
