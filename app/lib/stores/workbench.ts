@@ -1,6 +1,6 @@
 import { atom, map, type MapStore, type ReadableAtom, type WritableAtom } from 'nanostores';
 import type { EditorDocument, ScrollPosition } from '~/components/editor/codemirror/CodeMirrorEditor';
-import { ActionRunner } from '~/lib/runtime/action-runner';
+import { ActionRunner, usesLocalWorkspaceForFileActions } from '~/lib/runtime/action-runner';
 import type { ActionCallbackData, ArtifactCallbackData } from '~/lib/runtime/message-parser';
 import { webcontainer } from '~/lib/webcontainer';
 import type { ITerminal } from '~/types/terminal';
@@ -13,12 +13,14 @@ import JSZip from 'jszip';
 import fileSaver from 'file-saver';
 import { Octokit, type RestEndpointMethodTypes } from '@octokit/rest';
 import { path } from '~/utils/path';
+import { WORK_DIR } from '~/utils/constants';
 import { extractRelativePath } from '~/utils/diff';
 import { description } from '~/lib/persistence';
 import Cookies from 'js-cookie';
 import { createSampler } from '~/utils/sampler';
 import type { ActionAlert, DeployAlert, SupabaseAlert } from '~/types/actions';
 import { resetAndroidFallbackStorage, updateAndroidFallbackSession } from '~/lib/persistence/androidFallbackStorage';
+import { runtimeModeStore } from './runtime-mode';
 
 const { saveAs } = fileSaver;
 
@@ -522,6 +524,10 @@ export class WorkbenchStore {
 
           this.deployAlert.set(alert);
         },
+        async (filePath, content) => {
+          await this.#filesStore.saveFile(filePath, content);
+        },
+        async (filePath) => this.#filesStore.getFile(filePath)?.content,
       ),
     });
   }
@@ -579,8 +585,7 @@ export class WorkbenchStore {
     }
 
     if (data.action.type === 'file') {
-      const wc = await webcontainer;
-      const fullPath = path.join(wc.workdir, data.action.filePath);
+      const fullPath = path.join(WORK_DIR, data.action.filePath);
 
       /*
        * For scoped locks, we would need to implement diff checking here
@@ -596,20 +601,30 @@ export class WorkbenchStore {
         this.currentView.set('code');
       }
 
+      const runtime = runtimeModeStore.get();
+      const usesLocalWorkspace = usesLocalWorkspaceForFileActions(runtime.mode, runtime.isAndroid);
       const doc = this.#editorStore.documents.get()[fullPath];
+      const isNewLocalFile = !doc && usesLocalWorkspace;
 
       if (!doc) {
-        await artifact.runner.runAction(data, isStreaming);
+        if (usesLocalWorkspace) {
+          await this.createFile(fullPath, data.action.content);
+        } else {
+          await artifact.runner.runAction(data, isStreaming);
+        }
       }
 
       this.#editorStore.updateFile(fullPath, data.action.content);
 
-      if (!isStreaming && data.action.content) {
+      if (!isStreaming && data.action.content && !isNewLocalFile) {
         await this.saveFile(fullPath);
       }
 
       if (!isStreaming) {
-        await artifact.runner.runAction(data);
+        if (!usesLocalWorkspace) {
+          await artifact.runner.runAction(data);
+        }
+
         this.resetAllFileModifications();
       }
     } else {

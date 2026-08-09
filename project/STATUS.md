@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-09
 **Branch:** `main`
-**Current commit:** `44c4daba4a0ae71b055b2f4d23300d8e3967492b`
+**Current commit:** pending — Android/local workspace action integration
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
 ## Validation baseline
@@ -28,7 +28,7 @@
 | Model catalog / routing / reasoning | Provider-neutral contracts and capability routing | Wire verified catalog snapshots to runtime policy |
 | Budget / entitlement | Pure bounded policies and tests | Integrate one policy boundary into execution lifecycle |
 | Local models / Hugging Face / device profiles | Existing provider/settings foundations; no compatibility profiler | Add evidence-backed metadata and device scoring contracts |
-| Execution / sandbox | WebContainer provider registered; bounded registry status is visible in Runtime Settings | Add a real session bridge before changing ActionRunner's direct path |
+| Execution / sandbox | WebContainer provider registered; Android/local file actions use FilesStore callbacks; bounded registry status is visible in Runtime Settings | Add a real session bridge before routing shell/build/start actions |
 | Remote Runtime / sandbox | Allowlisted command profiles, path checks, auth, preview status | Add a registered provider adapter and integration tests before routing actions |
 | Agents / skills / subagents / Gauntlet | Bounded orchestration/studio foundations; no autonomous shell execution | Define explicit permissioned runtime adapter |
 | Git / updates | Remote Git workflow and VELDRA update manifest foundations | Keep push/release paths explicitly verified and non-secret |
@@ -42,7 +42,8 @@
 - WebContainer status requires the registered provider to be available and to advertise an interactive shell.
 - Android fallback is reported as `not-required` because it intentionally has no sandbox command provider.
 - Runtime Settings performs at most three bounded registration checks and labels the result as registry information; it does not claim ActionRunner has switched to provider-neutral sessions.
-- ActionRunner still uses the established direct WebContainer/BoltShell path; a provider-neutral session bridge is the next execution integration boundary.
+- ActionRunner keeps the established direct WebContainer/BoltShell path for browser/Desktop Remote, while Android fallback and Android Remote file/history actions use explicit FilesStore callbacks.
+- Shell/build/start actions remain capability-gated; a provider-neutral session bridge is still required before routing command execution.
 
 ## Previous validation and security baseline
 
@@ -61,7 +62,7 @@
 - No verified image-generation credentials or local image runtime are available; Image Studio remains unavailable by design.
 - Remote Runtime must be configured with `REMOTE_RUNTIME_TOKEN`; predictable defaults are not accepted.
 - Live Bedrock/NVIDIA connections were not executed because credentials are absent and tests must not incur provider costs.
-- ActionRunner has not yet been switched to provider-neutral sessions; doing so requires a session bridge that preserves terminal lifecycle, file-action semantics, remote capability checks, and Android fallback behavior.
+- ActionRunner has not yet been switched to provider-neutral command sessions; doing so requires a session bridge that preserves terminal lifecycle, file-action semantics, remote capability checks, and Android fallback behavior.
 
 ## Documentation and product integrity
 

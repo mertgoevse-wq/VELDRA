@@ -1,13 +1,45 @@
 import type { WebContainer } from '@webcontainer/api';
 import { path as nodePath } from '~/utils/path';
+import { WORK_DIR } from '~/utils/constants';
 import { atom, map, type MapStore } from 'nanostores';
 import type { ActionAlert, BoltAction, DeployAlert, FileHistory, SupabaseAction, SupabaseAlert } from '~/types/actions';
 import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
 import type { ActionCallbackData } from './message-parser';
 import type { BoltShell } from '~/utils/shell';
-import { runtimeModeStore } from '~/lib/stores/runtime-mode';
+import { runtimeModeStore, type RuntimeMode } from '~/lib/stores/runtime-mode';
 import { toast } from 'react-toastify';
+
+/**
+ * File actions are already persisted by FilesStore on Android fallback and
+ * Android remote mode. Desktop Remote still uses WebContainer until a remote
+ * sandbox session adapter exists.
+ */
+export function usesLocalWorkspaceForFileActions(mode: RuntimeMode, isAndroid = false): boolean {
+  return mode === 'android-fallback' || (mode === 'remote' && isAndroid);
+}
+
+type LocalFileWriter = (filePath: string, content: string) => Promise<void>;
+type LocalFileReader = (filePath: string) => Promise<string | undefined>;
+
+function normalizeLocalWorkspacePath(filePath: string): string {
+  const normalizedPath = nodePath.normalize(
+    nodePath.isAbsolute(filePath) ? filePath : nodePath.join(WORK_DIR, filePath),
+  );
+  const relativePath = nodePath.relative(WORK_DIR, normalizedPath);
+
+  if (
+    relativePath === '' ||
+    relativePath === '.' ||
+    relativePath === '..' ||
+    relativePath.startsWith('../') ||
+    relativePath.startsWith('..\\')
+  ) {
+    throw new Error(`Path '${filePath}' is outside the local workspace`);
+  }
+
+  return normalizedPath;
+}
 
 const logger = createScopedLogger('ActionRunner');
 
@@ -31,7 +63,8 @@ export type ActionState = BaseActionState | FailedActionState;
 type BaseActionUpdate = Partial<Pick<BaseActionState, 'status' | 'abort' | 'executed'>>;
 
 export type ActionStateUpdate =
-  BaseActionUpdate | (Omit<BaseActionUpdate, 'status'> & { status: 'failed'; error: string });
+  | BaseActionUpdate
+  | (Omit<BaseActionUpdate, 'status'> & { status: 'failed'; error: string });
 
 type ActionsMap = MapStore<Record<string, ActionState>>;
 
@@ -68,6 +101,8 @@ export class ActionRunner {
   #webcontainer: Promise<WebContainer>;
   #currentExecutionPromise: Promise<void> = Promise.resolve();
   #shellTerminal: () => BoltShell;
+  #localFileWriter?: LocalFileWriter;
+  #localFileReader?: LocalFileReader;
   runnerId = atom<string>(`${Date.now()}`);
   actions: ActionsMap = map({});
   onAlert?: (alert: ActionAlert) => void;
@@ -81,12 +116,16 @@ export class ActionRunner {
     onAlert?: (alert: ActionAlert) => void,
     onSupabaseAlert?: (alert: SupabaseAlert) => void,
     onDeployAlert?: (alert: DeployAlert) => void,
+    localFileWriter?: LocalFileWriter,
+    localFileReader?: LocalFileReader,
   ) {
     this.#webcontainer = webcontainerPromise;
     this.#shellTerminal = getShellTerminal;
     this.onAlert = onAlert;
     this.onSupabaseAlert = onSupabaseAlert;
     this.onDeployAlert = onDeployAlert;
+    this.#localFileWriter = localFileWriter;
+    this.#localFileReader = localFileReader;
   }
 
   addAction(data: ActionCallbackData) {
@@ -154,7 +193,7 @@ export class ActionRunner {
 
     // Intercept WebContainer actions on Android Fallback Mode
     const runtimeState = runtimeModeStore.get();
-    const needsWebContainer = ['shell', 'build', 'start', 'supabase'].includes(action.type);
+    const needsWebContainer = ['shell', 'build', 'start'].includes(action.type);
 
     if (needsWebContainer && !runtimeState.capabilities.commandExecution) {
       const errorMsg = 'Command execution requires WebContainer or Remote Runtime';
@@ -163,6 +202,7 @@ export class ActionRunner {
         error: errorMsg,
       });
       toast.warning(`Action "${action.type}" blocked: ${errorMsg}`);
+
       return;
     }
 
@@ -180,7 +220,12 @@ export class ActionRunner {
         }
         case 'supabase': {
           try {
-            await this.handleSupabaseAction(action as SupabaseAction);
+            const result = await this.handleSupabaseAction(action as SupabaseAction);
+
+            if ('pending' in result && result.pending) {
+              this.#updateAction(actionId, { executed: false, status: 'running' });
+              return;
+            }
           } catch (error: any) {
             // Update action status
             this.#updateAction(actionId, {
@@ -328,6 +373,19 @@ export class ActionRunner {
       unreachable('Expected file action');
     }
 
+    const runtime = runtimeModeStore.get();
+
+    if (usesLocalWorkspaceForFileActions(runtime.mode, runtime.isAndroid)) {
+      if (!this.#localFileWriter) {
+        throw new Error('Local workspace writer is not configured for this runtime');
+      }
+
+      const filePath = normalizeLocalWorkspacePath(action.filePath);
+      await this.#localFileWriter(filePath, action.content);
+
+      return;
+    }
+
     const webcontainer = await this.#webcontainer;
     const relativePath = nodePath.relative(webcontainer.workdir, action.filePath);
 
@@ -361,8 +419,20 @@ export class ActionRunner {
 
   async getFileHistory(filePath: string): Promise<FileHistory | null> {
     try {
-      const webcontainer = await this.#webcontainer;
+      const runtime = runtimeModeStore.get();
       const historyPath = this.#getHistoryPath(filePath);
+
+      if (usesLocalWorkspaceForFileActions(runtime.mode, runtime.isAndroid)) {
+        if (!this.#localFileReader) {
+          return null;
+        }
+
+        const content = await this.#localFileReader(normalizeLocalWorkspacePath(historyPath));
+
+        return content === undefined ? null : JSON.parse(content);
+      }
+
+      const webcontainer = await this.#webcontainer;
       const content = await webcontainer.fs.readFile(historyPath, 'utf-8');
 
       return JSON.parse(content);

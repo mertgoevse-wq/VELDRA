@@ -2,10 +2,10 @@
 
 **Last updated:** 2026-08-09  
 **Branch:** `main`  
-**Current commit:** `44c4daba4a0ae71b055b2f4d23300d8e3967492b` — `feat: expose execution provider status`
+**Current commit:** pending — Android/local workspace action integration
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
-**Last successful push:** `44c4daba4a0ae71b055b2f4d23300d8e3967492b` pushed successfully to `origin/main`
-**Working tree:** clean and synchronized with `origin/main`
+**Last successful push:** `254831932118532d216a5b2eacdca1fb709dbf42` pushed successfully to `origin/main`
+**Working tree:** local integration slice validated; push pending
 
 > The next MVP slice connects the existing chat model selector to VELDRA's capability router while preserving the established provider/streaming path.
 
@@ -121,9 +121,29 @@ Validation for this slice:
 - `git diff --check`: passed.
 - Secret-pattern scan: no findings.
 
+## Latest integration slice — Android/local workspace action persistence
+
+Implemented in `app/lib/runtime/action-runner.ts`, `app/lib/runtime/action-runner.spec.ts`, and `app/lib/stores/workbench.ts`:
+
+- Android fallback and Android Remote file actions use the existing `FilesStore` persistence path instead of awaiting an unavailable WebContainer.
+- Workbench new-file actions avoid duplicate persistence; direct migration/history actions receive explicit local writer/reader callbacks.
+- Local file paths are normalized against `WORK_DIR`; workspace-root and traversal paths are rejected.
+- Supabase query actions remain `running`/pending and retryable instead of being marked executed before the UI flow completes.
+- Desktop Remote and browser WebContainer file behavior remain unchanged.
+
+Validation for this slice:
+
+- Focused runtime/execution suite: 5 files, 84/84 tests passed with no unhandled errors.
+- Full root Vitest suite: 25 files, 205/205 tests passed; clean exit.
+- Root typecheck: passed.
+- Focused ESLint: passed.
+- `git diff --check`: passed.
+- Strict credential-pattern scan: no findings.
+- Android APK/device validation remains unavailable because JDK/Android SDK/device tooling is not present.
+
 ## Next step
 
-Integrate a real provider session lifecycle with `ActionRunner` only after a Remote Runtime sandbox adapter or an explicit WebContainer session bridge is available; do not treat registry status alone as execution.
+Integrate a real provider session lifecycle with `ActionRunner` only after a Remote Runtime sandbox adapter or an explicit WebContainer session bridge is available; do not treat registry status alone as execution. Add Workbench-level integration coverage when the store can be exercised without browser-only initialization.
 
 ## Current product state
 
