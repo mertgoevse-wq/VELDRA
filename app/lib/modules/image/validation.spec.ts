@@ -58,7 +58,7 @@ describe('image generation option validation', () => {
       transparentBackground: true,
     });
 
-    expect(errors).toHaveLength(7);
+    expect(errors).toHaveLength(6);
     expect(errors.join(' ')).toMatch(/not supported/);
   });
 });

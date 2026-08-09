@@ -133,11 +133,13 @@ export class ImageGenerationUnavailableError extends Error {
   }
 }
 
-export function createImageJob(options: ImageGenerationOptions, id = crypto.randomUUID()): ImageJob {
+export function createImageJob(options: ImageGenerationOptions, id: string = crypto.randomUUID()): ImageJob {
   const { prompt, sourceImage, maskImage, ...jobOptions } = options;
   const metadataOptions = {
     ...jobOptions,
-    ...(sourceImage && { sourceImage: { mimeType: sourceImage.mimeType, base64Length: sourceImage.dataBase64.length } }),
+    ...(sourceImage && {
+      sourceImage: { mimeType: sourceImage.mimeType, base64Length: sourceImage.dataBase64.length },
+    }),
     ...(maskImage && { maskImage: { mimeType: maskImage.mimeType, base64Length: maskImage.dataBase64.length } }),
   };
 
@@ -200,5 +202,5 @@ export function transitionImageJob(job: ImageJob, event: ImageJobEvent): ImageJo
     return { ...job, status: 'failed', metadata: { ...job.metadata, error: event.error } };
   }
 
-  throw new Error(`Unsupported image job event: ${event.type}`);
+  throw new Error('Unsupported image job event');
 }

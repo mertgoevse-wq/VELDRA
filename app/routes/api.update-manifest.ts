@@ -18,8 +18,35 @@ interface Release {
 
 type UpdateServiceError = 'not_configured' | 'auth' | 'not_found' | 'rate_limit' | 'upstream';
 
+/** Read only string-valued Cloudflare bindings used for update credentials. */
+function getCloudflareStringEnvironment(context: unknown): Record<string, string | undefined> | undefined {
+  if (!context || typeof context !== 'object') {
+    return undefined;
+  }
+
+  const cloudflare = (context as { cloudflare?: unknown }).cloudflare;
+
+  if (!cloudflare || typeof cloudflare !== 'object') {
+    return undefined;
+  }
+
+  const environment = (cloudflare as { env?: unknown }).env;
+
+  if (!environment || typeof environment !== 'object') {
+    return undefined;
+  }
+
+  return Object.entries(environment).reduce<Record<string, string | undefined>>((result, [key, value]) => {
+    if (typeof value === 'string' || value === undefined) {
+      result[key] = value;
+    }
+
+    return result;
+  }, {});
+}
+
 function getGitHubToken(context: LoaderFunctionArgs['context']): string | undefined {
-  const environment = (context as { cloudflare?: { env?: Record<string, string | undefined> } })?.cloudflare?.env;
+  const environment = getCloudflareStringEnvironment(context);
 
   return (
     environment?.GITHUB_UPDATE_TOKEN ||
@@ -116,10 +143,7 @@ async function updateManifestLoader({ context }: LoaderFunctionArgs) {
   } catch (error) {
     console.error('Failed to fetch VELDRA update manifest:', error);
 
-    return json(
-      { error: 'Failed to fetch update manifest', code: 'upstream' as UpdateServiceError },
-      { status: 502 },
-    );
+    return json({ error: 'Failed to fetch update manifest', code: 'upstream' as UpdateServiceError }, { status: 502 });
   }
 }
 

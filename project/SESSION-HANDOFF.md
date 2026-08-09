@@ -2,10 +2,10 @@
 
 **Last updated:** 2026-08-09  
 **Branch:** `main`  
-**Current commit:** `350ad17` — `feat: consolidate VELDRA orchestration foundation`
+**Current commit:** `350ad17` — last pushed foundation commit; repair slice pending commit
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
 **Last successful push:** `350ad17` pushed successfully to `origin/main`
-**Working tree:** clean and synchronized with `origin/main`
+**Working tree:** repair slice validated locally; not yet committed or pushed
 
 ## Current product state
 
@@ -89,7 +89,7 @@ No real image generator is available in the current execution environment:
 
 ## Known limitations and gates
 
-- `node_modules` is absent in the current environment; migrated targeted tests, typecheck, lint, and build cannot execute here.
+- Dependencies are installed from the synchronized lockfile. The focused repair validation is executable locally.
 - Android Gradle/device validation requires the appropriate JDK/Android SDK and hardware or CI.
 - `@capacitor/app` was deliberately not added; the source Capacitor back-button helper was excluded to avoid an unvalidated dependency/configuration change.
 - Execution contracts are not yet wired to `runtimeModeStore`, `ActionRunner`, remote runtime, or Android fallback.
@@ -104,11 +104,17 @@ No real image generator is available in the current execution environment:
 - Secret-pattern scans: no credential/private-key findings.
 - VELDRA Image Studio, Android identity, and branding paths were preserved.
 - Dependency/import audit completed; missing `@capacitor/app` was removed from the slice.
-- Executable Vitest/typecheck/lint/build validation: blocked by missing `node_modules`.
+- Full Vitest: 21/21 test files and 175/175 tests passed.
+- Typecheck: passed.
+- Focused ESLint on changed files: passed.
+- Full repository ESLint: still fails on the pre-existing broad formatting/rule backlog; this repair slice did not mass-reformat unrelated files.
+- Production `pnpm build`: blocked by the environment's Miniflare/tcmalloc 1 GiB mmap/OOM failure before application build completion.
+- Android `pnpm android:webbuild`: blocked by the Node JavaScript heap OOM during chunk generation after 4,900 modules; no Android device/APK validation was performed in this slice.
+- Secret scan and `git diff --check`: passed.
 
 ## Next recommended slice
 
-1. In a dependency-complete environment, run targeted migrated tests, full tests, typecheck, lint, and build; fix all findings.
+1. Re-run the production and Android builds in an environment with sufficient address space/Node heap, then investigate any application-level errors separately from infrastructure OOMs.
 2. Add a focused integration adapter between the execution contract and VELDRA runtime modes only after reconciling lifecycle and capability semantics.
 3. Verify current Bedrock IDs and adapt only the existing VELDRA provider, with no live-cost tests by default.
 4. Add signed/versioned catalog persistence only when a real endpoint and trust policy exist.

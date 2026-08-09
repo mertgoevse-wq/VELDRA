@@ -12,8 +12,8 @@ export class LLMManager {
   private _env: Record<string, string> = {};
 
   private constructor(_env: Record<string, string>) {
-    this._registerProvidersFromDirectory();
     this._env = _env;
+    this._registerProvidersFromDirectory();
   }
 
   static getInstance(env: Record<string, string> = {}): LLMManager {
@@ -30,14 +30,8 @@ export class LLMManager {
     return this._env;
   }
 
-  private async _registerProvidersFromDirectory() {
+  private _registerProvidersFromDirectory() {
     try {
-      /*
-       * Dynamically import all files from the providers directory
-       * const providerModules = import.meta.glob('./providers/*.ts', { eager: true });
-       */
-
-      // Look for exported classes that extend BaseProvider
       for (const exportedItem of Object.values(providers)) {
         if (typeof exportedItem === 'function' && exportedItem.prototype instanceof BaseProvider) {
           const provider = new exportedItem();

@@ -348,12 +348,9 @@ const getInitialTabConfiguration = (): TabWindowConfig => {
       return defaultConfig;
     }
 
-    // Merge new default tabs into an existing configuration without changing
-    // the user's existing order or visibility choices.
-    const savedTabs = parsed.userTabs.filter(
-      (tab: TabVisibilityConfig): tab is UserTabConfig => tab.window === 'user',
-    );
-    const savedTabIds = new Set(savedTabs.map((tab) => tab.id));
+    /* Merge new default tabs without changing existing order or visibility. */
+    const savedTabs = parsed.userTabs.filter((tab: TabVisibilityConfig): tab is UserTabConfig => tab.window === 'user');
+    const savedTabIds = new Set(savedTabs.map((tab: UserTabConfig) => tab.id));
     const missingDefaultTabs = defaultConfig.userTabs
       .filter((tab) => !savedTabIds.has(tab.id))
       .map((tab, index) => ({ ...tab, order: savedTabs.length + index }));

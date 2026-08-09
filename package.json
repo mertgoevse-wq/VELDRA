@@ -167,6 +167,7 @@
     "react-markdown": "^9.0.1",
     "react-qrcode-logo": "^3.0.0",
     "react-resizable-panels": "^2.1.7",
+    "react-router-dom": "^6.30.0",
     "react-toastify": "^10.0.6",
     "react-window": "^1.8.11",
     "rehype-raw": "^7.0.0",
