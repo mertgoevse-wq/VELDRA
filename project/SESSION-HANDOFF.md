@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-09  
 **Branch:** `main`  
-**Current commit:** `1393f4d` — `docs: finalize focused lint handoff`
+**Current commit:** `26b93af` — `fix: harden remote runtime authentication`
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
-**Last successful push:** `1393f4d` pushed successfully to `origin/main`
+**Last successful push:** `26b93af` pushed successfully to `origin/main`
 **Working tree:** clean and synchronized with `origin/main`
 
 > The focused four-file lint/security repair is committed and present on `origin/main`; this handoff also records the current audit baseline and the next security slice.
@@ -101,18 +101,21 @@ No real image generator is available in the current execution environment:
 
 ## Validation completed for this local slice
 
+- Security/lint checkpoint committed as `26b93af` and pushed to `origin/main`; `HEAD == origin/main` after fetch.
+- Remote Runtime security policy tests: 4/4 passed; root Vitest: 22/22 files and 179/179 tests passed.
+- Root typecheck and focused ESLint passed; full ESLint improved from 184 to 145 findings after the first focused lint slice.
+
 - Git source/ref comparison and safety-branch creation completed.
 - `git diff --check`: clean after current fixes.
 - Secret-pattern scans: no credential/private-key findings.
 - VELDRA Image Studio, Android identity, and branding paths were preserved.
 - Dependency/import audit completed; missing `@capacitor/app` was removed from the slice.
-- Full Vitest: 21/21 test files and 175/175 tests passed.
 - Typecheck: passed.
 - Focused ESLint on changed files: passed.
 - Full repository ESLint: still fails with 145 remaining formatting/rule findings after the first focused Image Studio/Runtime lint slice; unrelated files were not mass-reformatted.
 - Production `pnpm build`: blocked by the environment's Miniflare/tcmalloc 1 GiB mmap/OOM failure before application build completion.
 - Android `pnpm android:webbuild`: blocked by the Node JavaScript heap OOM during chunk generation after 4,900 modules; no Android device/APK validation was performed in this slice.
-- Full Vitest after the pending slice: 21/21 test files and 175/175 tests passed.
+- Full Vitest after the slice: 22/22 test files and 179/179 tests passed.
 - Focused Image validation: `app/lib/modules/image/validation.spec.ts`, 2/2 tests passed.
 - Typecheck and focused ESLint on all four pending files: passed.
 - Secret scan and `git diff --check`: passed.
