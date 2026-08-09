@@ -9,7 +9,12 @@ import { Progress } from '~/components/ui/Progress';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { WORK_DIR } from '~/utils/constants';
 import { base64ToBytes } from '~/lib/modules/image/assets';
-import { isValidGeneratedImage, type GeneratedImage, type ImageGenerationOptions, type ImageModelInfo } from '~/lib/modules/image/types';
+import {
+  isValidGeneratedImage,
+  type GeneratedImage,
+  type ImageGenerationOptions,
+  type ImageModelInfo,
+} from '~/lib/modules/image/types';
 
 interface ImageCatalogResponse {
   models?: ImageModelInfo[];
@@ -41,7 +46,9 @@ export default function ImageStudioTab() {
   const [models, setModels] = useState<ImageModelInfo[]>([]);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
   const [modelId, setModelId] = useState('');
-  const [prompt, setPrompt] = useState('Create a futuristic VELDRA logo for an AI development workbench, dark, minimal, with neon accents.');
+  const [prompt, setPrompt] = useState(
+    'Create a futuristic VELDRA logo for an AI development workbench, dark, minimal, with neon accents.',
+  );
   const [aspectRatio, setAspectRatio] = useState('');
   const [resolution, setResolution] = useState('');
   const [variants, setVariants] = useState('1');
@@ -65,7 +72,9 @@ export default function ImageStudioTab() {
           return;
         }
 
-        const availableModels = (data.models ?? []).filter((model) => model.availability === 'available' && model.status === 'active');
+        const availableModels = (data.models ?? []).filter(
+          (model) => model.availability === 'available' && model.status === 'active',
+        );
         setModels(availableModels);
         setModelId((current) => current || availableModels[0]?.id || '');
       })
@@ -85,10 +94,7 @@ export default function ImageStudioTab() {
     };
   }, []);
 
-  const selectedModel = useMemo(
-    () => models.find((model) => model.id === modelId),
-    [models, modelId],
-  );
+  const selectedModel = useMemo(() => models.find((model) => model.id === modelId), [models, modelId]);
   const options = capabilityOptions(selectedModel);
 
   const handleGenerate = async () => {
@@ -109,6 +115,7 @@ export default function ImageStudioTab() {
         ...(options.supportsVariants && { variants: Number(variants) }),
       };
       setJobStatus('running');
+
       const response = await fetch('/api/image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,7 +123,12 @@ export default function ImageStudioTab() {
       });
       const data = (await response.json()) as ImageResponse;
 
-      if (!response.ok || !data.images || data.images.length === 0 || data.images.some((image) => !isValidGeneratedImage(image))) {
+      if (
+        !response.ok ||
+        !data.images ||
+        data.images.length === 0 ||
+        data.images.some((image) => !isValidGeneratedImage(image))
+      ) {
         throw new Error(data.error || 'Image generation returned an invalid image result');
       }
 
@@ -151,10 +163,13 @@ export default function ImageStudioTab() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-2xl font-semibold text-bolt-elements-textPrimary">VELDRA Image Studio</h2>
-                <Badge variant="primary" size="sm">Preview</Badge>
+                <Badge variant="primary" size="sm">
+                  Preview
+                </Badge>
               </div>
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-bolt-elements-textSecondary">
-                Generate, compare, and bring image results into the current workspace as project assets. Provider options are shown only when a verified image model is available.
+                Generate, compare, and bring image results into the current workspace as project assets. Provider
+                options are shown only when a verified image model is available.
               </p>
             </div>
           </div>
@@ -180,14 +195,24 @@ export default function ImageStudioTab() {
               <div className="flex items-start gap-3">
                 <div className="i-ph:warning-circle-fill mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
                 <div>
-                  <h3 className="text-sm font-semibold text-bolt-elements-textPrimary">No verified image provider configured</h3>
+                  <h3 className="text-sm font-semibold text-bolt-elements-textPrimary">
+                    No verified image provider configured
+                  </h3>
                   <p className="mt-1 text-sm leading-relaxed text-bolt-elements-textSecondary">
-                    Image generation is not available in this deployment yet. VELDRA will not make an unverified or credential-less request. Once a provider is integrated, its real capabilities will unlock these controls automatically.
+                    Image generation is not available in this deployment yet. VELDRA will not make an unverified or
+                    credential-less request. Once a provider is integrated, its real capabilities will unlock these
+                    controls automatically.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs text-bolt-elements-textTertiary">
-                    <span className="rounded-full bg-bolt-elements-background-depth-2 px-2.5 py-1">No fake previews</span>
-                    <span className="rounded-full bg-bolt-elements-background-depth-2 px-2.5 py-1">Secrets stay server-side</span>
-                    <span className="rounded-full bg-bolt-elements-background-depth-2 px-2.5 py-1">Capability-gated UI</span>
+                    <span className="rounded-full bg-bolt-elements-background-depth-2 px-2.5 py-1">
+                      No fake previews
+                    </span>
+                    <span className="rounded-full bg-bolt-elements-background-depth-2 px-2.5 py-1">
+                      Secrets stay server-side
+                    </span>
+                    <span className="rounded-full bg-bolt-elements-background-depth-2 px-2.5 py-1">
+                      Capability-gated UI
+                    </span>
                   </div>
                 </div>
               </div>
@@ -202,7 +227,9 @@ export default function ImageStudioTab() {
                   className="flex h-10 w-full rounded-md border border-bolt-elements-border bg-bolt-elements-background px-3 py-2 text-sm text-bolt-elements-textPrimary focus:outline-none focus:ring-2 focus:ring-bolt-elements-ring"
                 >
                   {models.map((model) => (
-                    <option key={model.id} value={model.id}>{model.displayName}</option>
+                    <option key={model.id} value={model.id}>
+                      {model.displayName}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -222,31 +249,62 @@ export default function ImageStudioTab() {
                 {options.aspectRatios.length > 0 && (
                   <label className="space-y-2">
                     <span className="text-sm font-medium text-bolt-elements-textPrimary">Aspect ratio</span>
-                    <select value={aspectRatio} onChange={(event) => setAspectRatio(event.target.value)} className="h-10 w-full rounded-md border border-bolt-elements-border bg-bolt-elements-background px-3 text-sm text-bolt-elements-textPrimary">
+                    <select
+                      value={aspectRatio}
+                      onChange={(event) => setAspectRatio(event.target.value)}
+                      className="h-10 w-full rounded-md border border-bolt-elements-border bg-bolt-elements-background px-3 text-sm text-bolt-elements-textPrimary"
+                    >
                       <option value="">Provider default</option>
-                      {options.aspectRatios.map((value) => <option key={value} value={value}>{value}</option>)}
+                      {options.aspectRatios.map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
                     </select>
                   </label>
                 )}
                 {options.resolutions.length > 0 && (
                   <label className="space-y-2">
                     <span className="text-sm font-medium text-bolt-elements-textPrimary">Resolution</span>
-                    <select value={resolution} onChange={(event) => setResolution(event.target.value)} className="h-10 w-full rounded-md border border-bolt-elements-border bg-bolt-elements-background px-3 text-sm text-bolt-elements-textPrimary">
+                    <select
+                      value={resolution}
+                      onChange={(event) => setResolution(event.target.value)}
+                      className="h-10 w-full rounded-md border border-bolt-elements-border bg-bolt-elements-background px-3 text-sm text-bolt-elements-textPrimary"
+                    >
                       <option value="">Provider default</option>
-                      {options.resolutions.map((value) => <option key={value} value={value}>{value}</option>)}
+                      {options.resolutions.map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
                     </select>
                   </label>
                 )}
                 {options.supportsVariants && (
                   <label className="space-y-2">
                     <span className="text-sm font-medium text-bolt-elements-textPrimary">Variants</span>
-                    <Input type="number" min={1} max={options.maxVariants} value={variants} onChange={(event) => setVariants(event.target.value)} />
+                    <Input
+                      type="number"
+                      min={1}
+                      max={options.maxVariants}
+                      value={variants}
+                      onChange={(event) => setVariants(event.target.value)}
+                    />
                   </label>
                 )}
               </div>
 
-              <Button onClick={handleGenerate} disabled={jobStatus === 'queued' || jobStatus === 'running' || !prompt.trim()} size="lg" className="w-full gap-2 sm:w-auto">
-                {jobStatus === 'queued' || jobStatus === 'running' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              <Button
+                onClick={handleGenerate}
+                disabled={jobStatus === 'queued' || jobStatus === 'running' || !prompt.trim()}
+                size="lg"
+                className="w-full gap-2 sm:w-auto"
+              >
+                {jobStatus === 'queued' || jobStatus === 'running' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
                 {jobStatus === 'queued' || jobStatus === 'running' ? 'Generating…' : 'Generate images'}
               </Button>
             </>
@@ -278,14 +336,35 @@ export default function ImageStudioTab() {
               const assetPath = savedAssets.find((path) => path.includes(`-${index + 1}.`));
 
               return (
-                <div key={`${image.dataBase64.slice(0, 16)}-${index}`} className="overflow-hidden rounded-xl border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2">
+                <div
+                  key={`${image.dataBase64.slice(0, 16)}-${index}`}
+                  className="overflow-hidden rounded-xl border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2"
+                >
                   {isValidGeneratedImage(image) && (
-                    <img src={`data:${image.mimeType};base64,${image.dataBase64}`} alt={`Generated variant ${index + 1}`} className="aspect-square w-full object-cover" />
+                    <img
+                      src={`data:${image.mimeType};base64,${image.dataBase64}`}
+                      alt={`Generated variant ${index + 1}`}
+                      className="aspect-square w-full object-cover"
+                    />
                   )}
                   <div className="flex items-center justify-between gap-3 p-3">
                     <span className="text-xs text-bolt-elements-textSecondary">Variant {index + 1}</span>
-                    <Button variant="outline" size="sm" onClick={() => handleSaveAsset(image, index)} disabled={Boolean(assetPath)} className="gap-2">
-                      {assetPath ? <><UploadCloud className="h-3.5 w-3.5" /> Saved</> : <><UploadCloud className="h-3.5 w-3.5" /> Save asset</>}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSaveAsset(image, index)}
+                      disabled={Boolean(assetPath)}
+                      className="gap-2"
+                    >
+                      {assetPath ? (
+                        <>
+                          <UploadCloud className="h-3.5 w-3.5" /> Saved
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud className="h-3.5 w-3.5" /> Save asset
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

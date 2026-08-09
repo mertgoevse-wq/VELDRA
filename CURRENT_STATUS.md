@@ -5,7 +5,7 @@
 **Git sync:** local `main` is synchronized with the canonical private repository `origin/main`
 **Target device:** Samsung Galaxy A56 (Android 15, 1080×2340)
 
-> **Current validation note — 2026-08-09:** Commit `c2cebf8` is the latest pushed baseline and contains the focused four-file lint/security repair. It passes `pnpm test` (21/21 suites, 175/175 tests), `pnpm typecheck`, focused ESLint, and `git diff --check`; the full repository lint backlog remains unresolved (184 findings in the latest run). Production build is blocked by the environment's Miniflare/tcmalloc address-space OOM, and `pnpm android:webbuild` is blocked by Node heap OOM during chunk generation. Local `main` is synchronized with `origin/main`.
+> **Current validation note — 2026-08-09:** Commit `1393f4d` is the latest pushed baseline and contains the focused lint/security handoff. It passes `pnpm test` (21/21 suites, 175/175 tests), `pnpm typecheck`, focused ESLint, and `git diff --check`; the full repository lint backlog remains unresolved (184 findings in the latest run). Production build is blocked by the environment's Miniflare/tcmalloc address-space OOM, and `pnpm android:webbuild` is blocked by Node heap OOM during chunk generation. Local `main` is synchronized with `origin/main`.
 
 ---
 
@@ -303,7 +303,7 @@ e94c805 chore: verify remote runtime scaffold
 ```
 
 **Remote:** `origin → git@github.com:mertgoevse-wq/VELDRA.git`
-- Latest pushed commit: `20981e0` (`feat: add VELDRA image studio foundation`).
+- Latest pushed commit: `1393f4d` (`docs: finalize focused lint handoff`).
 - Local `main` is synchronized with `origin/main`; no force-push or alternate repository is used.
 - Local backup branches remain preserved.
 

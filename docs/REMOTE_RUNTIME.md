@@ -252,7 +252,7 @@ The Android terminal fallback uses these events to render command output and a c
 ---
 
 ## 3. Security Requirements
-1. **Token Authentication:** Every REST request and WebSocket connection upgrade MUST be validated with a cryptographically secure token.
+1. **Token Authentication:** Every REST request (including `/health`) and WebSocket connection upgrade MUST be validated with a configured, cryptographically secure token. There is no predictable fallback token; an unconfigured server fails closed.
 2. **Sandbox Isolation:** Each workspace ID must map to a separate directory (under `remote-runtime/workspaces/`). Strict resolution checks are enforced to block traversal attempts.
 3. **Encrypted Traffic:** All endpoints must be served over HTTPS/WSS in production.
 4. **Command Profiles Only:** Remote command execution accepts only the documented `commandProfile` values. The server never executes user-provided shell strings or args.
@@ -268,12 +268,26 @@ The remote runtime package resides in `remote-runtime/`.
 
 1. **Configure Environment:**
    Create a `.env` in the root workspace or in `remote-runtime/` using the following:
-   ```env
-   REMOTE_RUNTIME_TOKEN=change-me
-   REMOTE_RUNTIME_PORT=8787
-   REMOTE_RUNTIME_HOST=0.0.0.0
-   REMOTE_RUNTIME_COMMAND_TIMEOUT_MS=300000
-   ```
+   ```env    # Generate a long random value and keep it outside version control.
+    # Example: openssl rand -hex 32
+    REMOTE_RUNTIME_TOKEN=<long-random-secret>
+    # Optional comma-separated browser origins for production deployments.
+    REMOTE_RUNTIME_ALLOWED_ORIGINS=https://your-veldra-host.example
+    REMOTE_RUNTIME_PORT=8787
+    REMOTE_RUNTIME_HOST=0.0.0.0    REMOTE_RUNTIME_COMMAND_TIMEOUT_MS=300000
+```
+
+For a production browser client, set `REMOTE_RUNTIME_ALLOWED_ORIGINS` to the
+exact origin(s) that should receive CORS headers. Native Capacitor requests
+without a browser `Origin` header remain supported; local development origins
+such as `http://localhost:5173` and `capacitor://localhost` are only accepted
+when `NODE_ENV` is not `production`. CORS is an additional browser boundary,
+not a replacement for the runtime token.
+
+The browser WebSocket client prefers the token as a WebSocket subprotocol so it
+does not appear in URL logs. The server temporarily keeps the query-token form
+for legacy clients; migrate those clients before removing that compatibility
+path.
 
 2. **Boot the Server:**
    Using root scripts:
@@ -294,23 +308,21 @@ The Android app will use the detected network URL directly. No Remote Runtime pr
 ### 4.2 Verifying Endpoints
 
 1. **Health Query:**
-   ```bash
-   curl -i http://127.0.0.1:8787/health
+   ```bash    curl -i -H "Authorization: Bearer $REMOTE_RUNTIME_TOKEN" http://127.0.0.1:8787/health
    ```
 
 2. **Create Workspace:**
-   ```bash
-   curl -i -X POST -H "Authorization: Bearer change-me" http://127.0.0.1:8787/workspace
+   ```bash    curl -i -X POST -H "Authorization: Bearer $REMOTE_RUNTIME_TOKEN" http://127.0.0.1:8787/workspace
    ```
 
 3. **Safe File Sync:**
    ```bash
-   curl -i -X PUT -H "Authorization: Bearer change-me" -H "Content-Type: application/json" -d '{"files": {"index.html": "<h1>Hello</h1>"}}' http://127.0.0.1:8787/workspace/ws_example123/files
+   curl -i -X PUT -H "Authorization: Bearer $REMOTE_RUNTIME_TOKEN" -H "Content-Type: application/json" -d '{"files": {"index.html": "<h1>Hello</h1>"}}' http://127.0.0.1:8787/workspace/ws_example123/files
    ```
 
 4. **Safe Command Profile:**
    ```bash
-   curl -i -X POST -H "Authorization: Bearer change-me" -H "Content-Type: application/json" -d '{"commandProfile":"npm run build"}' http://127.0.0.1:8787/workspace/ws_example123/commands
+   curl -i -X POST -H "Authorization: Bearer $REMOTE_RUNTIME_TOKEN" -H "Content-Type: application/json" -d '{"commandProfile":"npm run build"}' http://127.0.0.1:8787/workspace/ws_example123/commands
    ```
 
 ## 5. File Sync Semantics

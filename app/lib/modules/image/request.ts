@@ -18,9 +18,9 @@ function isImageInput(value: unknown): value is ImageInput {
   );
 }
 
-export function parseImageGenerationRequest(value: unknown):
-  | { ok: true; options: ImageGenerationOptions }
-  | { ok: false; error: string } {
+export function parseImageGenerationRequest(
+  value: unknown,
+): { ok: true; options: ImageGenerationOptions } | { ok: false; error: string } {
   if (typeof value !== 'object' || value === null) {
     return { ok: false, error: 'Image request must be an object' };
   }
@@ -55,7 +55,10 @@ export function parseImageGenerationRequest(value: unknown):
     }
   }
 
-  if (input.variants !== undefined && (!Number.isInteger(input.variants) || input.variants < 1 || input.variants > 16)) {
+  if (
+    input.variants !== undefined &&
+    (!Number.isInteger(input.variants) || input.variants < 1 || input.variants > 16)
+  ) {
     return { ok: false, error: 'variants must be an integer between 1 and 16' };
   }
 

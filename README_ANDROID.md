@@ -194,7 +194,7 @@ This is not connected to production chat yet. See `docs/ANDROID_LLM_API_BRIDGE.m
 To use the Remote Runtime with your Android device:
 
 1. **Start the Server on your Computer**:
-   From the repository root on your laptop/computer, configure a `.env` file (e.g., `REMOTE_RUNTIME_TOKEN=change-me`) and run:
+   From the repository root on your laptop/computer, configure a `.env` file with a long random `REMOTE_RUNTIME_TOKEN` (never commit it) and run:
    ```bash
    set REMOTE_RUNTIME_HOST=0.0.0.0
    set REMOTE_RUNTIME_PORT=8787
@@ -210,7 +210,7 @@ To use the Remote Runtime with your Android device:
    - In Settings → **Runtime Mode**, toggle the mode to **Remote Runtime**.
    - Set **Server URL** to your computer's local IP and port: `http://192.168.x.x:8787` (e.g. `http://192.168.1.123:8787`).
      *Note: Using `http://localhost:8787` or `http://127.0.0.1:8787` inside the phone app will fail because the mobile WebView resolves it to the phone device itself.*
-   - Set **Auth Token** to the value configured on your server (e.g. `change-me`).
+   - Set **Auth Token** to the same random value configured on your server. Never use a shared or predictable default token.
    - Tap **Save** on both, then click **Test Connection** to verify health status, and finally tap **Create Workspace** to configure a sandbox!
 
 4. **Sync Files Explicitly**:

@@ -237,7 +237,7 @@
 ### Recommended Approach
 - [ ] Build/deploy a separate authenticated Android API Backend that reuses server-side LLM logic
 - [ ] Store provider API keys only on the backend, never in Android client JS or APK assets
-- [ ] Implement `GET /health`
+- [x] Implement authenticated Remote Runtime `GET /health`
 - [ ] Implement `GET /models`
 - [ ] Implement `POST /chat`
 - [ ] Implement `POST /chat/stream`

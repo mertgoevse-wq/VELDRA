@@ -34,7 +34,8 @@ export function createImageProviderRegistry(providers: readonly ImageProvider[] 
 
   return {
     getProvider: (name) => providerMap.get(name),
-    getProviderForModel: (modelId) => providers.find((provider) => provider.getModels().some((model) => model.id === modelId)),
+    getProviderForModel: (modelId) =>
+      providers.find((provider) => provider.getModels().some((model) => model.id === modelId)),
     getProviders: () => providers,
     getModels: () => providers.flatMap((provider) => provider.getModels()),
   };

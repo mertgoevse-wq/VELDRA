@@ -52,7 +52,11 @@ export default function RuntimeModeTab() {
   const [workspaceInput, setWorkspaceInput] = useState(runtime.remoteWorkspaceId);
   const [syncingAction, setSyncingAction] = useState<'push' | 'pull' | 'current-file' | null>(null);
   const [syncStatus, setSyncStatus] = useState<RemoteWorkspaceSyncStatus>(() => getSyncStatus());
-  const [persistenceStatus, setPersistenceStatus] = useState({ available: false, hasSavedFiles: false, lastOpenedFile: undefined as string | undefined });
+  const [persistenceStatus, setPersistenceStatus] = useState({
+    available: false,
+    hasSavedFiles: false,
+    lastOpenedFile: undefined as string | undefined,
+  });
 
   useEffect(() => {
     let active = true;
@@ -160,18 +164,21 @@ export default function RuntimeModeTab() {
     setSyncingAction(action);
 
     try {
-      const nextStatus = action === 'push'
-        ? await pushLocalWorkspaceToRemote()
-        : action === 'pull'
-          ? await pullRemoteWorkspaceToLocal()
-          : await syncSingleFileToRemote();
+      const nextStatus =
+        action === 'push'
+          ? await pushLocalWorkspaceToRemote()
+          : action === 'pull'
+            ? await pullRemoteWorkspaceToLocal()
+            : await syncSingleFileToRemote();
 
       setSyncStatus(nextStatus);
 
       if (nextStatus.state === 'error') {
         toast.error(nextStatus.lastError ?? 'Remote Runtime sync failed');
       } else if (nextStatus.conflictCount > 0) {
-        toast.warning(`Remote Runtime sync completed with ${nextStatus.conflictCount} conflict(s). Local files were kept.`);
+        toast.warning(
+          `Remote Runtime sync completed with ${nextStatus.conflictCount} conflict(s). Local files were kept.`,
+        );
       } else {
         toast.success('Remote Runtime sync completed');
       }
@@ -191,6 +198,7 @@ export default function RuntimeModeTab() {
   const handleResetWorkspace = useCallback(async () => {
     try {
       await workbenchStore.resetLocalAndroidWorkspace();
+
       const status = await getAndroidFallbackPersistenceStatus();
       setPersistenceStatus(status);
       toast.success('Local Android workspace cleared');
@@ -276,7 +284,9 @@ export default function RuntimeModeTab() {
 
         <div className="rounded-md border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
           <div className="flex items-center justify-between gap-3">
-            <span>{persistenceStatus.hasSavedFiles ? 'Saved locally on Android' : 'No local Android workspace yet'}</span>
+            <span>
+              {persistenceStatus.hasSavedFiles ? 'Saved locally on Android' : 'No local Android workspace yet'}
+            </span>
             {runtime.isAndroid && (
               <button
                 onClick={handleResetWorkspace}
@@ -508,7 +518,9 @@ export default function RuntimeModeTab() {
             disabled={!canUseRemoteSync || syncingAction !== null}
             className="px-3 py-2 rounded-lg text-xs font-medium border border-[#E5E5E5] dark:border-[#1A1A1A] text-bolt-elements-textPrimary hover:bg-gray-50 dark:hover:bg-[#1A1A1A] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
-            <div className={syncingAction === 'current-file' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:file-arrow-up-fill'} />
+            <div
+              className={syncingAction === 'current-file' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:file-arrow-up-fill'}
+            />
             <span>Sync current file</span>
           </button>
         </div>

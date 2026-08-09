@@ -2,12 +2,12 @@
 
 **Last updated:** 2026-08-09  
 **Branch:** `main`  
-**Current commit:** `c2cebf8` — `fix: clear focused VELDRA lint backlog`
+**Current commit:** `1393f4d` — `docs: finalize focused lint handoff`
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
-**Last successful push:** `c2cebf8` pushed successfully to `origin/main`
+**Last successful push:** `1393f4d` pushed successfully to `origin/main`
 **Working tree:** clean and synchronized with `origin/main`
 
-> The focused four-file lint/security repair is committed and present on `origin/main`.
+> The focused four-file lint/security repair is committed and present on `origin/main`; this handoff also records the current audit baseline and the next security slice.
 
 ## Current product state
 
@@ -91,7 +91,7 @@ No real image generator is available in the current execution environment:
 
 ## Known limitations and gates
 
-- Dependencies are installed from the synchronized lockfile. The focused repair validation is executable locally.
+- Root dependencies are installed from the synchronized lockfile. The focused root/security validation is executable locally; separate `remote-runtime` package compilation is blocked because its package-local dependencies are not installed in this environment.
 - Android Gradle/device validation requires the appropriate JDK/Android SDK and hardware or CI.
 - `@capacitor/app` was deliberately not added; the source Capacitor back-button helper was excluded to avoid an unvalidated dependency/configuration change.
 - Execution contracts are not yet wired to `runtimeModeStore`, `ActionRunner`, remote runtime, or Android fallback.
@@ -109,14 +109,14 @@ No real image generator is available in the current execution environment:
 - Full Vitest: 21/21 test files and 175/175 tests passed.
 - Typecheck: passed.
 - Focused ESLint on changed files: passed.
-- Full repository ESLint: still fails with the pre-existing broad formatting/rule backlog (184 findings in this run); this repair slice did not mass-reformat unrelated files.
+- Full repository ESLint: still fails with 145 remaining formatting/rule findings after the first focused Image Studio/Runtime lint slice; unrelated files were not mass-reformatted.
 - Production `pnpm build`: blocked by the environment's Miniflare/tcmalloc 1 GiB mmap/OOM failure before application build completion.
 - Android `pnpm android:webbuild`: blocked by the Node JavaScript heap OOM during chunk generation after 4,900 modules; no Android device/APK validation was performed in this slice.
 - Full Vitest after the pending slice: 21/21 test files and 175/175 tests passed.
 - Focused Image validation: `app/lib/modules/image/validation.spec.ts`, 2/2 tests passed.
 - Typecheck and focused ESLint on all four pending files: passed.
 - Secret scan and `git diff --check`: passed.
-- Remote WebSocket authentication still sends the token as a query parameter because that is the existing client/server contract; the client no longer logs the URL or token. Moving to subprotocol/cookie authentication requires a separately tested protocol change.
+- Remote Runtime now fails closed without a configured token, requires a minimum 32-character token, restricts production CORS via `REMOTE_RUNTIME_ALLOWED_ORIGINS`, and prefers WebSocket subprotocol authentication while retaining query-token compatibility. Policy tests pass; live Express/WebSocket integration remains a release gate.
 
 ## Next recommended slice
 

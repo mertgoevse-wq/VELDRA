@@ -309,10 +309,16 @@ export class RemoteRuntimeClient {
 
     const wsScheme = this._serverUrl.startsWith('https') ? 'wss' : 'ws';
     const cleanHost = this._serverUrl.replace(/^https?:\/\//, '');
-    const tokenQuery = this._token ? `?token=${encodeURIComponent(this._token)}` : '';
+    const canUseSubprotocol = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(this._token);
+    const tokenQuery = this._token && !canUseSubprotocol ? `?token=${encodeURIComponent(this._token)}` : '';
     const wsUrl = `${wsScheme}://${cleanHost}/workspace/${this._workspaceId}/events${tokenQuery}`;
 
-    const ws = new WebSocket(wsUrl);
+    /*
+     * Prefer the subprotocol so valid tokens do not appear in URL logs. Keep a
+     * query-token fallback for legacy servers or tokens that cannot be encoded
+     * as an RFC 6455 protocol value.
+     */
+    const ws = canUseSubprotocol ? new WebSocket(wsUrl, [this._token]) : new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {
       try {

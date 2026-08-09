@@ -46,6 +46,7 @@ describe('runImageJob', () => {
   it('cancels before invoking a provider when the signal is already aborted', async () => {
     const controller = new AbortController();
     controller.abort();
+
     let called = false;
 
     const execution = await runImageJob(

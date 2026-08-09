@@ -7,6 +7,7 @@ import url from 'url';
 import dotenv from 'dotenv';
 
 import { requireAuth, validateToken } from './auth.js';
+import { isAllowedCorsOrigin } from './security.js';
 import { createWorkspace, getWorkspacePath, isValidWorkspaceId } from './workspaces.js';
 import {
   getWorkspaceFileMetadata,
@@ -30,13 +31,20 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ noServer: true });
+const wss = new WebSocketServer({
+  noServer: true,
+  handleProtocols: (protocols: Set<string>) => protocols.values().next().value ?? '',
+});
 const workspaceSockets = new Map<string, Set<WebSocket>>();
 
 const PORT = parseInt(process.env.REMOTE_RUNTIME_PORT || '8787', 10);
 const HOST = process.env.REMOTE_RUNTIME_HOST || '127.0.0.1';
 
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, callback) => callback(null, isAllowedCorsOrigin(origin)),
+  }),
+);
 app.use(express.json({ limit: '50mb' }));
 
 function jsonError(res: express.Response, status: number, error: string) {
@@ -87,7 +95,7 @@ function observeAndBroadcastWorkspaceEvent(workspaceId: string, event: CommandEv
 /**
  * GET /health
  */
-app.get('/health', (req, res) => {
+app.get('/health', requireAuth, (req, res) => {
   res.status(200).json({
     ok: true,
     service: 'veldra-remote-runtime',
@@ -205,6 +213,7 @@ app.put('/workspace/:id/files', requireAuth, (req, res) => {
 
   try {
     writeWorkspaceFiles(id, files);
+
     const filePaths = Object.keys(files);
     res.status(200).json({
       ok: true,
@@ -310,11 +319,7 @@ app.post('/workspace/:id/commands', requireAuth, (req, res) => {
   }
 
   if (!isCommandProfile(commandProfile)) {
-    jsonError(
-      res,
-      400,
-      `Invalid commandProfile. Allowed profiles: ${listCommandProfiles().join(', ')}.`,
-    );
+    jsonError(res, 400, `Invalid commandProfile. Allowed profiles: ${listCommandProfiles().join(', ')}.`);
     return;
   }
 
@@ -403,10 +408,12 @@ app.get('/workspace/:id/git/status', requireAuth, async (req, res) => {
 
   try {
     const result = await gitStatus(getWorkspacePath(id));
+
     if (!result.ok) {
       jsonError(res, 500, result.error || 'Failed to check git status.');
       return;
     }
+
     res.status(200).json({ ok: true, status: result.status });
   } catch (error: any) {
     console.error(`[RemoteRuntime] Error in git status for ${id}`, error);
@@ -432,10 +439,12 @@ app.post('/workspace/:id/git/init', requireAuth, async (req, res) => {
 
   try {
     const result = await gitInit(getWorkspacePath(id));
+
     if (!result.ok) {
       jsonError(res, 500, result.error || 'Failed to initialize git repository.');
       return;
     }
+
     res.status(200).json({ ok: true, output: result.output });
   } catch (error: any) {
     console.error(`[RemoteRuntime] Error in git init for ${id}`, error);
@@ -467,10 +476,12 @@ app.post('/workspace/:id/git/commit', requireAuth, async (req, res) => {
 
   try {
     const result = await gitCommit(getWorkspacePath(id), message);
+
     if (!result.ok) {
       jsonError(res, 500, result.error || 'Failed to commit changes.');
       return;
     }
+
     res.status(200).json({ ok: true, output: result.output });
   } catch (error: any) {
     console.error(`[RemoteRuntime] Error in git commit for ${id}`, error);
@@ -499,6 +510,7 @@ app.post('/workspace/:id/git/push', requireAuth, async (req, res) => {
     // Set remote URL if provided
     if (repoUrl) {
       const remoteResult = await gitSetRemote(getWorkspacePath(id), repoUrl);
+
       if (!remoteResult.ok) {
         jsonError(res, 500, remoteResult.error || 'Failed to set remote URL.');
         return;
@@ -506,6 +518,7 @@ app.post('/workspace/:id/git/push', requireAuth, async (req, res) => {
     }
 
     const result = await gitPush(getWorkspacePath(id), token, repoUrl);
+
     if (!result.ok) {
       jsonError(res, 400, result.error || 'Push check failed.');
       return;
@@ -517,7 +530,6 @@ app.post('/workspace/:id/git/push', requireAuth, async (req, res) => {
     jsonError(res, 500, error.message || 'Internal server error');
   }
 });
-
 
 /**
  * WebSocket upgrade validation & attachment
@@ -532,6 +544,7 @@ server.on('upgrade', (request, socket, head) => {
   if (!match) {
     socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
     socket.destroy();
+
     return;
   }
 
@@ -541,23 +554,23 @@ server.on('upgrade', (request, socket, head) => {
   if (!isValidWorkspaceId(workspaceId) || !ensureWorkspaceExists(workspaceId)) {
     socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
     socket.destroy();
+
     return;
   }
 
-  // Retrieve token from query params or sec-websocket-protocol
-  let token = queryToken;
-  if (!token) {
-    const protocols = request.headers['sec-websocket-protocol'];
-    if (protocols) {
-      // Sometimes clients pass token as protocol
-      token = protocols.split(',')[0].trim();
-    }
-  }
+  /*
+   * Prefer the WebSocket subprotocol so the token is not placed in URL logs.
+   * Keep query-token support for existing clients during the migration.
+   */
+  const protocolsHeader = request.headers['sec-websocket-protocol'];
+  const protocolToken = typeof protocolsHeader === 'string' ? protocolsHeader.split(',')[0].trim() : undefined;
+  const token = queryToken ?? protocolToken;
 
   if (!validateToken(token)) {
     console.warn(`[RemoteRuntime] WebSocket upgrade rejected for workspace ${workspaceId}: Invalid token.`);
     socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
     socket.destroy();
+
     return;
   }
 
@@ -571,24 +584,32 @@ server.on('upgrade', (request, socket, head) => {
  */
 wss.on('connection', (ws: WebSocket, request: http.IncomingMessage, workspaceId: string) => {
   console.log(`[RemoteRuntime] Client connected to events channel for workspace: ${workspaceId}`);
+
   const sockets = workspaceSockets.get(workspaceId) ?? new Set<WebSocket>();
   sockets.add(ws);
   workspaceSockets.set(workspaceId, sockets);
 
   // Send status connection event
-  ws.send(JSON.stringify({
-    type: 'status',
-    timestamp: new Date().toISOString(),
-    payload: { status: 'connected', workspaceId },
-  }));
+  ws.send(
+    JSON.stringify({
+      type: 'status',
+      timestamp: new Date().toISOString(),
+      payload: { status: 'connected', workspaceId },
+    }),
+  );
 
   ws.on('message', (message) => {
     console.log(`[RemoteRuntime] Ignored WebSocket input in workspace ${workspaceId}: ${message}`);
-    ws.send(JSON.stringify({
-      type: 'status',
-      timestamp: new Date().toISOString(),
-      payload: { status: 'input_ignored', output: 'Free-form terminal input is disabled. Use command profiles only.\n' },
-    }));
+    ws.send(
+      JSON.stringify({
+        type: 'status',
+        timestamp: new Date().toISOString(),
+        payload: {
+          status: 'input_ignored',
+          output: 'Free-form terminal input is disabled. Use command profiles only.\n',
+        },
+      }),
+    );
   });
 
   ws.on('close', () => {
