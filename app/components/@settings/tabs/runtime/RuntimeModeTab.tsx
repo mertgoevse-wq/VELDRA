@@ -26,6 +26,7 @@ import {
   type RuntimeMode,
 } from '~/lib/stores/runtime-mode';
 import { getAndroidFallbackPersistenceStatus } from '~/lib/persistence/androidFallbackStorage';
+import { getExecutionProviderStatus, type ExecutionProviderStatus } from '~/lib/execution/runtime-status';
 import { workbenchStore } from '~/lib/stores/workbench';
 import {
   getMissingRemoteRuntimeConfig,
@@ -52,6 +53,7 @@ export default function RuntimeModeTab() {
   const [workspaceInput, setWorkspaceInput] = useState(runtime.remoteWorkspaceId);
   const [syncingAction, setSyncingAction] = useState<'push' | 'pull' | 'current-file' | null>(null);
   const [syncStatus, setSyncStatus] = useState<RemoteWorkspaceSyncStatus>(() => getSyncStatus());
+  const [executionStatus, setExecutionStatus] = useState<ExecutionProviderStatus | null>(null);
   const [persistenceStatus, setPersistenceStatus] = useState({
     available: false,
     hasSavedFiles: false,
@@ -75,6 +77,56 @@ export default function RuntimeModeTab() {
       active = false;
     };
   }, [runtime.mode, runtime.isAndroid]);
+
+  useEffect(() => {
+    let active = true;
+    let checkInFlight = false;
+    let statusChecks = 0;
+    let refreshTimer: number | undefined;
+    const maxStatusChecks = 3;
+
+    const refreshExecutionStatus = async () => {
+      if (!active || checkInFlight) {
+        return;
+      }
+
+      checkInFlight = true;
+      statusChecks += 1;
+
+      try {
+        const status = await getExecutionProviderStatus(runtime.mode);
+
+        if (!active) {
+          return;
+        }
+
+        setExecutionStatus(status);
+
+        /*
+         * Retry only a bounded number of times while the selected provider
+         * initializes. This lets a delayed boot become visible without
+         * creating an unbounded set of non-cancellable health checks.
+         */
+        if (runtime.mode === 'webcontainer' && status.state === 'unregistered' && statusChecks < maxStatusChecks) {
+          refreshTimer = window.setTimeout(() => {
+            void refreshExecutionStatus();
+          }, 2000);
+        }
+      } finally {
+        checkInFlight = false;
+      }
+    };
+
+    void refreshExecutionStatus();
+
+    return () => {
+      active = false;
+
+      if (refreshTimer !== undefined) {
+        window.clearTimeout(refreshTimer);
+      }
+    };
+  }, [runtime.mode]);
 
   useEffect(() => {
     setUrlInput(runtime.remoteRuntimeUrl);
@@ -280,7 +332,28 @@ export default function RuntimeModeTab() {
               {runtime.isAndroid ? 'Yes' : 'No'}
             </span>
           </div>
+          <div>
+            <span className="text-bolt-elements-textSecondary">Execution provider:</span>{' '}
+            <span
+              className={classNames(
+                'font-medium',
+                executionStatus?.state === 'available'
+                  ? 'text-green-600 dark:text-green-400'
+                  : executionStatus?.state === 'not-required'
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-bolt-elements-textSecondary',
+              )}
+            >
+              {executionStatus?.state ?? 'Checking…'}
+            </span>
+          </div>
         </div>
+
+        {executionStatus && executionStatus.state !== 'available' && (
+          <div className="rounded-md border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+            <span className="font-medium">Execution registry:</span> {executionStatus.reason}
+          </div>
+        )}
 
         <div className="rounded-md border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
           <div className="flex items-center justify-between gap-3">

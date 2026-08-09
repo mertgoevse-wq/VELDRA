@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-09  
 **Branch:** `main`  
-**Current commit:** `fd1f6efc3da4e6ea17aa57d9ab49f1a1a9a4156d` — `feat: register webcontainer execution provider`
+**Current commit:** `44c4daba4a0ae71b055b2f4d23300d8e3967492b` — `feat: expose execution provider status`
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
-**Last successful push:** `fd1f6efc3da4e6ea17aa57d9ab49f1a1a9a4156d` pushed successfully to `origin/main`
+**Last successful push:** `44c4daba4a0ae71b055b2f4d23300d8e3967492b` pushed successfully to `origin/main`
 **Working tree:** clean and synchronized with `origin/main`
 
 > The next MVP slice connects the existing chat model selector to VELDRA's capability router while preserving the established provider/streaming path.
@@ -103,9 +103,27 @@ Validation:
 - Secret-pattern scan: no findings.
 - Android build/device validation remains unavailable in this environment; Android LLM backend remains a documented external-backend blocker.
 
+## Latest integration slice — execution provider status in runtime mode
+
+Implemented in `app/lib/execution/runtime-status.ts`, `app/lib/execution/runtime-status.spec.ts`, and `app/components/@settings/tabs/runtime/RuntimeModeTab.tsx`:
+
+- Adds an observational, provider-neutral execution status query backed by the sandbox registry.
+- Uses explicit runtime-mode-to-provider mapping and requires an interactive shell before reporting execution readiness.
+- Fails closed for rejected or hanging provider availability checks with a bounded timeout.
+- Keeps Android fallback as `not-required` and Remote Runtime as explicitly unregistered until a real sandbox adapter is implemented.
+- Shows the registry status in Runtime Settings and refreshes it periodically so delayed provider registration/boot is not displayed permanently stale, without changing ActionRunner, provider contracts, streaming, or remote sync behavior.
+
+Validation for this slice:
+
+- Focused execution/capability tests: 4/4 files, 34/34 tests passed.
+- Root typecheck: passed.
+- Focused ESLint: passed.
+- `git diff --check`: passed.
+- Secret-pattern scan: no findings.
+
 ## Next step
 
-Complete the execution provider-registry commit/push, then integrate registry/session lifecycle with runtime-mode without changing existing ActionRunner behavior.
+Integrate a real provider session lifecycle with `ActionRunner` only after a Remote Runtime sandbox adapter or an explicit WebContainer session bridge is available; do not treat registry status alone as execution.
 
 ## Current product state
 
@@ -192,7 +210,7 @@ No real image generator is available in the current execution environment:
 - Root dependencies are installed from the synchronized lockfile. The focused root/security validation is executable locally; separate `remote-runtime` package compilation is blocked because its package-local dependencies are not installed in this environment.
 - Android Gradle/device validation requires the appropriate JDK/Android SDK and hardware or CI.
 - `@capacitor/app` was deliberately not added; the source Capacitor back-button helper was excluded to avoid an unvalidated dependency/configuration change.
-- Execution contracts are not yet wired to `runtimeModeStore`, `ActionRunner`, remote runtime, or Android fallback.
+- Execution contracts are now observed by `runtimeModeStore` settings through a bounded registry-status helper; they are not yet used to replace ActionRunner's direct WebContainer/Shell path, and Remote Runtime has no registered sandbox adapter.
 - The NIM adapter is dynamic and credential-gated, but no live connection or capability probe was executed.
 - Existing Bedrock implementation was preserved; source Bedrock changes require a separate official-ID verification slice.
 - Persistent image-job storage and linking saved workspace paths back into job metadata remain future work.
