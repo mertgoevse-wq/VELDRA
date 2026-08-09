@@ -2,12 +2,12 @@
 
 **Last updated:** 2026-08-09  
 **Branch:** `main`  
-**Current commit:** `300da86` — `fix: restore validated VELDRA runtime baseline`
+**Current commit:** `c2cebf8` — `fix: clear focused VELDRA lint backlog`
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
-**Last successful push:** `300da86` pushed successfully to `origin/main`
-**Working tree:** pending local lint-repair slice; not yet committed or pushed
+**Last successful push:** `c2cebf8` pushed successfully to `origin/main`
+**Working tree:** clean and synchronized with `origin/main`
 
-> **Pending slice:** The four-file lint/security repair is validated locally but remains uncommitted: `app/lib/android-api/AndroidApiClient.ts`, `app/lib/remote-runtime/RemoteRuntimeClient.ts`, `app/lib/remote-runtime/RemoteWorkspaceSync.ts`, and `app/routes/api.image.ts`. Do not treat the pending changes as present on `origin/main` until the follow-up commit is pushed.
+> The focused four-file lint/security repair is committed and present on `origin/main`.
 
 ## Current product state
 
@@ -119,8 +119,6 @@ No real image generator is available in the current execution environment:
 - Remote WebSocket authentication still sends the token as a query parameter because that is the existing client/server contract; the client no longer logs the URL or token. Moving to subprotocol/cookie authentication requires a separately tested protocol change.
 
 ## Next recommended slice
-
-0. Commit and push the pending four-file lint/security repair after the final staged diff gate; then update this handoff's commit metadata to the new SHA.
 
 1. Re-run the production and Android builds in an environment with sufficient address space/Node heap, then investigate any application-level errors separately from infrastructure OOMs.
 2. Add a focused integration adapter between the execution contract and VELDRA runtime modes only after reconciling lifecycle and capability semantics.
