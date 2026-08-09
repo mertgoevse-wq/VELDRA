@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-08-09
 **Branch:** `main`  
-**Git sync:** local `main` contains unpushed VELDRA work; canonical private repository push is blocked until GitHub repository creation/access is available
+**Git sync:** local `main` is synchronized with the canonical private repository `origin/main`
 **Target device:** Samsung Galaxy A56 (Android 15, 1080×2340)
 
 ---
@@ -290,6 +290,8 @@ VELDRA/
 
 ## Git State
 
+The canonical repository is available and the latest Image Studio foundation has been pushed successfully.
+
 ```
 [HEAD] feat: complete remote git workflow wiring
 ad1ffa6 ci: add debug apk artifact workflow
@@ -299,8 +301,9 @@ e94c805 chore: verify remote runtime scaffold
 ```
 
 **Remote:** `origin → git@github.com:mertgoevse-wq/VELDRA.git`
-- Push is currently blocked because GitHub responds `Repository not found`; no force-push or alternate repository is used.
-- Local commits remain preserved on `main` and `backup/pre-canonical-veldra-20260809`.
+- Latest pushed commit: `20981e0` (`feat: add VELDRA image studio foundation`).
+- Local `main` is synchronized with `origin/main`; no force-push or alternate repository is used.
+- Local backup branches remain preserved.
 
 ---
 

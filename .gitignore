@@ -70,6 +70,7 @@ android/app/src/main/assets/public/
 !docs/ANDROID_LLM_API_BRIDGE.md
 !docs/ANDROID_DEVICE_TEST_PLAN.md
 !docs/VELDRA_MIGRATION_PLAN.md
+!project/SESSION-HANDOFF.md
 
 # Package lock & generated gradle configs
 package-lock.json

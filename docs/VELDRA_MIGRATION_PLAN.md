@@ -2,14 +2,15 @@
 
 **Status:** Phase-1 inventory complete  
 **Inventory date:** 2026-08-09  
-**Baseline:** `main` at `fc1cfb6` (`docs: add android device test plan`)  
+**Historical baseline:** `main` at `fc1cfb6` (`docs: add android device test plan`)
 **Safety branch:** `backup/pre-veldra-rebrand-20260809`
+**Current state:** See `project/SESSION-HANDOFF.md`; `main` is currently synchronized with `origin/main`.
 
-**Confirmed identity decisions:** canonical GitHub repository `mertgoevse-wq/VELDRA`; Android namespace/application ID `com.veldra.app`; SSH is the intended push transport. The target repository currently responds `Repository not found`, so pushes remain blocked until it exists and the local key has access.
+**Confirmed identity decisions:** canonical GitHub repository `mertgoevse-wq/VELDRA`; Android namespace/application ID `com.veldra.app`; SSH is the intended push transport. The private repository is now available and `main` is synchronized with `origin/main`.
 
 ## 1. Verified baseline
 
-This repository is an Android-first adaptation of `bolt.diy`, not yet an independent VELDRA product. The current implementation combines:
+At the historical Phase-1 baseline, this repository was an Android-first adaptation of `bolt.diy`, not yet an independent VELDRA product. The current implementation has since advanced; see the session handoff for the current product state. The implementation combines:
 
 - Remix/Vite web application and Cloudflare-oriented server routes.
 - Capacitor Android SPA build with a native Android project.
@@ -82,7 +83,7 @@ Asset work must first distinguish upstream attribution assets from app identity 
 
 ### Phase A — Baseline and identity contract
 
-1. Keep the current backup branch and clean `main` baseline.
+1. Keep the current backup branch and preserve the historical clean `main` baseline; the active branch state is tracked in `project/SESSION-HANDOFF.md`.
 2. Confirmed canonical VELDRA repository URL/owner: `git@github.com:mertgoevse-wq/VELDRA.git`; release channels still require private-repository setup and access.
 3. Define canonical names:
    - Product: `VELDRA`
@@ -153,7 +154,7 @@ Decision: use the new `com.veldra.app` namespace/application ID. This creates a 
 
 ### Gate 2 — Canonical GitHub/release destination
 
-Decision: use `mertgoevse-wq/VELDRA` as a private repository and SSH transport (`git@github.com:mertgoevse-wq/VELDRA.git`). The target was probed and returned `Repository not found`; the remote may be configured locally, but pushing remains blocked until the private repository exists and the SSH key is authorized. Update checks and public links must be migrated only after that access gate passes.
+Decision: use `mertgoevse-wq/VELDRA` as a private repository and SSH transport (`git@github.com:mertgoevse-wq/VELDRA.git`). The repository now exists, SSH access works, and the latest Image Studio foundation is pushed to `origin/main`. Update checks and public links use this canonical destination.
 
 ### Gate 3 — Native asset generation
 
