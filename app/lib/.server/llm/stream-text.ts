@@ -73,6 +73,7 @@ export async function streamText(props: {
   messageSliceId?: number;
   chatMode?: 'discuss' | 'build';
   designScheme?: DesignScheme;
+  onModelResolved?: (model: { name: string; provider: string; automatic: boolean }) => void;
 }) {
   const {
     messages,
@@ -87,6 +88,7 @@ export async function streamText(props: {
     summary,
     chatMode,
     designScheme,
+    onModelResolved,
   } = props;
   let currentModel = DEFAULT_MODEL;
   let currentProvider = DEFAULT_PROVIDER.name;
@@ -117,7 +119,9 @@ export async function streamText(props: {
   const staticModels = llmManager.getStaticModelListFromProvider(provider);
   let modelDetails = staticModels.find((m) => m.name === currentModel);
 
-  if (currentModel === AUTO_MODEL) {
+  const automaticModelRequested = currentModel === AUTO_MODEL;
+
+  if (automaticModelRequested) {
     const modelsList = await llmManager.getModelListFromProvider(provider, {
       apiKeys,
       providerSettings,
@@ -134,6 +138,7 @@ export async function streamText(props: {
     logger.info(
       `Capability router selected ${modelDetails.name} for ${provider.name}: ${routedModel.result.decision.rationale}`,
     );
+    onModelResolved?.({ name: modelDetails.name, provider: provider.name, automatic: true });
   } else if (!modelDetails) {
     const modelsList = [
       ...(provider.staticModels || []),

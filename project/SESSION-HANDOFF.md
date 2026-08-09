@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-09  
 **Branch:** `main`  
-**Current commit:** `4d6629b8fa85d6f5abc4e455c191f90dbaf8045a` — `feat: connect chat to capability model router`
+**Current commit:** `05c6def239cbeef3f6bc7230724264d6a5dc9718` — `feat: expose resolved auto model`
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
-**Last successful push:** `4d6629b8fa85d6f5abc4e455c191f90dbaf8045a` pushed successfully to `origin/main`
+**Last successful push:** `05c6def239cbeef3f6bc7230724264d6a5dc9718` pushed successfully to `origin/main`
 **Working tree:** clean and synchronized with `origin/main`
 
 > The next MVP slice connects the existing chat model selector to VELDRA's capability router while preserving the established provider/streaming path.
@@ -51,9 +51,41 @@ Validation for this slice:
 - Remote Runtime package build: blocked because `remote-runtime/node_modules` is absent (`tsc: not found`); no dependency installation was performed.
 - Known residual limitation: filesystem validation and subsequent read/write are not atomic against a privileged local TOCTOU attacker; full descriptor/`O_NOFOLLOW` hardening is a separate slice.
 
+## Latest micro-slice — resolved Auto-model display
+
+Implemented locally in `app/lib/.server/llm/stream-text.ts`, `app/routes/api.chat.ts`, and `app/components/chat/AssistantMessage.tsx`:
+
+- Emits a `modelResolved` message annotation only when the capability router handles `Auto`.
+- Displays the concrete model and provider beside the assistant response as `Auto → <model> (<provider>)`.
+- Keeps explicit model selection, provider construction, and streaming behavior unchanged.
+
+Validation:
+
+- Full root Vitest suite: 23/23 files, 187/187 tests passed.
+- Focused router tests: 13/13 passed.
+- Root typecheck: passed.
+- Focused ESLint: passed.
+- `git diff --check`: passed.
+
+## Latest micro-slice — resolved Auto-model display
+
+Implemented locally in `app/lib/.server/llm/stream-text.ts`, `app/routes/api.chat.ts`, and `app/components/chat/AssistantMessage.tsx`:
+
+- Emits a `modelResolved` message annotation only when the capability router handles `Auto`.
+- Displays the concrete model and provider beside the assistant response as `Auto → <model> (<provider>)`.
+- Keeps explicit model selection, provider construction, and streaming behavior unchanged.
+
+Validation:
+
+- Full root Vitest suite: 23/23 files, 187/187 tests passed.
+- Focused router tests: 13/13 passed.
+- Root typecheck: passed.
+- Focused ESLint: passed.
+- `git diff --check`: passed.
+
 ## Next step
 
-Complete the verified Auto-routing commit/push, then continue with the next missing MVP connection: authenticated Android API backend/model listing or execution-contract wiring, selected after a fresh end-to-end audit.
+Complete the resolved Auto-model display commit/push, then continue with the next missing MVP connection after a fresh audit.
 
 ## Current product state
 

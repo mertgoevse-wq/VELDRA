@@ -280,6 +280,9 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               designScheme,
               summary,
               messageSliceId,
+              onModelResolved(model) {
+                dataStream.writeMessageAnnotation({ type: 'modelResolved', value: model });
+              },
             });
 
             result.mergeIntoDataStream(dataStream);
@@ -321,6 +324,9 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           designScheme,
           summary,
           messageSliceId,
+          onModelResolved(model) {
+            dataStream.writeMessageAnnotation({ type: 'modelResolved', value: model });
+          },
         });
 
         (async () => {

@@ -30,7 +30,8 @@ interface AssistantMessageProps {
   model?: string;
   provider?: ProviderInfo;
   parts:
-    (TextUIPart | ReasoningUIPart | ToolInvocationUIPart | SourceUIPart | FileUIPart | StepStartUIPart)[] | undefined;
+    | (TextUIPart | ReasoningUIPart | ToolInvocationUIPart | SourceUIPart | FileUIPart | StepStartUIPart)[]
+    | undefined;
   addToolResult: ({ toolCallId, result }: { toolCallId: string; result: any }) => void;
 }
 
@@ -95,6 +96,9 @@ export const AssistantMessage = memo(
       promptTokens: number;
       totalTokens: number;
     } = filteredAnnotations.find((annotation) => annotation.type === 'usage')?.value;
+    const resolvedModel = filteredAnnotations.find((annotation) => annotation.type === 'modelResolved')?.value as
+      | { name: string; provider: string; automatic: boolean }
+      | undefined;
 
     const toolInvocations = parts?.filter((part) => part.type === 'tool-invocation');
     const toolCallAnnotations = filteredAnnotations.filter(
@@ -145,11 +149,18 @@ export const AssistantMessage = memo(
               </Popover>
             )}
             <div className="flex w-full items-center justify-between">
-              {usage && (
-                <div>
-                  Tokens: {usage.totalTokens} (prompt: {usage.promptTokens}, completion: {usage.completionTokens})
-                </div>
-              )}
+              <div className="flex items-center gap-3 flex-wrap">
+                {resolvedModel?.automatic && (
+                  <div title="Selected by the capability router">
+                    Auto → {resolvedModel.name} ({resolvedModel.provider})
+                  </div>
+                )}
+                {usage && (
+                  <div>
+                    Tokens: {usage.totalTokens} (prompt: {usage.promptTokens}, completion: {usage.completionTokens})
+                  </div>
+                )}
+              </div>
               {(onRewind || onFork) && messageId && (
                 <div className="flex gap-2 flex-col lg:flex-row ml-auto">
                   {onRewind && (
