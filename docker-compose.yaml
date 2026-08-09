@@ -80,7 +80,7 @@ services:
     profiles: ['development', 'default']
 
   app-prebuild:
-    image: ghcr.io/veldra/veldra:latest
+    image: ghcr.io/mertgoevse-wq/veldra:latest
     ports:
       - '5173:5173'
     environment:

@@ -19,4 +19,8 @@ interface Env {
   XAI_API_KEY: string;
   PERPLEXITY_API_KEY: string;
   AWS_BEDROCK_CONFIG: string;
+  /** Server-only token used to read the private VELDRA update manifest. */
+  GITHUB_UPDATE_TOKEN?: string;
+  /** Optional existing server-side GitHub token fallback. */
+  GITHUB_TOKEN?: string;
 }

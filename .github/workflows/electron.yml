@@ -78,6 +78,14 @@ jobs:
           fi
         shell: bash
 
+      - name: Generate release checksums
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for archive in dist/*.zip; do
+            (cd dist && sha256sum "$(basename "$archive")") > "$archive.sha256"
+          done
+
       # Create Release
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -94,5 +102,6 @@ jobs:
             dist/*.deb
             dist/*.AppImage
             dist/*.zip
+            dist/*.zip.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

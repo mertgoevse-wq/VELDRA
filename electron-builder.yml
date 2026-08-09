@@ -55,9 +55,9 @@ npmRebuild: false
 
 publish:
   provider: github
-  owner: veldra
-  repo: veldra
-  private: false
+  owner: mertgoevse-wq
+  repo: VELDRA
+  private: true
   releaseType: release
 
 electronDownload:

@@ -5,7 +5,7 @@
 **Baseline:** `main` at `fc1cfb6` (`docs: add android device test plan`)  
 **Safety branch:** `backup/pre-veldra-rebrand-20260809`
 
-**Confirmed identity decisions:** canonical GitHub repository `veldra/veldra`; Android namespace/application ID `com.veldra.app`; SSH is the intended push transport. The target repository currently responds `Repository not found`, so pushes remain blocked until it exists and the local key has access.
+**Confirmed identity decisions:** canonical GitHub repository `mertgoevse-wq/VELDRA`; Android namespace/application ID `com.veldra.app`; SSH is the intended push transport. The target repository currently responds `Repository not found`, so pushes remain blocked until it exists and the local key has access.
 
 ## 1. Verified baseline
 
@@ -83,7 +83,7 @@ Asset work must first distinguish upstream attribution assets from app identity 
 ### Phase A — Baseline and identity contract
 
 1. Keep the current backup branch and clean `main` baseline.
-2. Confirmed canonical VELDRA repository URL/owner: `https://github.com/veldra/veldra.git`; release channels still require repository setup and access.
+2. Confirmed canonical VELDRA repository URL/owner: `git@github.com:mertgoevse-wq/VELDRA.git`; release channels still require private-repository setup and access.
 3. Define canonical names:
    - Product: `VELDRA`
    - Repository/package slug: `veldra`
@@ -106,7 +106,7 @@ Asset work must first distinguish upstream attribution assets from app identity 
 2. Keep `bolt-elements-*`, `.bolt`, and `boltArtifact` until a versioned compatibility migration exists.
 3. Add storage-key aliases/migrations for existing `bolt_*` local state.
 4. Change Android namespace/application ID only with an explicit migration path. A new application ID installs as a separate app and cannot receive updates from the old package automatically; evaluate signing identity, Play Store continuity, legacy package coexistence, and local-data migration before scheduling that release.
-5. Change GitHub remote/release ownership only after the canonical VELDRA repository exists and SSH access is available. The configured target is `git@github.com:veldra/veldra.git`; do not push until the probe succeeds.
+5. Change GitHub remote/release ownership only after the canonical VELDRA repository exists and SSH access is available. The configured target is `git@github.com:mertgoevse-wq/VELDRA.git`; do not push until the probe succeeds.
 
 ### Phase D — Provider-neutral model capability contract
 
@@ -153,7 +153,7 @@ Decision: use the new `com.veldra.app` namespace/application ID. This creates a 
 
 ### Gate 2 — Canonical GitHub/release destination
 
-Decision: use `veldra/veldra` and SSH transport (`git@github.com:veldra/veldra.git`). The target was probed on 2026-08-09 and returned `Repository not found`; the remote must not be switched or pushed until the repository exists and the SSH key is authorized. Update checks and public links must be migrated only after that access gate passes.
+Decision: use `mertgoevse-wq/VELDRA` as a private repository and SSH transport (`git@github.com:mertgoevse-wq/VELDRA.git`). The target was probed and returned `Repository not found`; the remote may be configured locally, but pushing remains blocked until the private repository exists and the SSH key is authorized. Update checks and public links must be migrated only after that access gate passes.
 
 ### Gate 3 — Native asset generation
 
