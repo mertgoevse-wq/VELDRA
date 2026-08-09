@@ -2,12 +2,37 @@
 
 **Last updated:** 2026-08-09  
 **Branch:** `main`  
-**Current commit:** `26b93af` — `fix: harden remote runtime authentication`
+**Current commit:** `07963dbf4cbbc94aa687dd2e4eb602c495be8854` — `fix: harden remote runtime symlink boundaries`
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
-**Last successful push:** `26b93af` pushed successfully to `origin/main`
+**Last successful push:** `07963dbf4cbbc94aa687dd2e4eb602c495be8854` pushed successfully to `origin/main`
 **Working tree:** clean and synchronized with `origin/main`
 
-> The focused four-file lint/security repair is committed and present on `origin/main`; this handoff also records the current audit baseline and the next security slice.
+> The Remote Runtime symlink-boundary hardening slice is committed and synchronized with `origin/main`.
+
+## Latest security slice — Remote Runtime symlink boundaries
+
+Implemented locally in `remote-runtime/src/files.ts`, `remote-runtime/src/workspaces.ts`, and `remote-runtime/src/security.spec.ts`:
+
+- Validates lexical and filesystem-real paths for file reads/writes, including nonexistent nested targets.
+- Rejects symlinked parents that resolve outside a workspace.
+- Rejects workspace-ID symlinks, dangling workspace symlinks, and a redirected/dangling `WORKSPACES_DIR` root.
+- Skips symlinks during recursive file discovery instead of following them.
+- Preserves legitimate symlink reads when the target remains inside the workspace.
+- Adds regression coverage for nested writes, outside-parent escapes, workspace-root escapes, dangling symlinks, and safe internal symlinks.
+
+Validation for this slice:
+
+- Focused Remote Runtime security tests: 7/7 passed.
+- Full root Vitest suite: 22/22 files, 182/182 tests passed.
+- Root typecheck: passed.
+- Focused ESLint on all changed files: passed.
+- `git diff --check`: passed.
+- Remote Runtime package build: blocked because `remote-runtime/node_modules` is absent (`tsc: not found`); no dependency installation was performed.
+- Known residual limitation: filesystem validation and subsequent read/write are not atomic against a privileged local TOCTOU attacker; full descriptor/`O_NOFOLLOW` hardening is a separate slice.
+
+## Next step
+
+Proceed to the next independent security/runtime gap.
 
 ## Current product state
 

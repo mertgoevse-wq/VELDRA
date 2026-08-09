@@ -8,26 +8,81 @@ const TEXT_CONTROL_CHARACTER_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/;
 /**
  * Safely resolves a file path within a workspace, preventing traversal.
  */
+function isWithinRoot(candidate: string, root: string): boolean {
+  const rootWithSeparator = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
+
+  return candidate === root || candidate.startsWith(rootWithSeparator);
+}
+
+/**
+ * Resolves a file path while checking both lexical and filesystem-real paths.
+ * The second check prevents a symlink inside the workspace from escaping it.
+ * Nonexistent targets are supported by resolving the nearest existing parent.
+ */
 export function resolveSafeFilePath(workspaceId: string, relativeFilePath: string): string {
   const wsPath = getWorkspacePath(workspaceId);
   const normalizedRelativePath = relativeFilePath.replace(/\\/g, '/');
 
-  if (
-    !normalizedRelativePath ||
-    normalizedRelativePath.includes('\0') ||
-    path.isAbsolute(normalizedRelativePath)
-  ) {
+  if (!normalizedRelativePath || normalizedRelativePath.includes('\0') || path.isAbsolute(normalizedRelativePath)) {
     throw new Error('Invalid file path.');
   }
 
   const resolved = path.resolve(wsPath, normalizedRelativePath);
-  const workspaceRoot = wsPath.endsWith(path.sep) ? wsPath : `${wsPath}${path.sep}`;
+  const workspaceRoot = path.resolve(wsPath);
 
-  if (resolved !== wsPath && !resolved.startsWith(workspaceRoot)) {
+  // Reject lexical traversal before touching the filesystem.
+  if (!isWithinRoot(resolved, workspaceRoot)) {
     throw new Error('Access denied: Path traversal detected.');
   }
 
-  return resolved;
+  /*
+   * realpathSync only accepts existing paths. Resolve the nearest existing
+   * parent, then append the validated nonexistent suffix.
+   */
+  let existingPath = resolved;
+  const missingParts: string[] = [];
+
+  while (true) {
+    try {
+      // lstatSync intentionally detects dangling symlinks, unlike existsSync.
+      fs.lstatSync(existingPath);
+      break;
+    } catch (error) {
+      if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT') {
+        throw error;
+      }
+
+      const parentPath = path.dirname(existingPath);
+
+      if (parentPath === existingPath) {
+        throw new Error('Invalid file path.');
+      }
+
+      missingParts.unshift(path.basename(existingPath));
+      existingPath = parentPath;
+    }
+  }
+
+  const realWorkspaceRoot = fs.realpathSync(workspaceRoot);
+  let realExistingPath: string;
+
+  try {
+    realExistingPath = fs.realpathSync(existingPath);
+  } catch {
+    /*
+     * A dangling symlink (or an otherwise unresolved filesystem path) must not
+     * be treated as a normal missing target beneath the workspace.
+     */
+    throw new Error('Access denied: Path traversal detected.');
+  }
+
+  const realResolvedPath = path.resolve(realExistingPath, ...missingParts);
+
+  if (!isWithinRoot(realResolvedPath, realWorkspaceRoot)) {
+    throw new Error('Access denied: Path traversal detected.');
+  }
+
+  return realResolvedPath;
 }
 
 export function isTextSafeContent(content: unknown): content is string {
@@ -49,7 +104,15 @@ export function listFilesRecursively(workspaceId: string, dirPath: string = ''):
 
   for (const item of items) {
     const relativeItemPath = path.join(dirPath, item.name).replace(/\\/g, '/');
-    
+
+    /*
+     * Do not follow symlinks during recursive discovery. A symlink can point
+     * outside the workspace even when its lexical path is inside it.
+     */
+    if (item.isSymbolicLink()) {
+      continue;
+    }
+
     if (item.isDirectory()) {
       const stats = fs.statSync(path.join(targetDir, item.name));
       result.push({
@@ -57,6 +120,7 @@ export function listFilesRecursively(workspaceId: string, dirPath: string = ''):
         type: 'directory',
         modifiedAt: stats.mtime.toISOString(),
       });
+
       // Recurse
       result.push(...listFilesRecursively(workspaceId, relativeItemPath));
     } else {
@@ -93,7 +157,10 @@ export function writeWorkspaceFiles(workspaceId: string, files: Record<string, s
   }
 }
 
-export function readWorkspaceTextFile(workspaceId: string, filePath: string): { path: string; content: string; size: number; modifiedAt: string } {
+export function readWorkspaceTextFile(
+  workspaceId: string,
+  filePath: string,
+): { path: string; content: string; size: number; modifiedAt: string } {
   const resolvedPath = resolveSafeFilePath(workspaceId, filePath);
   const stats = fs.statSync(resolvedPath);
 

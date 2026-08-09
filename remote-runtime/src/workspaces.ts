@@ -34,10 +34,68 @@ export function getWorkspacePath(workspaceId: string): string {
   }
 
   const workspacePath = path.resolve(WORKSPACES_DIR, workspaceId);
-  const workspaceRoot = WORKSPACES_DIR.endsWith(path.sep) ? WORKSPACES_DIR : `${WORKSPACES_DIR}${path.sep}`;
+  const workspaceRoot = path.resolve(WORKSPACES_DIR);
+  const workspaceRootWithSeparator = `${workspaceRoot}${path.sep}`;
 
-  // Check traversal
-  if (workspacePath !== WORKSPACES_DIR && !workspacePath.startsWith(workspaceRoot)) {
+  // Check lexical traversal before touching the filesystem.
+  if (workspacePath !== workspaceRoot && !workspacePath.startsWith(workspaceRootWithSeparator)) {
+    throw new Error('Access denied: Path traversal detected.');
+  }
+
+  let realWorkspaceRoot: string;
+
+  try {
+    const rootStats = fs.lstatSync(workspaceRoot);
+
+    if (rootStats.isSymbolicLink()) {
+      throw new Error('Access denied: Path traversal detected.');
+    }
+
+    realWorkspaceRoot = fs.realpathSync(workspaceRoot);
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      // A normal workspace creation path may not exist yet.
+      return workspacePath;
+    }
+
+    if (error instanceof Error && error.message.includes('Access denied')) {
+      throw error;
+    }
+
+    throw new Error('Access denied: Path traversal detected.');
+  }
+
+  // The configured workspaces root itself must not be redirected elsewhere.
+  if (realWorkspaceRoot !== workspaceRoot) {
+    throw new Error('Access denied: Path traversal detected.');
+  }
+
+  try {
+    fs.lstatSync(workspacePath);
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      return workspacePath;
+    }
+
+    throw error;
+  }
+
+  try {
+    const realWorkspacePath = fs.realpathSync(workspacePath);
+    const realWorkspaceRootWithSeparator = `${realWorkspaceRoot}${path.sep}`;
+
+    if (realWorkspacePath !== realWorkspaceRoot && !realWorkspacePath.startsWith(realWorkspaceRootWithSeparator)) {
+      throw new Error('Access denied: Path traversal detected.');
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Access denied')) {
+      throw error;
+    }
+
+    /*
+     * An existing entry that cannot be realpath-resolved is most commonly a
+     * dangling symlink. Treat it as untrusted rather than as a new workspace.
+     */
     throw new Error('Access denied: Path traversal detected.');
   }
 
@@ -49,9 +107,12 @@ export function getWorkspacePath(workspaceId: string): string {
  */
 export function createWorkspace(workspaceId: string): string {
   ensureWorkspacesDir();
+
   const wsPath = getWorkspacePath(workspaceId);
+
   if (!fs.existsSync(wsPath)) {
     fs.mkdirSync(wsPath, { recursive: true });
   }
+
   return wsPath;
 }
