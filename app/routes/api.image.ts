@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/cloudflare';
+import { json, type ActionFunctionArgs } from '@remix-run/cloudflare';
 import { withSecurity } from '~/lib/security';
 import { imageProviderRegistry } from '~/lib/modules/image/registry';
 import { runImageJob } from '~/lib/modules/image/jobs';
@@ -13,7 +13,10 @@ const MAX_RESULT_IMAGES = 16;
 const MAX_RESULT_BASE64_BYTES = 48 * 1024 * 1024;
 
 async function imageLoader() {
-  return json({ models: imageProviderRegistry.getModels(), providers: imageProviderRegistry.getProviders().map((provider) => provider.name) });
+  return json({
+    models: imageProviderRegistry.getModels(),
+    providers: imageProviderRegistry.getProviders().map((provider) => provider.name),
+  });
 }
 
 async function imageAction({ request }: ActionFunctionArgs) {
@@ -58,7 +61,10 @@ async function imageAction({ request }: ActionFunctionArgs) {
   const validationErrors = validateImageGenerationOptions(model, options);
 
   if (validationErrors.length > 0) {
-    return json({ error: 'Unsupported image generation options', code: 'unsupported_options', details: validationErrors }, { status: 400 });
+    return json(
+      { error: 'Unsupported image generation options', code: 'unsupported_options', details: validationErrors },
+      { status: 400 },
+    );
   }
 
   try {
@@ -83,7 +89,10 @@ async function imageAction({ request }: ActionFunctionArgs) {
       totalResultBytes > MAX_RESULT_BASE64_BYTES ||
       execution.result.images.some((image) => !isValidGeneratedImage(image))
     ) {
-      return json({ error: 'Image provider returned an invalid image result', code: 'invalid_provider_result' }, { status: 502 });
+      return json(
+        { error: 'Image provider returned an invalid image result', code: 'invalid_provider_result' },
+        { status: 502 },
+      );
     }
 
     return json({

@@ -83,48 +83,48 @@ export interface AndroidApiClientOptions {
 }
 
 export class AndroidApiClient {
-  private readonly baseUrl: string;
-  private readonly token: string;
+  private readonly _baseUrl: string;
+  private readonly _token: string;
 
   constructor({ baseUrl, token = '' }: AndroidApiClientOptions) {
-    this.baseUrl = baseUrl.replace(/\/$/, '');
-    this.token = token;
+    this._baseUrl = baseUrl.replace(/\/$/, '');
+    this._token = token;
   }
 
-  private getHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+  private _getHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...extraHeaders,
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    if (this._token) {
+      headers.Authorization = `Bearer ${this._token}`;
     }
 
     return headers;
   }
 
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  private async _request<T>(path: string, init: RequestInit = {}): Promise<T> {
     let response: Response;
 
     try {
-      response = await fetch(`${this.baseUrl}${path}`, {
+      response = await fetch(`${this._baseUrl}${path}`, {
         ...init,
-        headers: this.getHeaders(init.headers as Record<string, string> | undefined),
+        headers: this._getHeaders(init.headers as Record<string, string> | undefined),
       });
     } catch {
-      throw new Error(`Network failure contacting Android API Backend at ${this.baseUrl}.`);
+      throw new Error(`Network failure contacting Android API Backend at ${this._baseUrl}.`);
     }
 
     if (!response.ok) {
-      const detail = await this.readErrorDetail(response);
-      throw new Error(this.formatHttpError(response.status, detail));
+      const detail = await this._readErrorDetail(response);
+      throw new Error(this._formatHttpError(response.status, detail));
     }
 
     return response.json() as Promise<T>;
   }
 
-  private async readErrorDetail(response: Response): Promise<string | undefined> {
+  private async _readErrorDetail(response: Response): Promise<string | undefined> {
     try {
       const payload = (await response.json()) as { error?: string; message?: string };
       return payload.error ?? payload.message;
@@ -133,7 +133,7 @@ export class AndroidApiClient {
     }
   }
 
-  private formatHttpError(status: number, detail?: string) {
+  private _formatHttpError(status: number, detail?: string) {
     const suffix = detail ? ` ${detail}` : '';
 
     if (status === 401 || status === 403) {
@@ -152,16 +152,16 @@ export class AndroidApiClient {
   }
 
   async health(): Promise<AndroidApiHealthResponse> {
-    return this.request<AndroidApiHealthResponse>('/health', { method: 'GET' });
+    return this._request<AndroidApiHealthResponse>('/health', { method: 'GET' });
   }
 
   async listModels(options: { provider?: string } = {}): Promise<AndroidApiModelsResponse> {
     const query = options.provider ? `?provider=${encodeURIComponent(options.provider)}` : '';
-    return this.request<AndroidApiModelsResponse>(`/models${query}`, { method: 'GET' });
+    return this._request<AndroidApiModelsResponse>(`/models${query}`, { method: 'GET' });
   }
 
   async sendChatMessage(request: AndroidApiChatRequest): Promise<AndroidApiChatResponse> {
-    return this.request<AndroidApiChatResponse>('/chat', {
+    return this._request<AndroidApiChatResponse>('/chat', {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -171,18 +171,18 @@ export class AndroidApiClient {
     let response: Response;
 
     try {
-      response = await fetch(`${this.baseUrl}/chat/stream`, {
+      response = await fetch(`${this._baseUrl}/chat/stream`, {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: this._getHeaders(),
         body: JSON.stringify(request),
       });
     } catch {
-      throw new Error(`Network failure contacting Android API Backend at ${this.baseUrl}.`);
+      throw new Error(`Network failure contacting Android API Backend at ${this._baseUrl}.`);
     }
 
     if (!response.ok) {
-      const detail = await this.readErrorDetail(response);
-      throw new Error(this.formatHttpError(response.status, detail));
+      const detail = await this._readErrorDetail(response);
+      throw new Error(this._formatHttpError(response.status, detail));
     }
 
     if (!response.body) {
@@ -214,7 +214,7 @@ export class AndroidApiClient {
   }
 
   async enhancePrompt(request: AndroidApiEnhancePromptRequest): Promise<AndroidApiEnhancePromptResponse> {
-    return this.request<AndroidApiEnhancePromptResponse>('/enhance', {
+    return this._request<AndroidApiEnhancePromptResponse>('/enhance', {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -223,7 +223,7 @@ export class AndroidApiClient {
   async validateProviderConfig(
     request: AndroidApiProviderConfigValidationRequest = {},
   ): Promise<AndroidApiProviderConfigValidationResponse> {
-    return this.request<AndroidApiProviderConfigValidationResponse>('/provider-config/validate', {
+    return this._request<AndroidApiProviderConfigValidationResponse>('/provider-config/validate', {
       method: 'POST',
       body: JSON.stringify(request),
     });

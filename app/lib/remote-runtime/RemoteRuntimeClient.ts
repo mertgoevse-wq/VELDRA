@@ -97,64 +97,64 @@ export interface RemotePreviewResponse {
  * allowlisted command profiles, and WebSocket event streaming.
  */
 export class RemoteRuntimeClient {
-  private serverUrl: string;
-  private token: string;
-  private workspaceId: string;
+  private _serverUrl: string;
+  private _token: string;
+  private _workspaceId: string;
 
   constructor(serverUrl: string, token: string = '', workspaceId: string = '') {
     // Normalize URL to remove trailing slash
-    this.serverUrl = serverUrl.replace(/\/$/, '');
-    this.token = token;
-    this.workspaceId = workspaceId;
+    this._serverUrl = serverUrl.replace(/\/$/, '');
+    this._token = token;
+    this._workspaceId = workspaceId;
   }
 
-  private getHeaders(): HeadersInit {
+  private _getHeaders(): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    if (this._token) {
+      headers.Authorization = `Bearer ${this._token}`;
     }
 
     return headers;
   }
 
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  private async _request<T>(path: string, init: RequestInit = {}): Promise<T> {
     let response: Response;
 
     try {
-      response = await fetch(`${this.serverUrl}${path}`, {
+      response = await fetch(`${this._serverUrl}${path}`, {
         ...init,
         headers: {
-          ...this.getHeaders(),
+          ...this._getHeaders(),
           ...(init.headers ?? {}),
         },
       });
-    } catch (error) {
+    } catch {
       throw new Error(
-        `Network failure contacting Remote Runtime at ${this.serverUrl}. Check that the server is reachable from this device.`,
+        `Network failure contacting Remote Runtime at ${this._serverUrl}. Check that the server is reachable from this device.`,
       );
     }
 
     if (!response.ok) {
-      const detail = await this.readErrorDetail(response);
-      throw new Error(this.formatHttpError(response.status, detail));
+      const detail = await this._readErrorDetail(response);
+      throw new Error(this._formatHttpError(response.status, detail));
     }
 
     return response.json() as Promise<T>;
   }
 
-  private async readErrorDetail(response: Response): Promise<string | undefined> {
+  private async _readErrorDetail(response: Response): Promise<string | undefined> {
     try {
-      const payload = await response.json() as { error?: string; message?: string };
+      const payload = (await response.json()) as { error?: string; message?: string };
       return payload.error ?? payload.message;
     } catch {
       return undefined;
     }
   }
 
-  private formatHttpError(status: number, detail?: string): string {
+  private _formatHttpError(status: number, detail?: string): string {
     const suffix = detail ? ` ${detail}` : '';
 
     if (status === 401 || status === 403) {
@@ -176,7 +176,7 @@ export class RemoteRuntimeClient {
    * Health Check: GET /health
    */
   async checkHealth(): Promise<HealthResponse> {
-    return this.request<HealthResponse>('/health', { method: 'GET' });
+    return this._request<HealthResponse>('/health', { method: 'GET' });
   }
 
   /**
@@ -190,12 +190,13 @@ export class RemoteRuntimeClient {
    * Workspace Creation: POST /workspace
    */
   async createWorkspace(template: string = 'node-clean'): Promise<WorkspaceResponse> {
-    const data = await this.request<WorkspaceResponse>('/workspace', {
+    const data = await this._request<WorkspaceResponse>('/workspace', {
       method: 'POST',
       body: JSON.stringify({ template }),
     });
 
-    this.workspaceId = data.workspaceId;
+    this._workspaceId = data.workspaceId;
+
     return data;
   }
 
@@ -203,24 +204,24 @@ export class RemoteRuntimeClient {
    * List Files: GET /workspace/:id/files
    */
   async listFiles(options: { includeContent?: boolean } = {}): Promise<ListFilesResponse> {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
     const query = options.includeContent ? '?includeContent=true' : '';
 
-    return this.request<ListFilesResponse>(`/workspace/${this.workspaceId}/files${query}`, { method: 'GET' });
+    return this._request<ListFilesResponse>(`/workspace/${this._workspaceId}/files${query}`, { method: 'GET' });
   }
 
   /**
    * Sync Files: PUT /workspace/:id/files
    */
   async syncFiles(files: Record<string, string>): Promise<SyncFilesResponse> {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
-    return this.request<SyncFilesResponse>(`/workspace/${this.workspaceId}/files`, {
+    return this._request<SyncFilesResponse>(`/workspace/${this._workspaceId}/files`, {
       method: 'PUT',
       body: JSON.stringify({ files }),
     });
@@ -237,12 +238,12 @@ export class RemoteRuntimeClient {
    * Read Single File: GET /workspace/:id/files/content?path=...
    */
   async readFile(filePath: string): Promise<ReadFileResponse> {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
-    return this.request<ReadFileResponse>(
-      `/workspace/${this.workspaceId}/files/content?path=${encodeURIComponent(filePath)}`,
+    return this._request<ReadFileResponse>(
+      `/workspace/${this._workspaceId}/files/content?path=${encodeURIComponent(filePath)}`,
       { method: 'GET' },
     );
   }
@@ -251,11 +252,11 @@ export class RemoteRuntimeClient {
    * Run allowlisted command profile: POST /workspace/:id/commands
    */
   async runCommand(commandProfile: RemoteCommandProfile): Promise<RemoteCommandResponse> {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
-    return this.request<RemoteCommandResponse>(`/workspace/${this.workspaceId}/commands`, {
+    return this._request<RemoteCommandResponse>(`/workspace/${this._workspaceId}/commands`, {
       method: 'POST',
       body: JSON.stringify({ commandProfile }),
     });
@@ -265,11 +266,11 @@ export class RemoteRuntimeClient {
    * Get command status: GET /workspace/:id/commands/:commandId
    */
   async getCommandStatus(commandId: string): Promise<RemoteCommandResponse> {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
-    return this.request<RemoteCommandResponse>(`/workspace/${this.workspaceId}/commands/${commandId}`, {
+    return this._request<RemoteCommandResponse>(`/workspace/${this._workspaceId}/commands/${commandId}`, {
       method: 'GET',
     });
   }
@@ -278,11 +279,11 @@ export class RemoteRuntimeClient {
    * Stop command: POST /workspace/:id/commands/:commandId/stop
    */
   async stopCommand(commandId: string): Promise<RemoteCommandResponse> {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
-    return this.request<RemoteCommandResponse>(`/workspace/${this.workspaceId}/commands/${commandId}/stop`, {
+    return this._request<RemoteCommandResponse>(`/workspace/${this._workspaceId}/commands/${commandId}/stop`, {
       method: 'POST',
     });
   }
@@ -291,27 +292,26 @@ export class RemoteRuntimeClient {
    * Get live preview status: GET /workspace/:id/preview
    */
   async getPreviewUrl(): Promise<RemotePreviewResponse> {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
-    return this.request<RemotePreviewResponse>(`/workspace/${this.workspaceId}/preview`, { method: 'GET' });
+    return this._request<RemotePreviewResponse>(`/workspace/${this._workspaceId}/preview`, { method: 'GET' });
   }
 
   /**
    * WebSocket Connection: WS /workspace/:id/events
    */
   connectWebSocket(onMessage: (event: RemoteRuntimeEvent) => void): WebSocket {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
-    const wsScheme = this.serverUrl.startsWith('https') ? 'wss' : 'ws';
-    const cleanHost = this.serverUrl.replace(/^https?:\/\//, '');
-    const tokenQuery = this.token ? `?token=${encodeURIComponent(this.token)}` : '';
-    const wsUrl = `${wsScheme}://${cleanHost}/workspace/${this.workspaceId}/events${tokenQuery}`;
+    const wsScheme = this._serverUrl.startsWith('https') ? 'wss' : 'ws';
+    const cleanHost = this._serverUrl.replace(/^https?:\/\//, '');
+    const tokenQuery = this._token ? `?token=${encodeURIComponent(this._token)}` : '';
+    const wsUrl = `${wsScheme}://${cleanHost}/workspace/${this._workspaceId}/events${tokenQuery}`;
 
-    console.log(`[RemoteRuntimeClient] Connecting to WebSocket: ${wsUrl}`);
     const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {
@@ -337,13 +337,13 @@ export class RemoteRuntimeClient {
    * Safe Git Status: GET /workspace/:id/git/status
    */
   async gitStatus(): Promise<{ ok: boolean; status?: string; error?: string }> {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
-    return this.request<{ ok: boolean; status?: string; error?: string }>(
-      `/workspace/${this.workspaceId}/git/status`,
-      { method: 'GET' }
+    return this._request<{ ok: boolean; status?: string; error?: string }>(
+      `/workspace/${this._workspaceId}/git/status`,
+      { method: 'GET' },
     );
   }
 
@@ -351,21 +351,20 @@ export class RemoteRuntimeClient {
    * Safe Git Init: POST /workspace/:id/git/init
    */
   async gitInit(): Promise<{ ok: boolean; output?: string; error?: string }> {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
-    return this.request<{ ok: boolean; output?: string; error?: string }>(
-      `/workspace/${this.workspaceId}/git/init`,
-      { method: 'POST' }
-    );
+    return this._request<{ ok: boolean; output?: string; error?: string }>(`/workspace/${this._workspaceId}/git/init`, {
+      method: 'POST',
+    });
   }
 
   /**
    * Safe Git Commit: POST /workspace/:id/git/commit
    */
   async gitCommit(message: string): Promise<{ ok: boolean; output?: string; error?: string }> {
-    if (!this.workspaceId) {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
@@ -373,20 +372,23 @@ export class RemoteRuntimeClient {
       throw new Error('Commit message is required.');
     }
 
-    return this.request<{ ok: boolean; output?: string; error?: string }>(
-      `/workspace/${this.workspaceId}/git/commit`,
+    return this._request<{ ok: boolean; output?: string; error?: string }>(
+      `/workspace/${this._workspaceId}/git/commit`,
       {
         method: 'POST',
         body: JSON.stringify({ message }),
-      }
+      },
     );
   }
 
   /**
    * Safe Git Push: POST /workspace/:id/git/push
    */
-  async gitPush(options: { token: string; repoUrl: string }): Promise<{ ok: boolean; output?: string; error?: string }> {
-    if (!this.workspaceId) {
+  async gitPush(options: {
+    token: string;
+    repoUrl: string;
+  }): Promise<{ ok: boolean; output?: string; error?: string }> {
+    if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
@@ -401,18 +403,20 @@ export class RemoteRuntimeClient {
     }
 
     try {
-      return await this.request<{ ok: boolean; output?: string; error?: string }>(
-        `/workspace/${this.workspaceId}/git/push`,
+      return await this._request<{ ok: boolean; output?: string; error?: string }>(
+        `/workspace/${this._workspaceId}/git/push`,
         {
           method: 'POST',
           body: JSON.stringify({ token, repoUrl }),
-        }
+        },
       );
-    } catch (error: any) {
-      let message = error.message || 'Git push request failed.';
+    } catch (error: unknown) {
+      let message = error instanceof Error ? error.message : 'Git push request failed.';
+
       if (token) {
         message = message.replace(token, '[TOKEN_REDACTED]');
       }
+
       throw new Error(message);
     }
   }

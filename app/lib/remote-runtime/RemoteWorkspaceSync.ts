@@ -1,8 +1,12 @@
-import { loadAndroidFallbackState, saveAndroidFallbackWorkspace, type PersistedDirent } from '~/lib/persistence/androidFallbackStorage';
+import {
+  loadAndroidFallbackState,
+  saveAndroidFallbackWorkspace,
+  type PersistedDirent,
+} from '~/lib/persistence/androidFallbackStorage';
 import { runtimeModeStore } from '~/lib/stores/runtime-mode';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { WORK_DIR } from '~/utils/constants';
-import { RemoteRuntimeClient, type RemoteFileItem } from './RemoteRuntimeClient';
+import { RemoteRuntimeClient } from './RemoteRuntimeClient';
 
 export interface RemoteWorkspaceConflict {
   path: string;
@@ -94,7 +98,9 @@ function denormalizeWorkspacePath(remotePath: string, existingFiles: Record<stri
   return existingKey ?? `${WORK_DIR}/${normalized}`;
 }
 
-function isTextFile(dirent: PersistedDirent | undefined): dirent is PersistedDirent & { type: 'file'; content: string } {
+function isTextFile(
+  dirent: PersistedDirent | undefined,
+): dirent is PersistedDirent & { type: 'file'; content: string } {
   return dirent?.type === 'file' && !dirent.isBinary && typeof dirent.content === 'string';
 }
 
@@ -281,6 +287,7 @@ export async function syncSingleFileToRemote(filePath?: string): Promise<RemoteW
     }
 
     await workbenchStore.saveFile(targetPath);
+
     const localState = await loadAndroidFallbackState();
     const localFile = localState.workspace.files[targetPath];
     const remotePath = normalizeWorkspacePath(targetPath);
@@ -314,4 +321,3 @@ export async function syncSingleFileToRemote(filePath?: string): Promise<RemoteW
 
   return getSyncStatus();
 }
-

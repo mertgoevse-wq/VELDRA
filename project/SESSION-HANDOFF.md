@@ -5,7 +5,9 @@
 **Current commit:** `300da86` — `fix: restore validated VELDRA runtime baseline`
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
 **Last successful push:** `300da86` pushed successfully to `origin/main`
-**Working tree:** clean and synchronized with `origin/main`
+**Working tree:** pending local lint-repair slice; not yet committed or pushed
+
+> **Pending slice:** The four-file lint/security repair is validated locally but remains uncommitted: `app/lib/android-api/AndroidApiClient.ts`, `app/lib/remote-runtime/RemoteRuntimeClient.ts`, `app/lib/remote-runtime/RemoteWorkspaceSync.ts`, and `app/routes/api.image.ts`. Do not treat the pending changes as present on `origin/main` until the follow-up commit is pushed.
 
 ## Current product state
 
@@ -107,12 +109,18 @@ No real image generator is available in the current execution environment:
 - Full Vitest: 21/21 test files and 175/175 tests passed.
 - Typecheck: passed.
 - Focused ESLint on changed files: passed.
-- Full repository ESLint: still fails on the pre-existing broad formatting/rule backlog; this repair slice did not mass-reformat unrelated files.
+- Full repository ESLint: still fails with the pre-existing broad formatting/rule backlog (184 findings in this run); this repair slice did not mass-reformat unrelated files.
 - Production `pnpm build`: blocked by the environment's Miniflare/tcmalloc 1 GiB mmap/OOM failure before application build completion.
 - Android `pnpm android:webbuild`: blocked by the Node JavaScript heap OOM during chunk generation after 4,900 modules; no Android device/APK validation was performed in this slice.
+- Full Vitest after the pending slice: 21/21 test files and 175/175 tests passed.
+- Focused Image validation: `app/lib/modules/image/validation.spec.ts`, 2/2 tests passed.
+- Typecheck and focused ESLint on all four pending files: passed.
 - Secret scan and `git diff --check`: passed.
+- Remote WebSocket authentication still sends the token as a query parameter because that is the existing client/server contract; the client no longer logs the URL or token. Moving to subprotocol/cookie authentication requires a separately tested protocol change.
 
 ## Next recommended slice
+
+0. Commit and push the pending four-file lint/security repair after the final staged diff gate; then update this handoff's commit metadata to the new SHA.
 
 1. Re-run the production and Android builds in an environment with sufficient address space/Node heap, then investigate any application-level errors separately from infrastructure OOMs.
 2. Add a focused integration adapter between the execution contract and VELDRA runtime modes only after reconciling lifecycle and capability semantics.
