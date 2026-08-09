@@ -5,7 +5,7 @@
 **Git sync:** local `main` is synchronized with the canonical private repository `origin/main`
 **Target device:** Samsung Galaxy A56 (Android 15, 1080×2340)
 
-> **Current validation note — 2026-08-09:** The dependency manifest and lockfile are synchronized in the pending repair slice. `pnpm test` passes 21/21 suites and 175/175 tests; `pnpm typecheck` and focused ESLint pass. The full repository lint backlog remains unresolved. Production build is blocked by the environment's Miniflare/tcmalloc address-space OOM, and `pnpm android:webbuild` is blocked by Node heap OOM during chunk generation. The latest pushed commit remains `c36140b`; this repair slice is not yet committed.
+> **Current validation note — 2026-08-09:** Commit `300da86` synchronized the dependency manifest/lockfile and repaired the validated runtime baseline. `pnpm test` passes 21/21 suites and 175/175 tests; `pnpm typecheck` and focused ESLint pass. The full repository lint backlog remains unresolved. Production build is blocked by the environment's Miniflare/tcmalloc address-space OOM, and `pnpm android:webbuild` is blocked by Node heap OOM during chunk generation. Local `main` is synchronized with `origin/main`.
 
 ---
 
