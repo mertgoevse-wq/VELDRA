@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-09  
 **Branch:** `main`  
-**Current commit:** `05c6def239cbeef3f6bc7230724264d6a5dc9718` — `feat: expose resolved auto model`
+**Current commit:** `f73d2bbdb414b291ec017b6d1dd519ee9003592e` — `feat: register webcontainer execution provider`
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
-**Last successful push:** `05c6def239cbeef3f6bc7230724264d6a5dc9718` pushed successfully to `origin/main`
+**Last successful push:** `f73d2bbdb414b291ec017b6d1dd519ee9003592e` pushed successfully to `origin/main`
 **Working tree:** clean and synchronized with `origin/main`
 
 > The next MVP slice connects the existing chat model selector to VELDRA's capability router while preserving the established provider/streaming path.
@@ -83,9 +83,29 @@ Validation:
 - Focused ESLint: passed.
 - `git diff --check`: passed.
 
+## Latest integration slice — provider-neutral WebContainer execution registration
+
+Implemented locally in `app/lib/webcontainer/index.ts`, `app/lib/execution/webcontainer.ts`, `app/lib/execution/registry.ts`, and `app/lib/execution/webcontainer.spec.ts`:
+
+- Registers the existing WebContainer adapter in the provider-neutral sandbox registry from the composition root.
+- Preserves idempotence for HMR/repeated initialization.
+- Keeps SSR and unsupported-platform availability fail-closed.
+- Reports failed WebContainer boot promises as unavailable and attaches a rejection observer at the composition root.
+- Does not redirect ActionRunner or change existing WebContainer/Android runtime behavior; this slice makes the execution contract discoverable for the next adapter integration.
+
+Validation:
+
+- Focused execution/capability tests: 3/3 files, 27/27 tests passed.
+- Full root Vitest suite: 23/23 files, 189/189 tests passed.
+- Root typecheck: passed.
+- Focused ESLint: passed.
+- `git diff --check`: passed.
+- Secret-pattern scan: no findings.
+- Android build/device validation remains unavailable in this environment; Android LLM backend remains a documented external-backend blocker.
+
 ## Next step
 
-Complete the resolved Auto-model display commit/push, then continue with the next missing MVP connection after a fresh audit.
+Complete the execution provider-registry commit/push, then integrate registry/session lifecycle with runtime-mode without changing existing ActionRunner behavior.
 
 ## Current product state
 
@@ -116,7 +136,7 @@ The original Android baseline, the committed `bolt-android` development refs, an
 ## Migrated foundation
 
 - `app/lib/orchestrator/`: provider-neutral ports, evidence/policy contracts, bounded budgets, failure fingerprints, entitlement/developer override policy, model capability overlay, model routing, and catalog update validation/freshness/rollback contracts.
-- `app/lib/execution/`: sandbox contract, provider registry, and WebContainer adapter/specifications. These are not yet wired into the established VELDRA stores/action runner.
+- `app/lib/execution/`: sandbox contract, provider registry, and WebContainer adapter/specifications. The WebContainer provider is now registered from the composition root; ActionRunner/runtime-mode lifecycle routing remains a separate integration slice.
 - `app/lib/dev/`: host-side runtime environment and developer-policy adapter.
 - `app/lib/webcontainer/capabilities.ts`: testable WebContainer capability detection, without replacing the existing platform adapter.
 - `app/lib/api/base-url.ts`: relative-by-default API URL boundary for future Android backend wiring; existing routes are not globally rewritten yet.

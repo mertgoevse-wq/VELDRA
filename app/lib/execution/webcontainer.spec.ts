@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WORK_DIR, WORK_DIR_NAME } from '~/utils/constants';
-import { createWebContainerProvider, WEB_CONTAINER_PROVIDER_ID, WEB_CONTAINER_SESSION_ID } from './webcontainer';
+import {
+  createWebContainerProvider,
+  registerWebContainerProvider,
+  WEB_CONTAINER_PROVIDER_ID,
+  WEB_CONTAINER_SESSION_ID,
+} from './webcontainer';
+import { clearSandboxProviders, listSandboxProviders } from './registry';
 import type { SandboxEvent } from './types';
 
 function createContainerMock() {
@@ -42,6 +48,26 @@ describe('WebContainer sandbox provider', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.stubGlobal('crossOriginIsolated', true);
+    clearSandboxProviders();
+  });
+
+  it('registers the provider once for the shared execution registry', () => {
+    const containerPromise = Promise.resolve({} as any);
+
+    registerWebContainerProvider(containerPromise);
+    registerWebContainerProvider(containerPromise);
+
+    expect(listSandboxProviders().map((provider) => provider.id)).toEqual([WEB_CONTAINER_PROVIDER_ID]);
+  });
+
+  it('reports a failed boot as unavailable', async () => {
+    const boot = Promise.reject(new Error('boot failed'));
+
+    void boot.catch(() => undefined);
+
+    const provider = createWebContainerProvider(boot);
+
+    await expect(provider.isAvailable()).resolves.toBe(false);
   });
 
   it('exposes the existing runtime through the provider contract', async () => {

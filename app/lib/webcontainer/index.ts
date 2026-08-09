@@ -2,6 +2,7 @@ import { WebContainer } from '@webcontainer/api';
 import { WORK_DIR_NAME } from '~/utils/constants';
 import { cleanStackTrace } from '~/utils/stacktrace';
 import { isWebContainerSupported, isCapacitor, getPlatformInfo } from '~/lib/adapters/platform';
+import { registerWebContainerProvider } from '~/lib/execution/webcontainer';
 
 interface WebContainerContext {
   loaded: boolean;
@@ -76,6 +77,12 @@ if (!import.meta.env.SSR) {
     if (import.meta.hot) {
       import.meta.hot.data.webcontainer = webcontainer;
     }
+
+    // Keep the original promise for existing consumers while marking boot failures handled.
+    void webcontainer.catch(() => undefined);
+
+    // Expose the already-booted runtime through the provider-neutral execution registry.
+    registerWebContainerProvider(webcontainer);
   } else {
     /*
      * Android / fallback mode — no WebContainer

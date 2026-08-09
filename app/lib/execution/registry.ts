@@ -5,8 +5,9 @@ import type { SandboxCapabilities, SandboxProvider } from './types';
  * codebase should import a provider module directly, so that adding a backend
  * stays a one-line change plus one adapter file.
  *
- * No provider is registered yet -- see project/DECISIONS.md D-12 for why the
- * contract lands before any implementation.
+ * Providers are registered by their composition roots; the WebContainer
+ * adapter is wired from app/lib/webcontainer/index.ts. Generic consumers do
+ * not import a provider module directly.
  */
 const providers = new Map<string, SandboxProvider>();
 

@@ -398,7 +398,18 @@ export function createWebContainerProvider(containerPromise: Promise<WebContaine
     id: WEB_CONTAINER_PROVIDER_ID,
     label: 'WebContainer',
     capabilities: WEB_CONTAINER_CAPABILITIES,
-    isAvailable: async () => !import.meta.env.SSR && detectWebContainerSupport().supported,
+    isAvailable: async () => {
+      if (import.meta.env.SSR || !detectWebContainerSupport().supported) {
+        return false;
+      }
+
+      try {
+        await containerPromise;
+        return true;
+      } catch {
+        return false;
+      }
+    },
     create: async (options: SandboxCreateOptions) => {
       if (!detectWebContainerSupport().supported) {
         throw new Error('WebContainer is not supported in this runtime');
