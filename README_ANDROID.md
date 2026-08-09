@@ -1,10 +1,10 @@
-# bolt.diy Android — Android Build Guide
+# VELDRA — Android Build Guide
 
-This guide walks you through building and running bolt.diy as a native Android app using [Capacitor](https://capacitorjs.com/).
+This guide walks you through building and running VELDRA as a native Android app using [Capacitor](https://capacitorjs.com/).
 
 ## What This Is
 
-bolt.diy Android is an Android port/adaptation of bolt.diy, the browser-based AI coding assistant. The Android version wraps the web app in a native Android WebView shell. The chat interface, AI provider selection, code generation, and file editing all work on Android. Features that depend on [WebContainer](https://webcontainer.io/) — in-browser terminal, live preview, and shell commands — are not available in the Android WebView and will show a fallback message.
+VELDRA is an Android-capable AI development workbench derived from the open-source bolt.diy project. The Android version wraps the web app in a native Android WebView shell. The chat interface, AI provider selection, code generation, and file editing all work on Android. Features that depend on [WebContainer](https://webcontainer.io/) — in-browser terminal, live preview, and shell commands — are not available in the Android WebView and will show a fallback message.
 
 ## Prerequisites
 
@@ -143,7 +143,7 @@ To ensure the app does not feel broken when WebContainer is unavailable, we have
 
 ### Runtime Fallback Mode
 
-When bolt.diy detects that it's running in an Android WebView (or a browser without SharedArrayBuffer), it automatically enters **Android Fallback Mode**. A yellow banner appears at the top of the chat explaining the situation.
+When VELDRA detects that it's running in an Android WebView (or a browser without SharedArrayBuffer), it automatically enters **Android Fallback Mode**. A yellow banner appears at the top of the chat explaining the situation.
 
 In fallback mode:
 - **File editing** works in the UI (CodeMirror editor is fully functional)
@@ -468,8 +468,8 @@ At minimum, you need at least one LLM provider key (e.g., `OPENAI_API_KEY`).
 
 Edit `capacitor.config.ts`:
 ```ts
-appId: 'com.mertgoevse.boltdiyandroid',  // your package name
-appName: 'bolt.diy Android',        // display name
+appId: 'com.veldra.app',             // VELDRA Android package
+appName: 'VELDRA',                    // display name
 ```
 
 ## How to Build APK from GitHub
@@ -477,17 +477,17 @@ appName: 'bolt.diy Android',        // display name
 You can build and download the Android debug APK directly from GitHub Actions without needing to set up a local Android development environment or Android Studio.
 
 ### Steps to Build and Download:
-1. Navigate to your repository on GitHub: `https://github.com/mertgoevse-wq/bolt-diy-android`.
+1. Navigate to the private canonical repository on GitHub: `https://github.com/mertgoevse-wq/VELDRA`.
 2. Click on the **Actions** tab at the top.
 3. In the left sidebar, select the **Android Debug APK** workflow.
 4. Click the **Run workflow** dropdown menu on the right.
 5. Keep the branch as `main` (or select the branch you want to build) and click the green **Run workflow** button.
 6. Once the workflow run completes successfully (takes around 2-3 minutes), click on the completed run.
 7. Scroll down to the **Artifacts** section at the bottom.
-8. Click on **bolt-diy-android-debug-apk** to download the zip file containing the compiled `app-debug.apk`.
+8. Click on **veldra-android-debug-apk** to download the zip file containing the compiled `app-debug.apk`.
 
 ### How to Install on Your Device:
-1. Extract the downloaded `bolt-diy-android-debug-apk.zip` file to get the `app-debug.apk`.
+1. Extract the downloaded `veldra-android-debug-apk.zip` file to get the `app-debug.apk`.
 2. Transfer the APK file to your phone (via USB, email, cloud storage, or a file-sharing app).
 3. Open the file manager on your phone and tap the APK to install it.
 4. **Android Unknown-Source Warning**:
@@ -497,7 +497,7 @@ You can build and download the Android debug APK directly from GitHub Actions wi
 
 ## Troubleshooting
 
-For a comprehensive smoke-testing checklist and step-by-step physical device testing guide, see the [Android Device Testing & Smoke-Test Plan](file:///c:/Users/mertg/bolt-diy-android/docs/ANDROID_DEVICE_TEST_PLAN.md).
+For a comprehensive smoke-testing checklist and step-by-step physical device testing guide, see the [Android Device Testing & Smoke-Test Plan](docs/ANDROID_DEVICE_TEST_PLAN.md).
 
 **Gradle Permission Issue (Linux/macOS)**
 - **Problem:** When building locally, you see `./gradlew: Permission denied`.
@@ -549,7 +549,7 @@ This is expected on Android. The app falls back to a chat-only mode. See above.
 │  Android WebView (Capacitor)        │
 │                                     │
 │  ┌───────────────────────────────┐  │
-│  │  bolt.diy Web App             │  │
+│  │  VELDRA Web App               │  │
 │  │  (Remix + Vite build)         │  │
 │  │                               │  │
 │  │  ✅ Chat / AI / Editor       │  │
@@ -596,4 +596,4 @@ to work alongside the new runtime adapter abstraction.
 
 ## License
 
-MIT — same as the parent bolt.diy project.
+MIT — retained from the upstream bolt.diy project; see LICENSE and NOTICE.md for attribution.

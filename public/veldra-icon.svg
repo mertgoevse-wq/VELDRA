@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">VELDRA</title>
+  <desc id="desc">VELDRA app icon</desc>
+  <defs>
+    <linearGradient id="background" x1="72" y1="40" x2="440" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#242044"/>
+      <stop offset="1" stop-color="#0E0D1D"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="170" y1="91" x2="340" y2="421" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A99FFF"/>
+      <stop offset="1" stop-color="#5946E8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#background)"/>
+  <path d="m282 72-143 190h106l-27 178 155-231H267l15-137Z" fill="url(#mark)"/>
+  <circle cx="393" cy="393" r="18" fill="#8B7CFF" opacity=".9"/>
+</svg>

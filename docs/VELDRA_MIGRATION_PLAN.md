@@ -95,7 +95,7 @@ Asset work must first distinguish upstream attribution assets from app identity 
 ### Phase B — Branding and metadata slice
 
 1. Replace user-visible product branding and product-owned links in small batches.
-2. Create original VELDRA SVG logo, favicon, social preview, desktop icon source, Android launcher icon, and splash source; derive platform assets from those sources where tooling permits. Record asset provenance, license status, source inputs, generation commands, and visual verification.
+2. Create original VELDRA SVG logo, favicon, social preview, desktop icon source, Android launcher icon, and splash source; derive platform assets from those sources where tooling permits. The current Android launcher/splash source is reproducible VectorDrawable XML (`android/app/src/main/res/drawable/veldra_launcher_foreground.xml`, `veldra_splash.xml`, and legacy `mipmap-anydpi` fallbacks), while density-specific PNG/ICO/ICNS generation remains pending an available toolchain. Record asset provenance, license status, source inputs, generation commands, and visual verification.
 3. Update Capacitor app label and Android resources; keep display-name rebranding separate from any package/application-ID migration.
 4. Keep upstream attribution and MIT notices visible in docs and about/legal surfaces.
 5. The requested new Android package identity is approved for the independent VELDRA app path. It is a separate install/release identity and must not be presented as a seamless upgrade of the old package.

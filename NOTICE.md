@@ -18,8 +18,8 @@ The original MIT License is retained in full. See [LICENSE](./LICENSE).
 ## Trademarks and Logos
 
 - The original bolt.diy logos, icons, and trademarks remain the property of their respective owners.
-- This project uses distinct branding assets (`public/bolt-diy-android-logo.svg`, `public/bolt-diy-android-icon.svg`, and `public/bolt-diy-android-social-preview.svg`) that are visually inspired by the bolt/lightning concept but do not claim ownership of the original bolt.diy brand assets.
-- The name "bolt.diy Android" is used for attribution and descriptive purposes only, to accurately describe the relationship to the upstream project.
+- This project uses original VELDRA product assets (`public/veldra-logo.svg`, `public/veldra-icon.svg`, and `public/veldra-social-preview.svg`) and does not claim ownership of the original bolt.diy brand assets.
+- The name "bolt.diy" is retained only for attribution and descriptive purposes, accurately describing the relationship to the upstream project.
 
 ## Attribution Statement
 

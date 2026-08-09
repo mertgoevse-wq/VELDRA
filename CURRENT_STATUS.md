@@ -1,8 +1,8 @@
-# bolt.diy Android — Current Status
+# VELDRA — Current Status
 
-**Last updated:** 2026-07-05
+**Last updated:** 2026-08-09
 **Branch:** `main`  
-**Commits ahead of upstream:** 0 after latest push
+**Git sync:** local `main` contains unpushed VELDRA work; canonical private repository push is blocked until GitHub repository creation/access is available
 **Target device:** Samsung Galaxy A56 (Android 15, 1080×2340)
 
 ---
@@ -16,7 +16,7 @@
 | Item | Status | Details |
 |------|--------|---------|
 | Capacitor installed | ✅ | v7.6.7 (core, cli, android) — chosen for Node 20 compat |
-| `capacitor.config.ts` | ✅ | appId `com.mertgoevse.boltdiyandroid`, webDir `build/client`, debug flags, splash screen |
+| `capacitor.config.ts` | ✅ | appId `com.veldra.app`, webDir `build/client`, debug flags, splash screen |
 | Android project scaffolded | ✅ | `cap add android` — Gradle, MainActivity, manifests, resources, splash icons |
 | npm scripts | ✅ | 7 scripts: `android:init`, `android:sync`, `android:copy`, `android:open`, `android:build`, `android:run`, `android:clean` |
 | `cap copy android` tested | ✅ | Web assets copy to `android/app/src/main/assets/public/` successfully |
@@ -93,7 +93,7 @@
 ## Current Architecture
 
 ```
-bolt-diy-android/
+VELDRA/
 ├── app/                         # Remix/Vite web app (unchanged from upstream)
 │   ├── lib/
 │   │   ├── adapters/            # NEW — platform abstraction layer
@@ -116,7 +116,7 @@ bolt-diy-android/
 │   │   ├── build.gradle         #   compileSdk 35, minSdk 23, targetSdk 35
 │   │   ├── src/main/
 │   │   │   ├── AndroidManifest.xml
-│   │   │   ├── java/com/mertgoevse/boltdiyandroid/MainActivity.java
+│   │   │   ├── java/com/veldra/app/MainActivity.java
 │   │   │   └── res/             #   icons, splash, strings, styles
 │   │   └── ...
 │   ├── build.gradle
@@ -141,7 +141,7 @@ bolt-diy-android/
 | Aspect | Status | Notes |
 |--------|--------|-------|
 | Capacitor installed | ✅ Working | v7.6.7, `cap copy` succeeds |
-| Android project | ✅ Scaffolded | `com.mertgoevse.boltdiyandroid`, minSdk 23, targetSdk 35 |
+| Android project | ✅ Scaffolded | `com.veldra.app`, minSdk 23, targetSdk 35 |
 | Web build → Android | ✅ Pipeline exists | `npm run android:sync` → `android:webbuild` → `cap sync android` |
 | WebContainer on Android | ❌ Not available | SharedArrayBuffer unsupported in WebView — guarded, app doesn't crash |
 | Terminal on Android | ⚠️ Polished fallback | Replaces empty xterm with designed screen & settings redirection |
@@ -298,30 +298,33 @@ feat: connect android settings to remote runtime
 e94c805 chore: verify remote runtime scaffold
 ```
 
-**Remote:** `origin → https://github.com/mertgoevse-wq/bolt-diy-android.git`
-- Push is fully working.
+**Remote:** `origin → git@github.com:mertgoevse-wq/VELDRA.git`
+- Push is currently blocked because GitHub responds `Repository not found`; no force-push or alternate repository is used.
+- Local commits remain preserved on `main` and `backup/pre-canonical-veldra-20260809`.
 
 ---
 
-## Branding Pass ✅ COMPLETE
+## Branding Pass ⚠️ IN PROGRESS
 
-**Commit: `b00648c` — "feat: add branding preview and apk build workflow"**
+The active web, desktop metadata, Android package identity, and primary VELDRA SVG sources are migrated. Native launcher/splash vector sources are now being aligned; density-specific generated PNGs still require a reproducible asset-generation pass and device verification.
+
+**Initial branding milestone:** `8192044` — "feat: establish VELDRA product identity"**
 
 | Item | Status | Details |
 |------|--------|---------|
-| Project name | ✅ | `bolt-diy-android` |
-| Display name | ✅ | `bolt.diy Android` |
-| Android package | ✅ | `com.mertgoevse.boltdiyandroid` |
+| Project name | ✅ | `VELDRA` |
+| Display name | ✅ | `VELDRA` |
+| Android package | ✅ | `com.veldra.app` |
 | README.md | ✅ | Replaced with Android-port README and branding preview |
 | NOTICE.md | ✅ | Attribution and copyright |
 | BRANDING.md | ✅ | `BRANDING.md` |
-| New logo SVG | ✅ | `public/bolt-diy-android-logo.svg` |
-| New app icon SVG | ✅ | `public/bolt-diy-android-icon.svg` |
-| Social preview banner | ✅ | `public/bolt-diy-android-social-preview.svg` |
-| Android strings.xml | ✅ | App name → `bolt.diy Android` |
+| VELDRA logo SVG | ✅ | `public/veldra-logo.svg` |
+| VELDRA app icon SVG | ✅ | `public/veldra-icon.svg` |
+| VELDRA social preview | ✅ | `public/veldra-social-preview.svg` |
+| Android strings.xml | ✅ | App name → `VELDRA` |
 | Android build.gradle | ✅ | namespace + applicationId updated |
-| MainActivity.java | ✅ | Moved to `com/mertgoevse/boltdiyandroid/` |
+| MainActivity.java | ✅ | Package/path `com/veldra/app/`, package `com.veldra.app` |
 | capacitor.config.ts | ✅ | appId + appName updated |
 | package.json | ✅ | name, description, author, contributors |
 | Original LICENSE | ✅ | Retained unchanged |
-| Original logos | ✅ | Not deleted, not claimed as owned |
+| Original upstream logos | ✅ | Retained only where needed for attribution/compatibility; not claimed as VELDRA assets |

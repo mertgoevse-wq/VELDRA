@@ -1,12 +1,12 @@
 # Remote Runtime Design & Specification
 
-This document details the architecture, secure communication model, API contract, and client interface for the **bolt.diy Android Remote Runtime**.
+This document details the architecture, secure communication model, API contract, and client interface for the **VELDRA Remote Runtime**.
 
 ---
 
 ## 1. Overview & Architecture
 
-Since WebContainer and native command execution are unavailable in standard mobile WebViews, bolt.diy Android can optionally connect to a **Remote Runtime Server**. Android IndexedDB remains the local source of truth for files. Phase 5.4 adds safe command execution using predefined allowlisted command profiles only; free-form shell input is not supported. Phase 5.5 adds live preview status by detecting dev-server URLs from safe `npm run dev` / `pnpm run dev` command output.
+Since WebContainer and native command execution are unavailable in standard mobile WebViews, VELDRA can optionally connect to a **Remote Runtime Server**. Android IndexedDB remains the local source of truth for files. Phase 5.4 adds safe command execution using predefined allowlisted command profiles only; free-form shell input is not supported. Phase 5.5 adds live preview status by detecting dev-server URLs from safe `npm run dev` / `pnpm run dev` command output.
 
 ```mermaid
 sequenceDiagram

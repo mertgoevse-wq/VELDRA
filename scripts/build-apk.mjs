@@ -4,7 +4,7 @@
   * build-apk.mjs
   *
   * Node.js script wrapper to run the Gradle wrapper (gradlew/gradlew.bat)
-  * cross-platform to compile bolt.diy Android APKs.
+  * cross-platform to compile VELDRA Android APKs.
   */
 
 import { spawnSync } from 'child_process';

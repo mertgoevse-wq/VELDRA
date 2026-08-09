@@ -1,40 +1,33 @@
-# Branding Guide — bolt.diy Android
+# Branding Guide — VELDRA
 
 ## Identity
 
-- **Project name:** bolt-diy-android
-- **Display name:** bolt.diy Android
-- **Android app label:** bolt.diy Android
-- **Android package:** com.mertgoevse.boltdiyandroid
-- **Port author:** Mert Gövse
+- **Product name:** VELDRA
+- **Display name:** VELDRA
+- **Android app label:** VELDRA
+- **Android package:** `com.veldra.app`
+- **Canonical repository:** `github.com/mertgoevse-wq/VELDRA`
+- **Product owner:** Mert Gövse
 
-## Logo
+## Product assets
 
-The original bolt.diy logos (`public/logo.svg`, `public/logo-dark.png`, `public/logo-light.png`, etc.) are **not owned by this project**. They remain the property of StackBlitz Labs and the bolt.diy contributors.
+VELDRA product-facing assets are original and live under `public/`:
 
-This project uses a new, original SVG logo (`public/bolt-diy-android-logo.svg`) that is visually inspired by the bolt/lightning concept but is a distinct design. It includes a clear "Android" label to distinguish it from the upstream project.
+- `veldra-logo.svg` — responsive wordmark
+- `veldra-icon.svg` — square app icon source
+- `veldra-favicon.svg` — browser favicon
+- `veldra-social-preview.svg` — repository/social preview source
 
-## App Icon
+Provider logos and upstream compatibility assets are not product branding and should not be altered without a separate migration decision.
 
-A simple SVG app icon (`public/bolt-diy-android-icon.svg`) is provided. It follows the same design direction as the logo — bolt-inspired, with an Android badge.
+## Design direction
 
-## Design Direction
+- Deep indigo surfaces with violet accents
+- Geometric lightning-inspired mark with original proportions
+- Professional developer-tool aesthetic
+- No copied upstream wordmarks, logos, or mascots
+- Derive platform-specific icons from the VELDRA sources where possible
 
-- Visually inspired by the bolt/lightning concept
-- Clear "Android" word or badge
-- No neon/cyberpunk style
-- Clean, modern, minimal
-- Does not claim original logo ownership
+## Attribution
 
-## Trademarks
-
-"bolt.diy" and associated trademarks remain the property of their respective owners. This project uses the name "bolt.diy Android" for attribution and description purposes only, to accurately describe the relationship to the upstream project.
-
-## Colors
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| Primary | #1389fd | Bolt blue (inspired by upstream) |
-| Accent | #3ddc84 | Android green |
-| Dark | #0c0c0c | Background |
-| Light | #ffffff | Text on dark |
+VELDRA is derived from the open-source `bolt.diy` project by StackBlitz Labs and contributors. The upstream MIT license, copyright notices, trademarks, and attribution remain preserved in `LICENSE` and `NOTICE.md`. Upstream references are retained for legal and technical attribution, not as the VELDRA product identity.

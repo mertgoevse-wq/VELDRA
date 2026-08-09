@@ -92,7 +92,7 @@ Returns backend reachability without exposing provider secrets.
 ```json
 {
   "ok": true,
-  "service": "bolt-diy-android-api",
+  "service": "veldra-android-api",
   "version": "1.0.0"
 }
 ```

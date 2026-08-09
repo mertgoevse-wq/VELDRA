@@ -8,7 +8,7 @@
 ## Phase 1: WebView Wrapper ✅ DONE
 
 - [x] Install Capacitor (core, cli, android — v7 for Node 20 compat)
-- [x] Create `capacitor.config.ts` (appId: `com.mertgoevse.boltdiyandroid`, webDir: `build/client`)
+- [x] Create `capacitor.config.ts` (appId: `com.veldra.app`, webDir: `build/client`)
 - [x] Run `cap add android` — native project scaffolded
 - [x] Add npm scripts: `android:sync`, `android:open`, `android:build`, `android:run`, `android:copy`, `android:clean`, `android:init`
 - [x] Create platform adapter layer (`app/lib/adapters/`)
@@ -283,8 +283,9 @@
   - Add `android:usesCleartextTraffic="true"` for dev
   - Add `android:configChanges` for orientation handling
   - Consider `android:screenOrientation` lock or responsive handling
-- [ ] Generate app icons (use `@capacitor/assets` or manual)
-- [ ] Set correct app name in `strings.xml`
+- [x] Add reproducible VELDRA VectorDrawable sources for launcher and splash resources
+- [ ] Generate density-specific PNG/ICO/ICNS assets with an available reproducible toolchain
+- [x] Set correct app name in `strings.xml` (`VELDRA`)
 - [ ] Build release APK: `npm run android:build`
 - [ ] Test on Samsung Galaxy A56
 - [ ] **Commit:** `feat: production APK build configuration`

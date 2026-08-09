@@ -1,4 +1,4 @@
-# Bolt.diy Android Porting Audit Report
+# VELDRA Android Porting Audit Report
 
 **Date:** 2026-07-04
 **Target:** Samsung Galaxy A56 (Android 15, 1080×2340, 6.7")
@@ -8,11 +8,11 @@
 
 ## 1. Executive Summary
 
-Bolt.diy is a Remix/Vite web app that uses the **WebContainer API** to run a full Node.js environment inside the browser. This is the single hardest blocker for Android — WebContainer requires `SharedArrayBuffer` and cross-origin isolation (`COOP`/`COEP` headers), neither of which Android WebView supports.
+VELDRA is a Remix/Vite workbench derived from the upstream bolt.diy project and uses the **WebContainer API** to run a full Node.js environment inside the browser. This is the single hardest blocker for Android — WebContainer requires `SharedArrayBuffer` and cross-origin isolation (`COOP`/`COEP` headers), neither of which Android WebView supports.
 
 The good news: the **chat, AI provider, code generation, code editor, and settings** layers are standard React and work in any browser. Only the **runtime layer** (terminal, preview, live file execution) needs adapter work.
 
-**Verdict:** A WebView shell can ship immediately with chat-only mode. Full feature parity requires 5 phases of adapter work.
+**Verdict:** A VELDRA WebView shell can ship immediately with chat-only mode. Full feature parity requires 5 phases of adapter work.
 
 ---
 

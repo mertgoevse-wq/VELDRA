@@ -1,7 +1,7 @@
 /**
  * Android WebView Entry Point
  *
- * This is the main entry point for bolt.diy when running inside the Android WebView via Capacitor.
+ * This is the main entry point for VELDRA when running inside the Android WebView via Capacitor.
  * It's served from build/client/index.html after the Remix web build completes.
  *
  * This route ensures that the app mounts correctly and displays the proper UI components

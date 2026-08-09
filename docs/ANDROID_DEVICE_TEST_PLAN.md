@@ -1,6 +1,6 @@
 # Android Device Testing & Smoke-Test Plan
 
-This document provides step-by-step instructions for installing, testing, and debugging **bolt.diy Android** on physical devices (specifically optimized for the Samsung Galaxy A56 on Android 15).
+This document provides step-by-step instructions for installing, testing, and debugging **VELDRA** on physical devices (specifically optimized for the Samsung Galaxy A56 on Android 15).
 
 ---
 
@@ -19,12 +19,12 @@ npm run android:apk:debug
 
 ### How to Build the APK from GitHub Actions
 If you prefer to build using CI pipelines:
-1. Go to the repository on GitHub: `https://github.com/mertgoevse-wq/bolt-diy-android`.
+1. Go to the repository on GitHub: `https://github.com/mertgoevse-wq/VELDRA`.
 2. Navigate to the **Actions** tab.
 3. Select the **Android Debug APK** workflow from the left sidebar.
 4. Click the **Run workflow** dropdown on the right side and click the green **Run workflow** button.
 5. Wait for the run to complete (~3-4 minutes).
-6. Under the **Artifacts** section at the bottom of the run summary page, click **bolt-diy-android-debug-apk** to download the compiled ZIP file containing `app-debug.apk`.
+6. Under the **Artifacts** section at the bottom of the run summary page, click **veldra-android-debug-apk** to download the compiled ZIP file containing `app-debug.apk`.
 
 ---
 
@@ -41,7 +41,7 @@ If you prefer to build using CI pipelines:
 
 ### How to Uninstall/Reinstall Cleanly
 To ensure no cached assets or corrupt databases persist across builds:
-1. On your device's home screen or apps drawer, tap and hold the **bolt.diy** icon.
+1. On your device's home screen or apps drawer, tap and hold the **VELDRA** icon.
 2. Select **Uninstall** (or tap the `i` App Info icon and tap **Uninstall**).
 3. Confirm the uninstallation.
 4. Copy the new APK to your phone and install it normally.
@@ -50,7 +50,7 @@ To ensure no cached assets or corrupt databases persist across builds:
 
 ### How to Clear App Storage
 If the app gets stuck or you want to reset all user databases:
-1. Long-press the **bolt.diy** icon and select **App info** (or go to Settings → Apps → bolt.diy).
+1. Long-press the **VELDRA** icon and select **App info** (or go to Settings → Apps → VELDRA).
 2. Tap **Storage**.
 3. Tap **Clear data** (which deletes all local database entries, IndexedDB workspaces, and saved preferences) and **Clear cache**.
 4. Reopen the app to start from a clean state.
@@ -65,7 +65,7 @@ Run these tests step-by-step to verify the app's core functions:
 - [ ] **Launch:** The app boots up quickly when tapping the launcher icon.
 - [ ] **No Blank Screens:** The interface renders immediately; there is no infinite white/black screen.
 - [ ] **No Immediate Crash:** The application remains open and doesn't trigger "app stopped" dialogs.
-- [ ] **Icon/Name Check:** Launcher label reads **bolt.diy** and branding/logo displays correctly.
+- [ ] **Icon/Name Check:** Launcher label reads **VELDRA** and branding/logo displays correctly.
 - [ ] **Version Indicator:** Settings tab → About shows `v1.0.0 (Debug build)` with correct compilation date.
 
 ### B. Navigation & Basic UI

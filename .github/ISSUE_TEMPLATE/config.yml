@@ -3,6 +3,6 @@ contact_links:
   - name: Bolt.new related issues
     url: https://github.com/stackblitz/bolt.new/issues/new/choose
     about: Report issues related to Bolt.new (not Bolt.diy)
-  - name: Chat
+  - name: Community discussion
     url: https://thinktank.ottomator.ai
-    about: Ask questions and discuss with other Bolt.diy users.
+    about: Ask questions and discuss VELDRA and its upstream origins.

@@ -5,7 +5,7 @@
  * without Remix routing — we use React Router v6 directly with BrowserRouter
  * (or MemoryRouter for WebView where history may be restricted).
  *
- * The full bolt.diy UI is preserved; only the server-side routing layer is
+ * The full VELDRA UI is preserved; only the server-side routing layer is
  * replaced with a client-side equivalent. All stores, adapters, and components
  * work identically.
  */

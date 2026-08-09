@@ -1,7 +1,7 @@
 # Build & Persistence Verification Report
-**Date**: 2026-07-05  
-**Task**: Add GitHub Actions workflow for debug APK artifact  
-**Repository**: mertgoevse-wq/bolt-diy-android  
+**Date**: 2026-07-05
+**Task**: Add GitHub Actions workflow for debug APK artifact
+**Repository**: mertgoevse-wq/VELDRA
 
 ---
 

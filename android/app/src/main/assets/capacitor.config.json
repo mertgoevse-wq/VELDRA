@@ -1,6 +1,6 @@
 {
-	"appId": "com.mertgoevse.boltdiyandroid",
-	"appName": "bolt.diy Android",
+	"appId": "com.veldra.app",
+	"appName": "VELDRA",
 	"webDir": "build/client",
 	"server": {
 		"androidScheme": "https",
@@ -13,7 +13,7 @@
 	"plugins": {
 		"SplashScreen": {
 			"launchShowDuration": 1000,
-			"backgroundColor": "#0c0c0c",
+			"backgroundColor": "#17142D",
 			"showSpinner": false
 		}
 	}

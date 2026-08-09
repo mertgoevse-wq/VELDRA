@@ -1,7 +1,7 @@
 # Branding Verification Report
 
-**Date:** 2026-07-04  
-**Commit:** `chore: finalize android branding verification`
+**Date:** 2026-08-09
+**Scope:** active VELDRA product surfaces after the web/native identity slice
 
 ---
 
@@ -19,11 +19,11 @@
 
 ## Notes
 
-- `# bolt.diy Android` appears in `README.md`, `CURRENT_STATUS.md`, and `README_ANDROID.md` — this is the **correct new branding**, not the old `# bolt.diy` heading.
+- Historical upstream references are permitted only in attribution, compatibility, or migration context; active product headings and labels use VELDRA.
 - `social_preview_index.jpg` references in `CLEANUP_REPORT.md` are documentation of files slated for future removal — allowed context.
 - `stackblitz-labs/bolt.diy` URLs in `changelog.md` are historical upstream PR links — allowed as upstream attribution.
 - Original MIT LICENSE and copyright notice (StackBlitz, Inc.) retained unchanged.
 
 ## Conclusion
 
-**All clear.** Zero non-allowed occurrences of any searched string. No fixes required.
+The active web and Android identity is VELDRA. Native vector sources are aligned; density-specific generated raster assets and physical-device verification remain open follow-up work. Upstream attribution and technical compatibility identifiers remain intentionally preserved.
