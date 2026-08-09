@@ -69,6 +69,7 @@ android/app/src/main/assets/public/
 !docs/REMOTE_GIT_WORKFLOW.md
 !docs/ANDROID_LLM_API_BRIDGE.md
 !docs/ANDROID_DEVICE_TEST_PLAN.md
+!docs/VELDRA_MIGRATION_PLAN.md
 
 # Package lock & generated gradle configs
 package-lock.json
