@@ -5,7 +5,7 @@
 **Git sync:** local `main` is synchronized with the canonical private repository `origin/main`
 **Target device:** Samsung Galaxy A56 (Android 15, 1080×2340)
 
-> **Current validation note — 2026-08-09:** Commit `26b93af` is the latest pushed baseline and hardens Remote Runtime authentication/CORS/WebSocket handling while clearing the first focused lint slice. It passes `pnpm test` (22/22 suites, 179/179 tests), `pnpm typecheck`, focused ESLint, and `git diff --check`; the full repository lint backlog is reduced to 145 remaining findings. Production build is blocked by the environment's Miniflare/tcmalloc address-space OOM, and `pnpm android:webbuild` is blocked by Node heap OOM during chunk generation. Local `main` is synchronized with `origin/main`.
+> **Current validation note — 2026-08-09:** The local Auto capability-router MVP slice passes the full root suite (23/23 files, 187/187 tests), focused router tests (13/13), root typecheck, focused ESLint, `git diff --check`, and secret scanning. It adds an explicit Auto model option and resolves it to a concrete model within the selected provider before the existing streaming/provider path. Production and Android builds remain blocked by the previously documented environment OOM limits; commit/push is pending.
 
 ---
 

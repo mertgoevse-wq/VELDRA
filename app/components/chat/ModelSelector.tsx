@@ -4,6 +4,7 @@ import type { KeyboardEvent } from 'react';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import { classNames } from '~/utils/classNames';
 import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
+import { AUTO_MODEL } from '~/utils/constants';
 
 // Fuzzy search utilities
 const levenshteinDistance = (str1: string, str2: string): number => {
@@ -658,7 +659,11 @@ export const ModelSelector = ({
           tabIndex={0}
         >
           <div className="flex items-center justify-between">
-            <div className="truncate">{modelList.find((m) => m.name === model)?.label || 'Select model'}</div>
+            <div className="truncate">
+              {model === AUTO_MODEL
+                ? 'Auto (capability router)'
+                : modelList.find((m) => m.name === model)?.label || 'Select model'}
+            </div>
             <div
               className={classNames(
                 'i-ph:caret-down w-4 h-4 text-bolt-elements-textSecondary opacity-75',
@@ -765,6 +770,31 @@ export const ModelSelector = ({
                 'sm:[&::-webkit-scrollbar-track]:bg-transparent',
               )}
             >
+              <div
+                role="option"
+                aria-selected={model === AUTO_MODEL}
+                className={classNames(
+                  'px-3 py-2 text-sm cursor-pointer hover:bg-bolt-elements-background-depth-3 text-bolt-elements-textPrimary',
+                  model === AUTO_MODEL ? 'bg-bolt-elements-background-depth-2' : undefined,
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setModel?.(AUTO_MODEL);
+                  setIsModelDropdownOpen(false);
+                  setModelSearchQuery('');
+                  setDebouncedModelSearchQuery('');
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="truncate">Auto (capability router)</div>
+                    <div className="mt-0.5 text-xs text-bolt-elements-textTertiary">
+                      Chooses the largest verified context window for this provider
+                    </div>
+                  </div>
+                  {model === AUTO_MODEL && <span className="i-ph:check text-xs text-green-500" title="Selected" />}
+                </div>
+              </div>
               {modelLoading === 'all' || modelLoading === provider?.name ? (
                 <div className="px-3 py-3 text-sm">
                   <div className="flex items-center gap-2 text-bolt-elements-textTertiary">

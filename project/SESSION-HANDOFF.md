@@ -2,12 +2,33 @@
 
 **Last updated:** 2026-08-09  
 **Branch:** `main`  
-**Current commit:** `07963dbf4cbbc94aa687dd2e4eb602c495be8854` — `fix: harden remote runtime symlink boundaries`
+**Current commit:** `4d6629b8fa85d6f5abc4e455c191f90dbaf8045a` — `feat: connect chat to capability model router`
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
-**Last successful push:** `07963dbf4cbbc94aa687dd2e4eb602c495be8854` pushed successfully to `origin/main`
+**Last successful push:** `4d6629b8fa85d6f5abc4e455c191f90dbaf8045a` pushed successfully to `origin/main`
 **Working tree:** clean and synchronized with `origin/main`
 
-> The Remote Runtime symlink-boundary hardening slice is committed and synchronized with `origin/main`.
+> The next MVP slice connects the existing chat model selector to VELDRA's capability router while preserving the established provider/streaming path.
+
+## Latest product slice — Auto capability model routing
+
+Implemented locally in `app/utils/constants.ts`, `app/components/chat/ModelSelector.tsx`, `app/lib/orchestrator/model-router-adapter.ts`, `app/lib/orchestrator/model-router-adapter.spec.ts`, and `app/lib/.server/llm/stream-text.ts`:
+
+- Adds an explicit `Auto (capability router)` model option without introducing a virtual provider.
+- Projects only verified `ModelInfo` fields into the capability contract; unsupported tool, vision, reasoning, local, cost, and availability facts remain unknown.
+- Resolves the Auto sentinel within the selected provider using the largest verified context window, with provider scoping and malformed-candidate rejection.
+- Passes the resulting concrete model ID through the existing provider instance and streaming code path; explicit model selection remains unchanged.
+- Fails closed when no valid model can satisfy the routing request.
+- Adds offline regression coverage for capability projection, routing, provider scoping, fail-closed requirements, malformed candidates, and concrete Auto resolution.
+
+Validation for this slice:
+
+- Full root Vitest suite: 23/23 files, 187/187 tests passed.
+- Focused router/adapter tests: 13/13 passed.
+- Root typecheck: passed.
+- Focused ESLint on all changed files: passed.
+- `git diff --check`: passed.
+- Secret-pattern scan: no credential/private-key findings.
+- Production build and Android build remain environment-gated by the previously documented Miniflare/Node heap limits; they were not rerun for this isolated server/router slice.
 
 ## Latest security slice — Remote Runtime symlink boundaries
 
@@ -32,7 +53,7 @@ Validation for this slice:
 
 ## Next step
 
-Proceed to the next independent security/runtime gap.
+Complete the verified Auto-routing commit/push, then continue with the next missing MVP connection: authenticated Android API backend/model listing or execution-contract wiring, selected after a fresh end-to-end audit.
 
 ## Current product state
 

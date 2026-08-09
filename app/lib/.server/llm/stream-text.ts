@@ -1,7 +1,15 @@
 import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
 import { MAX_TOKENS, PROVIDER_COMPLETION_LIMITS, isReasoningModel, type FileMap } from './constants';
 import { getSystemPrompt } from '~/lib/common/prompts/prompts';
-import { DEFAULT_MODEL, DEFAULT_PROVIDER, MODIFICATIONS_TAG_NAME, PROVIDER_LIST, WORK_DIR } from '~/utils/constants';
+import {
+  AUTO_MODEL,
+  DEFAULT_MODEL,
+  DEFAULT_PROVIDER,
+  MODIFICATIONS_TAG_NAME,
+  PROVIDER_LIST,
+  WORK_DIR,
+} from '~/utils/constants';
+import { resolveAutoModelInfo } from '~/lib/orchestrator/model-router-adapter';
 import type { IProviderSetting } from '~/types/model';
 import { PromptLibrary } from '~/lib/common/prompt-library';
 import { allowedHTMLElements } from '~/utils/markdown';
@@ -105,13 +113,31 @@ export async function streamText(props: {
   });
 
   const provider = PROVIDER_LIST.find((p) => p.name === currentProvider) || DEFAULT_PROVIDER;
-  const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(provider);
+  const llmManager = LLMManager.getInstance();
+  const staticModels = llmManager.getStaticModelListFromProvider(provider);
   let modelDetails = staticModels.find((m) => m.name === currentModel);
 
-  if (!modelDetails) {
+  if (currentModel === AUTO_MODEL) {
+    const modelsList = await llmManager.getModelListFromProvider(provider, {
+      apiKeys,
+      providerSettings,
+      serverEnv: serverEnv as any,
+    });
+    const routedModel = resolveAutoModelInfo(modelsList, provider.name);
+
+    if (!routedModel) {
+      throw new Error(`No verified models available for capability routing with provider ${provider.name}`);
+    }
+
+    modelDetails = routedModel.model;
+    currentModel = modelDetails.name;
+    logger.info(
+      `Capability router selected ${modelDetails.name} for ${provider.name}: ${routedModel.result.decision.rationale}`,
+    );
+  } else if (!modelDetails) {
     const modelsList = [
       ...(provider.staticModels || []),
-      ...(await LLMManager.getInstance().getModelListFromProvider(provider, {
+      ...(await llmManager.getModelListFromProvider(provider, {
         apiKeys,
         providerSettings,
         serverEnv: serverEnv as any,
