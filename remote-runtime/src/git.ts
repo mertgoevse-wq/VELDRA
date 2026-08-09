@@ -75,9 +75,9 @@ export async function gitCommit(workspacePath: string, message: string): Promise
   const commitResult = await execGit(
     [
       '-c',
-      'user.name=bolt.diy Android',
+      'user.name=VELDRA',
       '-c',
-      'user.email=android@bolt.diy',
+      'user.email=git@veldra.app',
       'commit',
       '-m',
       message,

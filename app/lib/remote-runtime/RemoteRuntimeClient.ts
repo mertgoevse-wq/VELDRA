@@ -92,7 +92,7 @@ export interface RemotePreviewResponse {
 /**
  * RemoteRuntimeClient
  *
- * Client SDK to communicate with the bolt.diy Android Remote Runtime server.
+ * Client SDK to communicate with the VELDRA Remote Runtime server.
  * Handles server health status checks, workspace creation, files syncing,
  * allowlisted command profiles, and WebSocket event streaming.
  */

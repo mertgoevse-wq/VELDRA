@@ -5,6 +5,8 @@
 **Baseline:** `main` at `fc1cfb6` (`docs: add android device test plan`)  
 **Safety branch:** `backup/pre-veldra-rebrand-20260809`
 
+**Confirmed identity decisions:** canonical GitHub repository `veldra/veldra`; Android namespace/application ID `com.veldra.app`; SSH is the intended push transport. The target repository currently responds `Repository not found`, so pushes remain blocked until it exists and the local key has access.
+
 ## 1. Verified baseline
 
 This repository is an Android-first adaptation of `bolt.diy`, not yet an independent VELDRA product. The current implementation combines:
@@ -81,11 +83,12 @@ Asset work must first distinguish upstream attribution assets from app identity 
 ### Phase A — Baseline and identity contract
 
 1. Keep the current backup branch and clean `main` baseline.
-2. Decide the canonical VELDRA repository URL/owner and release channels.
+2. Confirmed canonical VELDRA repository URL/owner: `https://github.com/veldra/veldra.git`; release channels still require repository setup and access.
 3. Define canonical names:
    - Product: `VELDRA`
-   - Repository/package slug: proposed `veldra`
-   - Android display name: proposed `VELDRA`
+   - Repository/package slug: `veldra`
+   - Android display name: `VELDRA`
+   - Android namespace/application ID: `com.veldra.app`
    - Stable storage keys: preserve old keys and add a migration layer rather than silently losing user data.
 4. Add a small identity/constants boundary so future UI, update, and diagnostics code does not hard-code product strings.
 
@@ -95,7 +98,7 @@ Asset work must first distinguish upstream attribution assets from app identity 
 2. Create original VELDRA SVG logo, favicon, social preview, desktop icon source, Android launcher icon, and splash source; derive platform assets from those sources where tooling permits. Record asset provenance, license status, source inputs, generation commands, and visual verification.
 3. Update Capacitor app label and Android resources; keep display-name rebranding separate from any package/application-ID migration.
 4. Keep upstream attribution and MIT notices visible in docs and about/legal surfaces.
-5. Do not change Android package identity until the upgrade/migration decision below is approved.
+5. The requested new Android package identity is approved for the independent VELDRA app path. It is a separate install/release identity and must not be presented as a seamless upgrade of the old package.
 
 ### Phase C — Compatibility-safe identifiers
 
@@ -103,7 +106,7 @@ Asset work must first distinguish upstream attribution assets from app identity 
 2. Keep `bolt-elements-*`, `.bolt`, and `boltArtifact` until a versioned compatibility migration exists.
 3. Add storage-key aliases/migrations for existing `bolt_*` local state.
 4. Change Android namespace/application ID only with an explicit migration path. A new application ID installs as a separate app and cannot receive updates from the old package automatically; evaluate signing identity, Play Store continuity, legacy package coexistence, and local-data migration before scheduling that release.
-5. Change GitHub remote/release ownership only after the canonical VELDRA repository is confirmed and access is available.
+5. Change GitHub remote/release ownership only after the canonical VELDRA repository exists and SSH access is available. The configured target is `git@github.com:veldra/veldra.git`; do not push until the probe succeeds.
 
 ### Phase D — Provider-neutral model capability contract
 
@@ -146,11 +149,11 @@ Asset work must first distinguish upstream attribution assets from app identity 
 
 ### Gate 1 — Android package identity
 
-Changing `com.mertgoevse.boltdiyandroid` to a VELDRA package is not a cosmetic edit. It creates a new Android application identity and prevents seamless upgrades from already-installed packages. Recommended default: keep the existing package for the first VELDRA-compatible release, change only display branding, and schedule a separate package migration if a new identity is required.
+Decision: use the new `com.veldra.app` namespace/application ID. This creates a new Android application identity and prevents seamless upgrades from already-installed `com.mertgoevse.boltdiyandroid` packages. Treat VELDRA as a separate app/release line and evaluate signing identity, Play Store continuity, legacy package coexistence, and local-data migration before distribution.
 
 ### Gate 2 — Canonical GitHub/release destination
 
-The current remote is `https://github.com/mertgoevse-wq/bolt-diy-android.git`; update checks and several links still point to upstream StackBlitz repositories. Before changing these, provide or confirm the canonical VELDRA GitHub repository and whether the current remote should remain the publishing target.
+Decision: use `veldra/veldra` and SSH transport (`git@github.com:veldra/veldra.git`). The target was probed on 2026-08-09 and returned `Repository not found`; the remote must not be switched or pushed until the repository exists and the SSH key is authorized. Update checks and public links must be migrated only after that access gate passes.
 
 ### Gate 3 — Native asset generation
 
@@ -161,10 +164,12 @@ SVG sources can be authored in-repository. PNG/ICO/ICNS and Android density asse
 ### 6.1 Plan slice
 
 - The repository baseline, instruction inventory, architecture comparison, rebrand matrix, asset inventory, decision gates, and phased migration plan are documented.
-- No product code, package identity, remote, license, or asset was changed by this planning slice.
+- The planning commit remains preserved; later implementation slices are independently reviewable and reversible.
 - The document passes `git diff --check` and receives a focused review.
 
 ### 6.2 First rebrand milestone
+
+**Current slice:** product/build metadata and the Android package identity have been migrated to VELDRA; asset and broad documentation migration remain separate follow-up slices.
 
 - No product-facing Bolt identity remains in VELDRA-owned metadata, titles, labels, docs, links, or app assets except explicitly marked attribution/compatibility references.
 - Upstream license, copyright, attribution, external dependency names, and required compatibility contracts remain intact.

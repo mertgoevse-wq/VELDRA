@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
- * Capacitor configuration for bolt.diy Android.
+ * Capacitor configuration for the VELDRA Android workbench.
  *
  * The web build output (Remix Vite → build/client/) is served inside
  * a native Android WebView. This is the "shell" phase — the existing
@@ -11,13 +11,13 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *
  * Build flow:
  *   1. pnpm build          → Remix Vite builds to build/client/
- *   2. pnpm android:sync   → copies build/client/ into bolt.diy Android
+ *   2. pnpm android:sync   → copies build/client/ into VELDRA Android
  *   3. pnpm android:open   → opens Android Studio
  *   4. pnpm android:build  → builds the APK via Gradle
  */
 const config: CapacitorConfig = {
-  appId: 'com.mertgoevse.boltdiyandroid',
-  appName: 'bolt.diy Android',
+  appId: 'com.veldra.app',
+  appName: 'VELDRA',
   webDir: 'build/client',
   // Don't mix server build into the Android assets
   server: {

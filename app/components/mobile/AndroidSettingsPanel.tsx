@@ -750,7 +750,7 @@ export default function AndroidSettingsPanel() {
             About
           </h2>
           <div className="android-card-content android-about space-y-2">
-            <p className="android-about-name font-bold text-bolt-elements-textPrimary">bolt.diy Android</p>
+            <p className="android-about-name font-bold text-bolt-elements-textPrimary">VELDRA</p>
             <p className="android-about-version text-xs text-bolt-elements-textSecondary">v1.0.0 (Debug build)</p>
             <p className="text-xs text-bolt-elements-textSecondary">Build Date: 2026-07-05</p>
             
@@ -780,7 +780,7 @@ export default function AndroidSettingsPanel() {
             )}
 
             <p className="android-about-desc text-xs text-bolt-elements-textTertiary leading-normal mt-2">
-              Android port of bolt.diy — AI-powered code generation in your pocket.
+              VELDRA for Android — provider-agnostic AI-powered development in your pocket.
               WebContainer features (terminal, dev server, preview) require a desktop browser or a connected Remote Runtime.
             </p>
             <button

@@ -90,7 +90,7 @@ function observeAndBroadcastWorkspaceEvent(workspaceId: string, event: CommandEv
 app.get('/health', (req, res) => {
   res.status(200).json({
     ok: true,
-    service: 'bolt-diy-android-remote-runtime',
+    service: 'veldra-remote-runtime',
     version: '1.0.0',
   });
 });
@@ -608,7 +608,7 @@ wss.on('connection', (ws: WebSocket, request: http.IncomingMessage, workspaceId:
  */
 server.listen(PORT, HOST, () => {
   console.log(`====================================================`);
-  console.log(` bolt.diy Android — Remote Runtime Server Scaffold  `);
+  console.log(` VELDRA — Remote Runtime Server  `);
   console.log(`====================================================`);
   console.log(` Running on: http://${HOST}:${PORT} `);
   console.log(` Workspaces: ${getWorkspacePath('example').replace('example', '')} `);

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">bolt.diy Android</string>
-    <string name="title_activity_main">bolt.diy Android</string>
-    <string name="package_name">com.mertgoevse.boltdiyandroid</string>
-    <string name="custom_url_scheme">com.mertgoevse.boltdiyandroid</string>
+    <string name="app_name">VELDRA</string>
+    <string name="title_activity_main">VELDRA</string>
+    <string name="package_name">com.veldra.app</string>
+    <string name="custom_url_scheme">com.veldra.app</string>
 </resources>

@@ -1,5 +1,5 @@
-appId: com.stackblitz.bolt.diy
-productName: Bolt Local
+appId: com.veldra.app
+productName: VELDRA
 directories:
   buildResources: build
   output: dist
@@ -55,9 +55,9 @@ npmRebuild: false
 
 publish:
   provider: github
-  owner: Derek-X-Wang
-  repo: bolt.local
-  private: true
+  owner: veldra
+  repo: veldra
+  private: false
   releaseType: release
 
 electronDownload:

@@ -11,7 +11,7 @@
  *   - Bottom navigation (Chat / Files / Settings tabs)
  *   - Tab-based view management
  *
- * All bolt.diy stores, adapters, and components are used as-is.
+ * Existing stores, adapters, and components are reused through the VELDRA shell.
  * Only the routing glue is replaced with tab-based navigation.
  */
 
@@ -46,7 +46,7 @@ function LoadingScreen() {
     <div className="android-loading-screen">
       <div className="android-loading-inner">
         <div className="android-spinner" />
-        <p className="android-loading-text">Loading bolt.diy…</p>
+        <p className="android-loading-text">Loading VELDRA…</p>
       </div>
     </div>
   );

@@ -52,11 +52,11 @@ export const checkForUpdates = async (): Promise<UpdateCheckResult> => {
     const currentVersion = packageData.version;
 
     /*
-     * Get the latest version from GitHub's main branch package.json
-     * Using raw.githubusercontent.com which doesn't require authentication
+     * Get the latest VELDRA version from the canonical repository's main branch package.json.
+     * Using raw.githubusercontent.com avoids requiring authentication for public metadata.
      */
     const latestPackageResponse = await fetch(
-      'https://raw.githubusercontent.com/stackblitz-labs/bolt.diy/main/package.json',
+      'https://raw.githubusercontent.com/veldra/veldra/main/package.json',
     );
 
     if (!latestPackageResponse.ok) {

@@ -1,4 +1,4 @@
-package com.mertgoevse.boltdiyandroid;
+package com.veldra.app;
 
 import com.getcapacitor.BridgeActivity;
 
