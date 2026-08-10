@@ -3,6 +3,8 @@ import { isWebContainerSupported, isCapacitor } from '~/lib/adapters/platform';
 import { getEncoding } from 'istextorbinary';
 import { map, type MapStore } from 'nanostores';
 import { Buffer } from 'node:buffer';
+import { toast } from 'react-toastify';
+import { androidPersistenceHealth } from '~/lib/stores/androidPersistenceHealth';
 import { path } from '~/utils/path';
 import { bufferWatchEvents } from '~/utils/buffer';
 import { WORK_DIR } from '~/utils/constants';
@@ -687,8 +689,35 @@ export class FilesStore {
 
     try {
       await saveAndroidFallbackWorkspace(files, Array.from(this.#deletedPaths));
+
+      if (androidPersistenceHealth.get().status !== 'ok') {
+        androidPersistenceHealth.set({ status: 'ok' });
+      }
     } catch (error) {
       logger.error('Failed to persist fallback state', error);
+
+      /*
+       * createFile()/saveFile()/etc. already updated the in-memory files map and returned
+       * success before this runs -- without surfacing the failure, a full IndexedDB quota
+       * (a real scenario once binary imports are involved) would silently lose every unsaved
+       * change on the next app restart with zero warning. Toast only on the failure -> ok
+       * transition, not on every write, since this runs on every file operation.
+       */
+      const isQuotaExceeded = error instanceof DOMException && error.name === 'QuotaExceededError';
+      const message = isQuotaExceeded
+        ? 'Device storage is full. Your latest changes are not saved -- free up space or export your project now.'
+        : 'Failed to save your changes locally. Your latest changes may be lost if you close the app.';
+      const wasAlreadyFailing = androidPersistenceHealth.get().status !== 'ok';
+
+      androidPersistenceHealth.set({
+        status: isQuotaExceeded ? 'quota-exceeded' : 'error',
+        message,
+        failedAt: Date.now(),
+      });
+
+      if (!wasAlreadyFailing) {
+        toast.error(message);
+      }
     }
   }
 

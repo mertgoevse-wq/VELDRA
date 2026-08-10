@@ -10,10 +10,12 @@ import { motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
 import { runtimeModeStore } from '~/lib/stores/runtime-mode';
 import { getAndroidFallbackPersistenceStatus } from '~/lib/persistence/androidFallbackStorage';
+import { androidPersistenceHealth } from '~/lib/stores/androidPersistenceHealth';
 import { useEffect, useState } from 'react';
 
 export default function AndroidFallbackBanner() {
   const runtime = useStore(runtimeModeStore);
+  const persistenceHealth = useStore(androidPersistenceHealth);
   const [persistenceStatus, setPersistenceStatus] = useState({ available: false, hasSavedFiles: false });
 
   useEffect(() => {
@@ -52,8 +54,12 @@ export default function AndroidFallbackBanner() {
           <div className="text-xs opacity-85 mt-1 space-y-1">
             <p>✅ Chat, editing, and file management work normally</p>
             <p>⚠️ Terminal, dev server, and live preview are disabled</p>
-            {persistenceStatus.available && (
-              <p>💾 Files are {persistenceStatus.hasSavedFiles ? 'saved locally' : 'not yet saved'}</p>
+            {persistenceHealth.status !== 'ok' ? (
+              <p className="font-semibold text-red-700 dark:text-red-400">🛑 {persistenceHealth.message}</p>
+            ) : (
+              persistenceStatus.available && (
+                <p>💾 Files are {persistenceStatus.hasSavedFiles ? 'saved locally' : 'not yet saved'}</p>
+              )
             )}
             <p>Open Settings → Runtime Mode for configuration options</p>
           </div>

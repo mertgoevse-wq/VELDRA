@@ -52,6 +52,38 @@ function createDefaultSessionState(): AndroidFallbackSessionState {
   };
 }
 
+/**
+ * IndexedDB has no schema enforcement -- a record could be malformed from an interrupted write,
+ * a future incompatible version, or platform bugs. Reading `request.result` straight through an
+ * `as` cast previously trusted it unconditionally; a corrupted `files`/`deletedPaths` shape would
+ * propagate into FilesStore and crash or silently corrupt the workspace instead of falling back
+ * to a safe, empty default.
+ */
+export function isValidWorkspaceState(value: unknown): value is AndroidFallbackWorkspaceState {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Partial<AndroidFallbackWorkspaceState>;
+
+  return (
+    candidate.key === 'workspace' &&
+    typeof candidate.files === 'object' &&
+    candidate.files !== null &&
+    Array.isArray(candidate.deletedPaths)
+  );
+}
+
+export function isValidSessionState(value: unknown): value is AndroidFallbackSessionState {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Partial<AndroidFallbackSessionState>;
+
+  return candidate.key === 'session' && typeof candidate.activeWorkspace === 'string';
+}
+
 function openDb(): Promise<IDBDatabase | undefined> {
   if (!isIndexedDBAvailable()) {
     return Promise.resolve(undefined);
@@ -90,8 +122,21 @@ async function getWorkspaceState(): Promise<AndroidFallbackWorkspaceState> {
     const request = store.get('workspace');
 
     request.onsuccess = () => {
-      const value = request.result as AndroidFallbackWorkspaceState | undefined;
-      resolve(value ?? createDefaultWorkspaceState());
+      const value: unknown = request.result;
+
+      if (value === undefined) {
+        resolve(createDefaultWorkspaceState());
+        return;
+      }
+
+      if (!isValidWorkspaceState(value)) {
+        console.error('[androidFallbackStorage] Discarding corrupted workspace record', value);
+        resolve(createDefaultWorkspaceState());
+
+        return;
+      }
+
+      resolve(value);
     };
 
     request.onerror = () => resolve(createDefaultWorkspaceState());
@@ -111,8 +156,21 @@ async function getSessionState(): Promise<AndroidFallbackSessionState> {
     const request = store.get('session');
 
     request.onsuccess = () => {
-      const value = request.result as AndroidFallbackSessionState | undefined;
-      resolve(value ?? createDefaultSessionState());
+      const value: unknown = request.result;
+
+      if (value === undefined) {
+        resolve(createDefaultSessionState());
+        return;
+      }
+
+      if (!isValidSessionState(value)) {
+        console.error('[androidFallbackStorage] Discarding corrupted session record', value);
+        resolve(createDefaultSessionState());
+
+        return;
+      }
+
+      resolve(value);
     };
 
     request.onerror = () => resolve(createDefaultSessionState());
