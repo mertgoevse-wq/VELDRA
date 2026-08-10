@@ -2,8 +2,24 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `275642e` — "fix: complete the Android chat vertical slice (models, keys, enhance)"
+**Current commit:** `5771579` — "fix: mount Workbench on Android so agent file changes are actually visible"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Critical gap found and fixed: agent file changes were invisible on Android (2026-08-10)
+
+A deep audit (see `project/SESSION-HANDOFF.md` for the full trail) found that `AndroidShell.tsx` — the actual React root the shipped Android app uses (confirmed: the Android build does **not** use Remix routing at all; `android-main.tsx` mounts `AndroidShell` in a bare `MemoryRouter`, so `app/routes/_index.tsx` is dead code for the shipped app) — only ever rendered the `chat` and `settings` tabs. `BottomNav` already had `files`/`preview` buttons, but they were hardcoded `disabled` (`workbenchAvailable={false}`) and had **no render branch at all** even if enabled. `ActionRunner`/`FilesStore` were already correctly persisting agent-created files (confirmed the loop before this one), but there was no UI path to ever see them — the mandate's central acceptance test ("create hello.txt, show me the diff") was a dead end on Android regardless of whether chat/model/agent worked.
+
+Fixed by reusing the existing desktop `Workbench.client.tsx` (file tree, editor, code/diff slider, preview — unmodified) instead of building a second file/diff UI:
+- `AndroidShell.tsx` now lazy-mounts `Workbench` and drives `workbenchStore.showWorkbench`/`currentView` from the bottom-nav tab state.
+- `android.css` gained an `.android-shell`-scoped clearance fix — the Workbench panel is `position:fixed` and was extending under the opaque, higher-z-index bottom nav bar.
+- `src/android-main.tsx` now imports `index.scss` (previously only `android.css` loaded). Workbench/EditorPanel/DiffView/CodeMirror/TerminalTabs depend on CSS custom properties (`--header-height`, `--workbench-left`, `.z-workbench`) and component styles defined there — undefined without it. This also finally loads `mobile.scss`, whose header comment already names the Galaxy A56 as a target device; it was written for exactly this integration but never wired up.
+- `Chat.client.tsx`: a `fetch()`-level network failure (unreachable Android backend) previously surfaced as a generic "unexpected error occurred" instead of a clear message — now detects it and names the configured backend URL.
+
+**Validated**: 224/224 tests, typecheck clean, lint clean, Cloudflare build clean, Android web build (`android:webbuild`) clean, debug APK builds successfully (`BUILD SUCCESSFUL in 9s`). **NOT VERIFIED**: on-device visual correctness — drawer slide animation, exact bottom-nav clearance, overall Workbench layout on a real 360–412px viewport. This is a CSS/layout change confirmed to compile and build but not confirmed to look right; **NEEDS DEVICE VALIDATION**.
+
+**Found, documented, deliberately deferred (not a silent drop):**
+- Android hardware back button has no handler anywhere in the app. Fixing this needs the `@capacitor/app` plugin — a new native dependency touching Gradle/Capacitor config, a bigger decision than a same-slice fix.
+- Chat history navigation is confirmed broken on Android: `HistoryItem.tsx` navigates via `<a href="/chat/...">`, but the Android build's `@remix-run/react` shim (`src/shims/remix-react.tsx`) makes `useLoaderData()` always return `{}` and `useNavigate()` a no-op — a saved chat can never be reopened; every launch is a fresh session. Pre-existing, not introduced this loop.
 
 ## Validation baseline (2026-08-10, this session/environment)
 
@@ -15,7 +31,7 @@
 | `pnpm typecheck` | Passed |
 | `pnpm lint` | Passed: 0 errors (142 auto-fixable formatting/style findings resolved via `lint:fix` earlier this session, re-verified with tests/typecheck) |
 | `pnpm build` | **Passed** in this environment (15 GB RAM) — the previously documented Miniflare/tcmalloc 1 GiB OOM does not reproduce here; environment-dependent, not a code defect |
-| Android debug APK | **Built successfully**, twice this session — first after the initial chat bridge, then rebuilt after the model-selector/enhance-prompt fixes below (`BUILD SUCCESSFUL in 46s`, `app-debug.apk`, 9.5 MB, `com.veldra.app` v1.0, targetSdk 35, minSdk 23). Delivered to the product owner both times. Android SDK (platform 35, build-tools 35.0.0, platform-tools) installed ad hoc at `/opt/android-sdk` in this ephemeral container — **not persisted**; a future session/CI run needs the SDK available again (the repo's `.github/workflows/android-debug-apk.yml` already handles this for CI). Java 21 and Gradle were already present in this environment. |
+| Android debug APK | **Built successfully three times** this session — initial chat bridge, model-selector/enhance-prompt fixes, then the Workbench-visibility fix (`BUILD SUCCESSFUL in 9s`, `app-debug.apk`, 8.98 MB, `com.veldra.app` v1.0, targetSdk 35, minSdk 23). Delivered to the product owner each time. Android SDK (platform 35, build-tools 35.0.0, platform-tools) installed ad hoc at `/opt/android-sdk` in this ephemeral container — **not persisted**; a future session/CI run needs the SDK available again (the repo's `.github/workflows/android-debug-apk.yml` already handles this for CI). Java 21 and Gradle were already present in this environment. |
 | Secret scan | No private-key or obvious literal-token findings; `.env.example` and `.env.production` remain tracked templates/configuration files and require review before release |
 
 ## Android LLM chat bridge (2026-08-10)
