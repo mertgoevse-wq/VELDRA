@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `24872f6` — "feat: wire real Android LLM chat through a Bearer-authenticated bridge"
+**Current commit:** `275642e` — "fix: complete the Android chat vertical slice (models, keys, enhance)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
 ## Validation baseline (2026-08-10, this session/environment)
@@ -11,11 +11,11 @@
 |---|---|
 | Git status/fetch | Clean; `main` synchronized with `origin/main` |
 | `pnpm install` | Was blocked by a GitHub 403 fetching `@electron/node-gyp`'s tarball; fixed with the same `pnpm.overrides` entry already proven in the bolt-android source (`npm:@electron/node-gyp@10.2.0-electron.2`) |
-| `pnpm test` | Passed: 27 files / 218 tests (was 205; +13 from the Android LLM chat bridge auth/config specs) |
+| `pnpm test` | Passed: 27 files / 224 tests (was 205 at session start; +19 across the Android bridge slices) |
 | `pnpm typecheck` | Passed |
-| `pnpm lint` | Passed: 0 errors (142 auto-fixable formatting/style findings resolved via `lint:fix`, re-verified with tests/typecheck) |
+| `pnpm lint` | Passed: 0 errors (142 auto-fixable formatting/style findings resolved via `lint:fix` earlier this session, re-verified with tests/typecheck) |
 | `pnpm build` | **Passed** in this environment (15 GB RAM) — the previously documented Miniflare/tcmalloc 1 GiB OOM does not reproduce here; environment-dependent, not a code defect |
-| Android debug APK | **Built successfully** — `android/app/build/outputs/apk/debug/app-debug.apk` (8.4 MB, `com.veldra.app`, label "VELDRA"), delivered directly to the product owner for device install. Android SDK (platform 35, build-tools 35.0.0, platform-tools) installed ad hoc at `/opt/android-sdk` in this ephemeral container — **not persisted**; a future session/CI run needs the SDK available again (the repo's `.github/workflows/android-debug-apk.yml` already handles this for CI). Java 21 and Gradle were already present in this environment. |
+| Android debug APK | **Built successfully**, twice this session — first after the initial chat bridge, then rebuilt after the model-selector/enhance-prompt fixes below (`BUILD SUCCESSFUL in 46s`, `app-debug.apk`, 9.5 MB, `com.veldra.app` v1.0, targetSdk 35, minSdk 23). Delivered to the product owner both times. Android SDK (platform 35, build-tools 35.0.0, platform-tools) installed ad hoc at `/opt/android-sdk` in this ephemeral container — **not persisted**; a future session/CI run needs the SDK available again (the repo's `.github/workflows/android-debug-apk.yml` already handles this for CI). Java 21 and Gradle were already present in this environment. |
 | Secret scan | No private-key or obvious literal-token findings; `.env.example` and `.env.production` remain tracked templates/configuration files and require review before release |
 
 ## Android LLM chat bridge (2026-08-10)
@@ -26,8 +26,32 @@ Implemented per `docs/ANDROID_LLM_API_BRIDGE.md` Option B: the Android app (no s
 - `chatAction()` moved from the `api.chat.ts` route file into `app/lib/.server/llm/chat-action.ts` so both `api.chat.ts` (cookie-authenticated) and `api.android.chat.ts` (Bearer-authenticated) can import the identical streaming/MCP/context-selection logic — no duplicated chat logic, no per-platform provider special-casing.
 - `api.android.chat.ts` strips the `Cookie` header before delegating, so `apiKeys`/`providerSettings` resolve to `{}` and `BaseProvider`'s existing `serverEnv`/`process.env` fallback chain supplies provider credentials from this backend's own environment — provider API keys never reach the Android app or its local storage.
 - `app/lib/android-api/backend-config.ts` reads the Android app's locally-stored backend URL/token (`AndroidSettingsPanel.tsx` already wrote these keys); `Chat.client.tsx` now points `useChat()` at the Android backend when `isCapacitor()` and a backend is configured, and blocks sending with a toast otherwise instead of calling a route that can't exist in-app.
-- **Tested**: auth gate (9 cases) and backend-config parsing (4 cases) — 218/218 total tests, clean typecheck/lint/build.
+- **Tested**: auth gate (9 cases) and backend-config parsing (4 cases) — 218/218 total tests at that point, clean typecheck/lint/build.
 - **NOT YET VERIFIED**: real end-to-end streaming against a live provider from a physical device — no provider credentials exist in this environment. This is the next highest-value step (see Known blockers).
+
+## Android chat vertical slice completed (2026-08-10, same session, follow-up loop)
+
+The chat bridge above only covered `chatAction()`. Auditing the rest of the chat surface for the identical bug class (`fetch('/api/...')` calls that don't exist inside the Android WebView) found and fixed three more breaks that were silently blocking the chat bridge from being usable end-to-end:
+
+- `BaseChat.tsx` fetched `/api/models` directly — the model selector had **no models to show on Android** even though `api.android.models.ts` already worked. Fixed via `getAndroidModelsRequest()` in `app/lib/android-api/backend-config.ts`.
+- `ChatBox.tsx` rendered the per-provider `APIKeyManager` text-entry UI on Android, where a typed-in key is silently dropped (Cookie header is stripped before `chatAction()`). Replaced with a notice pointing at the real configuration surface (Settings → Android API Backend) on Android.
+- `usePromptEnhancer.ts`'s "Enhance prompt" button called `/api/enhancer` directly, same broken pattern. Fixed the same way as chat: `enhancerAction()` extracted to `app/lib/.server/llm/enhancer-action.ts`, new `app/routes/api.android.enhance.ts` route, `getAndroidEnhanceRequest()` helper.
+- `AndroidApiClient.ts`'s `health()`/`listModels()` methods called bare `/health`/`/models` paths that don't match the real `/api/android/*` routes — the Settings panel's "Test API Backend" button was calling a URL that 404s. Fixed; documented in-code which of its other methods (`sendChatMessage`, `streamChatResponse`, `enhancePrompt`, `validateProviderConfig`) still have no backing server route, rather than leaving them silently wrong.
+- `docs/ANDROID_LLM_API_BRIDGE.md` updated with a table of the real implemented paths vs. the original design draft's bare paths.
+
+**Tested**: 224/224 tests (was 218), clean typecheck/lint/build. **NOT YET VERIFIED**: still needs a deployed backend with `ANDROID_API_BACKEND_TOKEN` + a real provider key, and the URL/token entered in the Android app, to confirm an actual on-device streamed response.
+
+### Architectural finding: the first agent/tool workflow does not need new code
+
+Investigated what it would take to make "user types `create hello.txt with content Hello VELDRA`" actually create a file on Android (the mandate's first vertical-slice acceptance test), expecting to need a new tool-calling system. It does not exist as a gap:
+
+- bolt.diy's existing `<boltArtifact>`/`<boltAction type="file">` streamed-tag mechanism (`app/lib/runtime/message-parser.ts` → `useMessageParser` → `workbenchStore.addArtifact`/`runAction` → `ActionRunner`) is provider-neutral, already reused verbatim by Android chat (same `Chat.client.tsx`/`Workbench.client.tsx` components, `chatMode` defaults to `'build'` which is what activates the artifact system prompt).
+- `ActionRunner`'s file-action path already branches to `FilesStore.saveFile()` when `usesLocalWorkspaceForFileActions()` is true (Android fallback mode), which persists to IndexedDB and updates the same modified-files tracking `DiffView.tsx` reads from — no Android-specific code path needed, none is missing.
+- `Workbench.client.tsx` (file tree, action list, diff view) has zero `isCapacitor()` gating — it renders identically on Android.
+- Confirmed **NOT implemented**: MCPService's AI-SDK-native tool-calling plumbing has no built-in `read_file`/`write_file` tools (only user-configured MCP servers) — but this is irrelevant, since file creation already happens through the artifact mechanism, not AI-SDK tool calls. Building a second, parallel tool-calling system for this would have duplicated working functionality (explicitly against the project's "extend, don't duplicate" rule) instead of fixing an actual gap.
+- Confirmed **NOT implemented**: `@capacitor/filesystem` — Android file writes land in IndexedDB (app-private), not the device's real filesystem or a synced Remote Runtime workspace. This is a real, separate limitation (files are visible in VELDRA's own UI but not in an Android file manager), not a blocker for the "create a file, see it in chat/diff" acceptance test itself.
+
+**Conclusion**: the hello.txt-style first agent workflow is very likely to already work end-to-end on a real device now that model selection is fixed, contingent only on a configured provider — but this is an inference from static analysis, not a device observation. Still **NOT VERIFIED** per the project's no-fake-success rule; needs an actual device run to confirm, not further implementation work.
 
 ## State matrix
 

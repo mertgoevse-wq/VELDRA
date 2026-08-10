@@ -2,12 +2,30 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `24872f6` — "feat: wire real Android LLM chat through a Bearer-authenticated bridge"
+**Current commit:** `275642e` — "fix: complete the Android chat vertical slice (models, keys, enhance)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `24872f6` pushed successfully to `origin/main`
+**Last successful push:** `275642e` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slice — Android LLM chat bridge, real end-to-end wiring (2026-08-10)
+## Latest product slice — Android chat vertical slice completed + APK rebuilt (2026-08-10, follow-up loop)
+
+Continuation of the "VELDRA – MAJOR PORTING + PRODUCTIZATION LOOP" mandate's SLICE 1 ("Real Android chat + model selector"). The chat bridge below was real but incomplete: it fixed `chatAction()` only, and three more `fetch('/api/...')`-on-Android bugs of the identical class were still silently blocking it from being usable. Found via a static audit (grep for `fetch('/api/` across `app/components`/`app/lib`), not device testing.
+
+- `app/components/chat/BaseChat.tsx`: model-list fetch used relative `/api/models`, so the Android model selector had literally no models to show. Fixed with `getAndroidModelsRequest()` in `app/lib/android-api/backend-config.ts` (new `buildAndroidApiRequest()` helper, reused for enhance below).
+- `app/components/chat/ChatBox.tsx`: rendered the desktop per-provider `APIKeyManager` text field on Android, where typing a key does nothing (Cookie header stripped before `chatAction()`). Replaced with an `AndroidApiKeyNotice` pointing at Settings → Android API Backend.
+- `app/lib/hooks/usePromptEnhancer.ts`: "Enhance prompt" called `/api/enhancer` directly. Fixed with the exact same extraction pattern as `chatAction()`: `enhancerAction()` moved to `app/lib/.server/llm/enhancer-action.ts`, new Bearer-gated `app/routes/api.android.enhance.ts`, `api.enhancer.ts` reduced to a thin wrapper.
+- `app/lib/android-api/AndroidApiClient.ts`: `health()`/`listModels()` called bare `/health`/`/models`, not the real `/api/android/health`/`/api/android/models` — the Settings panel's "Test API Backend" button was 404ing. Fixed; the other methods (`sendChatMessage`, `streamChatResponse`, `enhancePrompt`, `validateProviderConfig`) have no backing route yet and are now documented as such in-code instead of silently pretending to work.
+- `docs/ANDROID_LLM_API_BRIDGE.md`: added an "Implementation note" table showing the real `/api/android/*` paths vs. the original design draft's bare paths, and which draft endpoints (`POST /chat` non-streaming, `POST /provider-config/validate`) still have no implementation because nothing needs them yet.
+
+**Architectural finding, not a code change**: investigated what the mandate's first agent/tool acceptance test ("create hello.txt with content Hello VELDRA") would need on Android, expecting a tool-calling gap. There isn't one — bolt.diy's existing `<boltArtifact>` streamed-tag mechanism (`message-parser.ts` → `useMessageParser` → `workbenchStore` → `ActionRunner` → `FilesStore.saveFile()` in Android fallback mode → IndexedDB, read by the unmodified `DiffView.tsx`) is provider-neutral and already reused verbatim by Android chat with zero `isCapacitor()` gating anywhere in `Workbench.client.tsx`. Building a second AI-SDK-native tool-calling system for this would have duplicated already-working functionality. Full audit trail is in `project/STATUS.md`. **This is an inference from reading the code, not a device observation — still marked NOT VERIFIED.**
+
+Validation: full Vitest suite 27/27 files, **224/224 tests** (was 218; +6: 2 model-request cases already counted, 4 new — `getAndroidModelsRequest`/`getAndroidEnhanceRequest` cases), typecheck clean, lint clean, build clean, `git diff --check` and secret-pattern grep clean.
+
+**Rebuilt the debug APK** with these fixes using the Android SDK still present in this container from earlier in the session (`/opt/android-sdk`, not persisted across sessions): `BUILD SUCCESSFUL in 46s`, `app-debug.apk` (9.5 MB, `com.veldra.app` v1.0, targetSdk 35, minSdk 23), delivered to the product owner.
+
+**Next highest-value step:** device/credential validation — deploy a backend with `ANDROID_API_BACKEND_TOKEN` + a real provider key, enter the URL/token in the rebuilt APK's Settings → Android API Backend, confirm model selection + a real streamed chat response + (per the architectural finding above) whether "create hello.txt" actually produces a file/diff on screen. This is genuinely just a device/credential availability question now, not further implementation.
+
+## Earlier product slice — Android LLM chat bridge, real end-to-end wiring (2026-08-10)
 
 Implements the first concrete goal of the "NEXT MAJOR IMPLEMENTATION LOOP" mandate: real (non-mock) Android chat, reusing the existing provider abstraction end-to-end rather than building a parallel one.
 
