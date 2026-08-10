@@ -36,6 +36,13 @@ import LlmErrorAlert from './LLMApiAlert';
 import { RuntimeModeBanner } from '~/components/mobile/RuntimeModeBanner';
 import { isCapacitor } from '~/lib/adapters/platform';
 import { getAndroidModelsRequest } from '~/lib/android-api/backend-config';
+import { ProjectGuidedBuild } from '~/components/chat/ProjectGuidedBuild';
+import {
+  composeMessageWithProjectBrief,
+  hasProjectBriefDetails,
+  projectBriefStore,
+  resetProjectBrief,
+} from '~/lib/stores/projectBrief';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -291,7 +298,25 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
 
     const handleSendMessage = (event: React.UIEvent, messageInput?: string) => {
       if (sendMessage) {
-        sendMessage(event, messageInput);
+        /*
+         * Guided Build's optional platform/style/integrations/offline details only apply to the
+         * very first message of a new chat, and only when the user actually filled something in
+         * (ProjectGuidedBuild.tsx). When the panel was never opened/filled, projectBriefStore is
+         * empty and messageInput is passed through completely unchanged -- Quick Start (typing
+         * and sending with the panel untouched) behaves exactly as it did before this feature.
+         */
+        const projectBrief = projectBriefStore.get();
+        const usingProjectBrief = !chatStarted && hasProjectBriefDetails(projectBrief);
+        const outgoingMessage = usingProjectBrief
+          ? composeMessageWithProjectBrief(messageInput ?? input ?? '', projectBrief)
+          : messageInput;
+
+        sendMessage(event, outgoingMessage);
+
+        if (usingProjectBrief) {
+          resetProjectBrief();
+        }
+
         setSelectedElement?.(null);
 
         if (recognition) {
@@ -377,9 +402,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 <h1 className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">
                   Where ideas begin
                 </h1>
-                <p className="text-md lg:text-xl mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
+                <p className="text-md lg:text-xl mb-4 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
                   Bring ideas to life in seconds or get help on existing projects.
                 </p>
+                <div className="mb-4">
+                  <ClientOnly>{() => <ProjectGuidedBuild />}</ClientOnly>
+                </div>
               </div>
             )}
             <StickToBottom
