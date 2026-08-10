@@ -69,9 +69,12 @@ export default class NvidiaNimProvider extends BaseProvider {
         name: model.id,
         label: model.id,
         provider: this.name,
-        // NIM's /v1/models response does not guarantee context metadata. Keep
-        // the existing provider contract conservative until a capability probe
-        // supplies a verified per-model limit.
+
+        /*
+         * NIM's /v1/models response does not guarantee context metadata. Keep
+         * the existing provider contract conservative until a capability probe
+         * supplies a verified per-model limit.
+         */
         maxTokenAllowed: 8000,
       }));
   }

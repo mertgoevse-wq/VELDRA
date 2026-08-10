@@ -50,20 +50,12 @@ export default function AndroidFallbackBanner() {
         <div className="flex-1 text-amber-800 dark:text-amber-200">
           <div className="font-medium">Android Fallback Mode</div>
           <div className="text-xs opacity-85 mt-1 space-y-1">
-            <p>
-              ✅ Chat, editing, and file management work normally
-            </p>
-            <p>
-              ⚠️ Terminal, dev server, and live preview are disabled
-            </p>
+            <p>✅ Chat, editing, and file management work normally</p>
+            <p>⚠️ Terminal, dev server, and live preview are disabled</p>
             {persistenceStatus.available && (
-              <p>
-                💾 Files are {persistenceStatus.hasSavedFiles ? 'saved locally' : 'not yet saved'}
-              </p>
+              <p>💾 Files are {persistenceStatus.hasSavedFiles ? 'saved locally' : 'not yet saved'}</p>
             )}
-            <p>
-              Open Settings → Runtime Mode for configuration options
-            </p>
+            <p>Open Settings → Runtime Mode for configuration options</p>
           </div>
         </div>
       </div>

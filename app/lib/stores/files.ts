@@ -584,6 +584,7 @@ export class FilesStore {
       }
 
       await this.#persistFallbackState();
+
       return;
     }
 
@@ -665,21 +666,24 @@ export class FilesStore {
       return;
     }
 
-    const files = Object.entries(this.files.get()).reduce<Record<string, PersistedDirent>>((acc, [filePath, dirent]) => {
-      if (!dirent) {
+    const files = Object.entries(this.files.get()).reduce<Record<string, PersistedDirent>>(
+      (acc, [filePath, dirent]) => {
+        if (!dirent) {
+          return acc;
+        }
+
+        acc[filePath] = {
+          type: dirent.type,
+          content: dirent.type === 'file' ? dirent.content : undefined,
+          isBinary: dirent.type === 'file' ? dirent.isBinary : false,
+          isLocked: dirent.isLocked,
+          lockedByFolder: dirent.lockedByFolder,
+        };
+
         return acc;
-      }
-
-      acc[filePath] = {
-        type: dirent.type,
-        content: dirent.type === 'file' ? dirent.content : undefined,
-        isBinary: dirent.type === 'file' ? dirent.isBinary : false,
-        isLocked: dirent.isLocked,
-        lockedByFolder: dirent.lockedByFolder,
-      };
-
-      return acc;
-    }, {});
+      },
+      {},
+    );
 
     try {
       await saveAndroidFallbackWorkspace(files, Array.from(this.#deletedPaths));
@@ -911,8 +915,11 @@ export class FilesStore {
   async createFile(filePath: string, content: string | Uint8Array = '') {
     if (this.#isFallbackMode) {
       const isBinary = content instanceof Uint8Array;
-      // Keep binary content as base64 in the in-memory and IndexedDB-backed
-      // file map. Decoding arbitrary bytes as UTF-8 corrupts image assets.
+
+      /*
+       * Keep binary content as base64 in the in-memory and IndexedDB-backed
+       * file map. Decoding arbitrary bytes as UTF-8 corrupts image assets.
+       */
       const contentToWrite = isBinary ? Buffer.from(content).toString('base64') : (content as string);
 
       this.files.setKey(filePath, {
@@ -924,6 +931,7 @@ export class FilesStore {
       this.#size += 1;
       this.#modifiedFiles.set(filePath, contentToWrite);
       await this.#persistFallbackState();
+
       return true;
     }
 
@@ -983,6 +991,7 @@ export class FilesStore {
     if (this.#isFallbackMode) {
       this.files.setKey(folderPath, { type: 'folder' });
       await this.#persistFallbackState();
+
       return true;
     }
 
@@ -1019,6 +1028,7 @@ export class FilesStore {
       }
 
       await this.#persistFallbackState();
+
       return true;
     }
 
@@ -1076,6 +1086,7 @@ export class FilesStore {
       }
 
       await this.#persistFallbackState();
+
       return true;
     }
 

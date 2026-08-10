@@ -66,13 +66,17 @@ export default function AndroidSettingsPanel() {
   const [tokenInput, setTokenInput] = useState(runtime.remoteAuthToken);
   const [workspaceInput, setWorkspaceInput] = useState(runtime.remoteWorkspaceId);
   const [testingConnection, setTestingConnection] = useState(false);
-  const [connectionState, setConnectionState] = useState<'disconnected' | 'checking' | 'connected' | 'failed'>('disconnected');
+  const [connectionState, setConnectionState] = useState<'disconnected' | 'checking' | 'connected' | 'failed'>(
+    'disconnected',
+  );
   const [lastError, setLastError] = useState<string | null>(null);
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const [syncingAction, setSyncingAction] = useState<'push' | 'pull' | 'current-file' | null>(null);
   const [syncStatus, setSyncStatus] = useState<RemoteWorkspaceSyncStatus>(() => getSyncStatus());
   const [apiBackendUrlInput, setApiBackendUrlInput] = useState(() => loadLocalSetting(ANDROID_API_BACKEND_URL_KEY));
-  const [apiBackendTokenInput, setApiBackendTokenInput] = useState(() => loadLocalSetting(ANDROID_API_BACKEND_TOKEN_KEY));
+  const [apiBackendTokenInput, setApiBackendTokenInput] = useState(() =>
+    loadLocalSetting(ANDROID_API_BACKEND_TOKEN_KEY),
+  );
   const [apiBackendState, setApiBackendState] = useState<'not-configured' | 'checking' | 'connected' | 'failed'>(
     apiBackendUrlInput.trim() ? 'not-configured' : 'not-configured',
   );
@@ -125,11 +129,7 @@ export default function AndroidSettingsPanel() {
     const trimmedUrl = apiBackendUrlInput.trim();
     const trimmedToken = apiBackendTokenInput.trim();
 
-    if (
-      trimmedUrl &&
-      !trimmedUrl.startsWith('http://') &&
-      !trimmedUrl.startsWith('https://')
-    ) {
+    if (trimmedUrl && !trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
       toast.error('Android API Backend URL must start with http:// or https://');
       return;
     }
@@ -182,6 +182,7 @@ export default function AndroidSettingsPanel() {
 
   const handleTestConnection = useCallback(async () => {
     const trimmedUrl = urlInput.trim();
+
     if (!trimmedUrl) {
       toast.error('Remote Runtime URL is required to test connection');
       return;
@@ -194,7 +195,7 @@ export default function AndroidSettingsPanel() {
     try {
       const client = new RemoteRuntimeClient(trimmedUrl, tokenInput.trim(), workspaceInput.trim());
       const healthResponse = await client.health();
-      
+
       if (healthResponse && healthResponse.ok) {
         setConnectionState('connected');
         toast.success(`Connected successfully! Server: ${healthResponse.service}, Version: ${healthResponse.version}`);
@@ -205,6 +206,7 @@ export default function AndroidSettingsPanel() {
       }
     } catch (err: any) {
       console.error('[RemoteRuntime] Test connection failed', err);
+
       const errMsg = err.message || 'Unknown error';
       setConnectionState('failed');
       setLastError(errMsg);
@@ -216,6 +218,7 @@ export default function AndroidSettingsPanel() {
 
   const handleCreateWorkspace = useCallback(async () => {
     const trimmedUrl = urlInput.trim();
+
     if (!trimmedUrl) {
       toast.error('Remote Runtime URL is required to create a workspace');
       return;
@@ -227,7 +230,7 @@ export default function AndroidSettingsPanel() {
     try {
       const client = new RemoteRuntimeClient(trimmedUrl, tokenInput.trim());
       const workspaceResponse = await client.createWorkspace('node-clean');
-      
+
       if (workspaceResponse && workspaceResponse.workspaceId) {
         setRemoteWorkspaceId(workspaceResponse.workspaceId);
         setWorkspaceInput(workspaceResponse.workspaceId);
@@ -237,6 +240,7 @@ export default function AndroidSettingsPanel() {
       }
     } catch (err: any) {
       console.error('[RemoteRuntime] Workspace creation failed', err);
+
       const errMsg = err.message || 'Unknown error';
       setLastError(errMsg);
       toast.error(`Workspace creation failed: ${errMsg}`);
@@ -249,18 +253,21 @@ export default function AndroidSettingsPanel() {
     setSyncingAction(action);
 
     try {
-      const nextStatus = action === 'push'
-        ? await pushLocalWorkspaceToRemote()
-        : action === 'pull'
-          ? await pullRemoteWorkspaceToLocal()
-          : await syncSingleFileToRemote();
+      const nextStatus =
+        action === 'push'
+          ? await pushLocalWorkspaceToRemote()
+          : action === 'pull'
+            ? await pullRemoteWorkspaceToLocal()
+            : await syncSingleFileToRemote();
 
       setSyncStatus(nextStatus);
 
       if (nextStatus.state === 'error') {
         toast.error(nextStatus.lastError ?? 'Remote Runtime sync failed');
       } else if (nextStatus.conflictCount > 0) {
-        toast.warning(`Remote Runtime sync completed with ${nextStatus.conflictCount} conflict(s). Local files were kept.`);
+        toast.warning(
+          `Remote Runtime sync completed with ${nextStatus.conflictCount} conflict(s). Local files were kept.`,
+        );
       } else {
         toast.success('Remote Runtime sync completed');
       }
@@ -311,6 +318,7 @@ export default function AndroidSettingsPanel() {
 
     try {
       await workbenchStore.resetLocalAndroidWorkspace();
+
       const status = await getAndroidFallbackPersistenceStatus();
       setPersistenceStatus(status);
       toast.success('Local workspace reset successfully');
@@ -322,11 +330,12 @@ export default function AndroidSettingsPanel() {
     }
   }, []);
 
-  const modeLabel = runtime.mode === 'android-fallback'
-    ? 'Android Fallback Mode'
-    : runtime.mode === 'webcontainer'
-    ? 'WebContainer Mode'
-    : 'Remote Runtime Mode';
+  const modeLabel =
+    runtime.mode === 'android-fallback'
+      ? 'Android Fallback Mode'
+      : runtime.mode === 'webcontainer'
+        ? 'WebContainer Mode'
+        : 'Remote Runtime Mode';
 
   const modeColor = runtime.mode === 'android-fallback' ? '#f59e0b' : '#10b981';
   const missingRemoteConfig = getMissingRemoteRuntimeConfig();
@@ -352,7 +361,8 @@ export default function AndroidSettingsPanel() {
                 onClick={() => handleModeChange('android-fallback')}
                 className={classNames('flex-1 py-2 rounded-lg text-xs font-semibold border transition-all', {
                   'bg-purple-600/15 border-purple-500/50 text-purple-400': runtime.mode === 'android-fallback',
-                  'bg-transparent border-bolt-elements-borderColor text-bolt-elements-textSecondary': runtime.mode !== 'android-fallback',
+                  'bg-transparent border-bolt-elements-borderColor text-bolt-elements-textSecondary':
+                    runtime.mode !== 'android-fallback',
                 })}
               >
                 Android Fallback
@@ -361,14 +371,18 @@ export default function AndroidSettingsPanel() {
                 onClick={() => handleModeChange('remote')}
                 className={classNames('flex-1 py-2 rounded-lg text-xs font-semibold border transition-all', {
                   'bg-purple-600/15 border-purple-500/50 text-purple-400': runtime.mode === 'remote',
-                  'bg-transparent border-bolt-elements-borderColor text-bolt-elements-textSecondary': runtime.mode !== 'remote',
+                  'bg-transparent border-bolt-elements-borderColor text-bolt-elements-textSecondary':
+                    runtime.mode !== 'remote',
                 })}
               >
                 Remote Runtime
               </button>
             </div>
 
-            <div className="android-mode-badge" style={{ backgroundColor: modeColor + '20', color: modeColor, borderColor: modeColor + '40' }}>
+            <div
+              className="android-mode-badge"
+              style={{ backgroundColor: modeColor + '20', color: modeColor, borderColor: modeColor + '40' }}
+            >
               <span className="android-mode-dot" style={{ backgroundColor: modeColor }} />
               {modeLabel}
             </div>
@@ -382,7 +396,13 @@ export default function AndroidSettingsPanel() {
                 { label: 'WebContainer', enabled: runtime.webContainerAvailable },
               ].map(({ label, enabled }) => (
                 <div key={label} className="android-capability-row">
-                  <div className={enabled ? 'i-ph:check-circle-fill android-cap-icon android-cap-enabled' : 'i-ph:x-circle-fill android-cap-icon android-cap-disabled'} />
+                  <div
+                    className={
+                      enabled
+                        ? 'i-ph:check-circle-fill android-cap-icon android-cap-enabled'
+                        : 'i-ph:x-circle-fill android-cap-icon android-cap-disabled'
+                    }
+                  />
                   <span className={enabled ? 'android-cap-label-enabled' : 'android-cap-label-disabled'}>{label}</span>
                 </div>
               ))}
@@ -482,14 +502,16 @@ export default function AndroidSettingsPanel() {
           </h2>
           <div className="android-card-content gap-3.5">
             <p className="text-xs text-bolt-elements-textSecondary leading-relaxed">
-              Remote Runtime can mirror local Android files to a trusted computer/server and run safe predefined command profiles.
-              On a phone, localhost points to the phone; use your laptop LAN IP, for example http://192.168.x.x:8787.
-              For live preview, run project dev servers with --host 0.0.0.0 or equivalent.
+              Remote Runtime can mirror local Android files to a trusted computer/server and run safe predefined command
+              profiles. On a phone, localhost points to the phone; use your laptop LAN IP, for example
+              http://192.168.x.x:8787. For live preview, run project dev servers with --host 0.0.0.0 or equivalent.
             </p>
 
             {/* URL Input */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] text-bolt-elements-textTertiary font-semibold uppercase tracking-wider">Server URL</span>
+              <span className="text-[10px] text-bolt-elements-textTertiary font-semibold uppercase tracking-wider">
+                Server URL
+              </span>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -517,7 +539,9 @@ export default function AndroidSettingsPanel() {
 
             {/* Auth Token Input */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] text-bolt-elements-textTertiary font-semibold uppercase tracking-wider">Auth Token</span>
+              <span className="text-[10px] text-bolt-elements-textTertiary font-semibold uppercase tracking-wider">
+                Auth Token
+              </span>
               <div className="flex gap-2">
                 <input
                   type="password"
@@ -545,7 +569,9 @@ export default function AndroidSettingsPanel() {
 
             {/* Workspace ID Input */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] text-bolt-elements-textTertiary font-semibold uppercase tracking-wider">Workspace ID</span>
+              <span className="text-[10px] text-bolt-elements-textTertiary font-semibold uppercase tracking-wider">
+                Workspace ID
+              </span>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -575,12 +601,14 @@ export default function AndroidSettingsPanel() {
             <div className="flex flex-col gap-1.5 mt-1 border-t border-bolt-elements-borderColor pt-3">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-bolt-elements-textSecondary">Connection Status:</span>
-                <span className={classNames('font-semibold uppercase text-[10px] px-2.5 py-0.5 rounded-full border', {
-                  'bg-gray-500/10 border-gray-500/30 text-gray-400': connectionState === 'disconnected',
-                  'bg-purple-500/10 border-purple-500/30 text-purple-400': connectionState === 'checking',
-                  'bg-green-500/10 border-green-500/30 text-green-400': connectionState === 'connected',
-                  'bg-red-500/10 border-red-500/30 text-red-400': connectionState === 'failed',
-                })}>
+                <span
+                  className={classNames('font-semibold uppercase text-[10px] px-2.5 py-0.5 rounded-full border', {
+                    'bg-gray-500/10 border-gray-500/30 text-gray-400': connectionState === 'disconnected',
+                    'bg-purple-500/10 border-purple-500/30 text-purple-400': connectionState === 'checking',
+                    'bg-green-500/10 border-green-500/30 text-green-400': connectionState === 'connected',
+                    'bg-red-500/10 border-red-500/30 text-red-400': connectionState === 'failed',
+                  })}
+                >
                   {connectionState}
                 </span>
               </div>
@@ -634,12 +662,14 @@ export default function AndroidSettingsPanel() {
             <div className="flex flex-col gap-2 mt-2 border-t border-bolt-elements-borderColor pt-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-bolt-elements-textPrimary">File Sync</span>
-                <span className={classNames('text-[10px] uppercase px-2 py-0.5 rounded-full border', {
-                  'bg-gray-500/10 border-gray-500/30 text-gray-400': syncStatus.state === 'idle',
-                  'bg-purple-500/10 border-purple-500/30 text-purple-400': syncStatus.state === 'syncing',
-                  'bg-green-500/10 border-green-500/30 text-green-400': syncStatus.state === 'success',
-                  'bg-red-500/10 border-red-500/30 text-red-400': syncStatus.state === 'error',
-                })}>
+                <span
+                  className={classNames('text-[10px] uppercase px-2 py-0.5 rounded-full border', {
+                    'bg-gray-500/10 border-gray-500/30 text-gray-400': syncStatus.state === 'idle',
+                    'bg-purple-500/10 border-purple-500/30 text-purple-400': syncStatus.state === 'syncing',
+                    'bg-green-500/10 border-green-500/30 text-green-400': syncStatus.state === 'success',
+                    'bg-red-500/10 border-red-500/30 text-red-400': syncStatus.state === 'error',
+                  })}
+                >
                   {syncStatus.state}
                 </span>
               </div>
@@ -656,7 +686,9 @@ export default function AndroidSettingsPanel() {
                   disabled={!canUseRemoteSync || syncingAction !== null}
                   className="android-secondary-btn text-[10px] font-semibold py-2 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className={syncingAction === 'push' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:upload-simple-fill'} />
+                  <div
+                    className={syncingAction === 'push' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:upload-simple-fill'}
+                  />
                   <span>Sync workspace to Remote Runtime</span>
                 </button>
                 <button
@@ -664,7 +696,9 @@ export default function AndroidSettingsPanel() {
                   disabled={!canUseRemoteSync || syncingAction !== null}
                   className="android-secondary-btn text-[10px] font-semibold py-2 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className={syncingAction === 'pull' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:download-simple-fill'} />
+                  <div
+                    className={syncingAction === 'pull' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:download-simple-fill'}
+                  />
                   <span>Pull remote files</span>
                 </button>
                 <button
@@ -672,13 +706,19 @@ export default function AndroidSettingsPanel() {
                   disabled={!canUseRemoteSync || syncingAction !== null}
                   className="android-secondary-btn text-[10px] font-semibold py-2 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className={syncingAction === 'current-file' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:file-arrow-up-fill'} />
+                  <div
+                    className={
+                      syncingAction === 'current-file' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:file-arrow-up-fill'
+                    }
+                  />
                   <span>Sync current file</span>
                 </button>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[10px] text-bolt-elements-textSecondary">
-                <span>Last sync: {syncStatus.lastSyncAt ? new Date(syncStatus.lastSyncAt).toLocaleString() : 'Never'}</span>
+                <span>
+                  Last sync: {syncStatus.lastSyncAt ? new Date(syncStatus.lastSyncAt).toLocaleString() : 'Never'}
+                </span>
                 <span>Synced files: {syncStatus.syncedFileCount}</span>
                 <span>Skipped files: {syncStatus.skippedFileCount}</span>
                 <span>Conflicts: {syncStatus.conflictCount}</span>
@@ -710,7 +750,9 @@ export default function AndroidSettingsPanel() {
           <div className="android-card-content">
             {persistenceStatus.available ? (
               <>
-                <div className={`android-storage-status ${persistenceStatus.hasSavedFiles ? 'android-storage-saved' : 'android-storage-empty'}`}>
+                <div
+                  className={`android-storage-status ${persistenceStatus.hasSavedFiles ? 'android-storage-saved' : 'android-storage-empty'}`}
+                >
                   <div className={persistenceStatus.hasSavedFiles ? 'i-ph:floppy-disk-fill' : 'i-ph:database'} />
                   <span>
                     {persistenceStatus.hasSavedFiles
@@ -719,9 +761,7 @@ export default function AndroidSettingsPanel() {
                   </span>
                 </div>
                 {persistenceStatus.lastOpenedFile && (
-                  <p className="android-storage-last">
-                    Last file: {persistenceStatus.lastOpenedFile}
-                  </p>
+                  <p className="android-storage-last">Last file: {persistenceStatus.lastOpenedFile}</p>
                 )}
                 <button
                   className="android-danger-btn"
@@ -729,9 +769,13 @@ export default function AndroidSettingsPanel() {
                   disabled={resetting || !persistenceStatus.hasSavedFiles}
                 >
                   {resetting ? (
-                    <><div className="i-ph:spinner-gap animate-spin" /> Resetting…</>
+                    <>
+                      <div className="i-ph:spinner-gap animate-spin" /> Resetting…
+                    </>
                   ) : (
-                    <><div className="i-ph:trash-fill" /> Reset Local Workspace</>
+                    <>
+                      <div className="i-ph:trash-fill" /> Reset Local Workspace
+                    </>
                   )}
                 </button>
               </>
@@ -753,7 +797,7 @@ export default function AndroidSettingsPanel() {
             <p className="android-about-name font-bold text-bolt-elements-textPrimary">VELDRA</p>
             <p className="android-about-version text-xs text-bolt-elements-textSecondary">v1.0.0 (Debug build)</p>
             <p className="text-xs text-bolt-elements-textSecondary">Build Date: 2026-07-05</p>
-            
+
             <div className="border-t border-bolt-elements-borderColor/30 my-2 pt-2 text-xs">
               <span className="text-bolt-elements-textSecondary">Runtime Mode: </span>
               <span className="font-semibold text-bolt-elements-textPrimary">
@@ -764,13 +808,15 @@ export default function AndroidSettingsPanel() {
             {runtime.mode === 'remote' && (
               <div className="text-xs">
                 <span className="text-bolt-elements-textSecondary">Remote Status: </span>
-                <span className={classNames(
-                  'font-semibold',
-                  connectionState === 'connected' && 'text-green-500',
-                  connectionState === 'failed' && 'text-red-500',
-                  connectionState === 'checking' && 'text-blue-500',
-                  connectionState === 'disconnected' && 'text-gray-500'
-                )}>
+                <span
+                  className={classNames(
+                    'font-semibold',
+                    connectionState === 'connected' && 'text-green-500',
+                    connectionState === 'failed' && 'text-red-500',
+                    connectionState === 'checking' && 'text-blue-500',
+                    connectionState === 'disconnected' && 'text-gray-500',
+                  )}
+                >
                   {connectionState === 'connected' && 'Connected'}
                   {connectionState === 'failed' && 'Failed'}
                   {connectionState === 'checking' && 'Checking…'}
@@ -780,8 +826,8 @@ export default function AndroidSettingsPanel() {
             )}
 
             <p className="android-about-desc text-xs text-bolt-elements-textTertiary leading-normal mt-2">
-              VELDRA for Android — provider-agnostic AI-powered development in your pocket.
-              WebContainer features (terminal, dev server, preview) require a desktop browser or a connected Remote Runtime.
+              VELDRA for Android — provider-agnostic AI-powered development in your pocket. WebContainer features
+              (terminal, dev server, preview) require a desktop browser or a connected Remote Runtime.
             </p>
             <button
               className="android-secondary-btn mt-3 w-full py-1.5 rounded-lg text-xs"

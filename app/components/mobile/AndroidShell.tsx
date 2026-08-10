@@ -55,10 +55,7 @@ function LoadingScreen() {
 /**
  * Error boundary for the lazy-loaded chat.
  */
-class ChatErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { error: Error | null }
-> {
+class ChatErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { error: null };
@@ -76,10 +73,7 @@ class ChatErrorBoundary extends React.Component<
             <div className="i-ph:warning-circle-fill android-error-icon" />
             <h2 className="android-error-title">Failed to load chat</h2>
             <p className="android-error-message">{this.state.error.message}</p>
-            <button
-              className="android-error-retry"
-              onClick={() => window.location.reload()}
-            >
+            <button className="android-error-retry" onClick={() => window.location.reload()}>
               Reload App
             </button>
           </div>
@@ -118,6 +112,7 @@ export default function AndroidShell() {
   useEffect(() => {
     const handleOpenTab = (e: Event) => {
       const customEvent = e as CustomEvent<MobileTab>;
+
       if (customEvent.detail) {
         setActiveTab(customEvent.detail);
       }
@@ -142,10 +137,7 @@ export default function AndroidShell() {
   return (
     <DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
       {/* Theme-aware root */}
-      <div
-        className={classNames('android-shell', `theme-${theme}`)}
-        data-theme={theme}
-      >
+      <div className={classNames('android-shell', `theme-${theme}`)} data-theme={theme}>
         {/* Android fallback mode banner */}
         <AndroidFallbackBanner />
 
@@ -172,11 +164,7 @@ export default function AndroidShell() {
         </main>
 
         {/* Bottom navigation */}
-        <BottomNav
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          workbenchAvailable={false}
-        />
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} workbenchAvailable={false} />
 
         {/* Toasts */}
         <ToastContainer

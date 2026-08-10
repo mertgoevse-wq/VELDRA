@@ -13,21 +13,22 @@
 /* ===== Base mobile layout ===== */
 @media (max-width: 768px) {
   /* Prevent horizontal scroll caused by desktop fixed widths */
-  html, body {
+  html,
+  body {
     overflow-x: hidden;
     max-width: 100vw;
   }
 
   /* Touch-friendly tap targets */
   button,
-  [role="button"],
+  [role='button'],
   .i-ph {
     min-height: 44px;
     min-width: 44px;
   }
 
   /* But don't inflate tiny inline icons */
-  button[class*="i-ph:"]:not([class*="text-lg"]):not([class*="text-xl"]):not([class*="text-2xl"]) {
+  button[class*='i-ph:']:not([class*='text-lg']):not([class*='text-xl']):not([class*='text-2xl']) {
     min-height: unset;
     min-width: unset;
   }
@@ -136,7 +137,7 @@
   }
 
   .mobile-bottom-nav button .i-ph,
-  .mobile-bottom-nav button [class*="i-ph:"] {
+  .mobile-bottom-nav button [class*='i-ph:'] {
     font-size: 20px;
     min-height: unset;
     min-width: unset;
@@ -181,7 +182,7 @@
   /* Disable hover-only effects on touch devices — they cause sticky hover states */
   @media (hover: none) {
     button:hover,
-    [role="button"]:hover,
+    [role='button']:hover,
     a:hover {
       background-color: inherit;
       color: inherit;
@@ -189,22 +190,22 @@
 
     /* Keep active states for touch feedback */
     button:active,
-    [role="button"]:active,
+    [role='button']:active,
     a:active {
       opacity: 0.7;
     }
   }
 
   /* Make sliders touch-friendly */
-  [class*="slider"] button,
-  [class*="Slider"] button {
+  [class*='slider'] button,
+  [class*='Slider'] button {
     min-height: 32px;
     min-width: 32px;
   }
 
   /* Prevent text selection on long-press for UI elements */
   button,
-  [role="button"],
+  [role='button'],
   nav,
   .mobile-bottom-nav,
   .mobile-terminal-drawer,
@@ -216,8 +217,8 @@
 
   /* But allow text selection in code editor and messages */
   .cm-editor,
-  [class*="messages"],
-  [class*="Messages"],
+  [class*='messages'],
+  [class*='Messages'],
   textarea,
   input {
     -webkit-user-select: text;

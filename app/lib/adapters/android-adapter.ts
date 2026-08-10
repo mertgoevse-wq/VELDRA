@@ -76,6 +76,7 @@ export class InMemoryFileSystem implements IFileSystem {
 
   async readFile(path: string): Promise<{ content: string; isBinary: boolean }> {
     await this._ensureInitialized();
+
     const content = this._files.get(path);
 
     if (content === undefined) {
@@ -87,6 +88,7 @@ export class InMemoryFileSystem implements IFileSystem {
 
   async writeFile(path: string, content: string | Uint8Array): Promise<void> {
     await this._ensureInitialized();
+
     const str = typeof content === 'string' ? content : new TextDecoder().decode(content);
     this._files.set(path, str);
     await this._persistState();
@@ -95,6 +97,7 @@ export class InMemoryFileSystem implements IFileSystem {
 
   async mkdir(path: string, _recursive?: boolean): Promise<void> {
     await this._ensureInitialized();
+
     if (!this._files.has(path)) {
       this._files.set(path, '');
       await this._persistState();
@@ -105,6 +108,7 @@ export class InMemoryFileSystem implements IFileSystem {
 
   async readdir(path: string): Promise<Dirent[]> {
     await this._ensureInitialized();
+
     const results: Dirent[] = [];
     const prefix = path.endsWith('/') ? path : path + '/';
 
@@ -129,6 +133,7 @@ export class InMemoryFileSystem implements IFileSystem {
 
   async rm(path: string, _recursive?: boolean): Promise<void> {
     await this._ensureInitialized();
+
     // Remove exact match and all children
     for (const key of this._files.keys()) {
       if (key === path || key.startsWith(path + '/')) {
@@ -141,6 +146,7 @@ export class InMemoryFileSystem implements IFileSystem {
 
   async rename(oldPath: string, newPath: string): Promise<void> {
     await this._ensureInitialized();
+
     const content = this._files.get(oldPath);
 
     if (content !== undefined) {

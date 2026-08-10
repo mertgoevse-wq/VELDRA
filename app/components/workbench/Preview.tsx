@@ -90,15 +90,11 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
   ].filter(Boolean) as string[];
   const remotePreviewConfigured = runtime.mode === 'remote' && missingRemotePreviewConfig.length === 0;
 
-  const hasStaticHtml = Object.keys(files).some(
-    (path) => path.endsWith('/index.html') || path === 'index.html'
-  );
+  const hasStaticHtml = Object.keys(files).some((path) => path.endsWith('/index.html') || path === 'index.html');
 
   const handleStartStaticPreview = () => {
     const fileMap = workbenchStore.files.get();
-    const indexPath = Object.keys(fileMap).find(
-      (path) => path.endsWith('/index.html') || path === 'index.html'
-    );
+    const indexPath = Object.keys(fileMap).find((path) => path.endsWith('/index.html') || path === 'index.html');
 
     if (indexPath) {
       const file = fileMap[indexPath];
@@ -126,6 +122,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
 
   const handleStopStaticPreview = () => {
     setUseStaticPreview(false);
+
     if (staticUrl) {
       URL.revokeObjectURL(staticUrl);
       setStaticUrl(null);
@@ -145,6 +142,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
       if (!remotePreviewConfigured) {
         setRemotePreview(null);
         setRemotePreviewError(null);
+
         return;
       }
 
@@ -189,6 +187,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
     if (!remotePreviewConfigured) {
       setRemotePreview(null);
       setRemotePreviewError(null);
+
       return;
     }
 
@@ -1157,9 +1156,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
               <div className="bg-purple-500/10 border-b border-purple-500/20 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-purple-400">
                 <span className="flex items-center gap-1.5 font-medium min-w-0">
                   <span className="i-ph:broadcast-fill text-sm shrink-0" />
-                  <span className="truncate">
-                    Remote Preview: {remotePreview.previewUrl}
-                  </span>
+                  <span className="truncate">Remote Preview: {remotePreview.previewUrl}</span>
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -1190,7 +1187,8 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
               <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-between text-xs text-amber-500">
                 <span className="flex items-center gap-1.5 font-medium">
                   <span className="i-ph:warning-circle-fill text-sm" />
-                  Local Static Preview: Viewing in-memory index.html. Scripts/stylesheets with relative paths may not load.
+                  Local Static Preview: Viewing in-memory index.html. Scripts/stylesheets with relative paths may not
+                  load.
                 </span>
                 <button
                   onClick={handleStopStaticPreview}
@@ -1212,7 +1210,8 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
               <div className="i-ph:monitor-play text-5xl text-bolt-elements-textSecondary mb-3 animate-pulse" />
               <h3 className="text-md font-semibold mb-1">Live Preview Unavailable</h3>
               <p className="text-xs text-bolt-elements-textSecondary max-w-xs mb-4 leading-relaxed">
-                Live Server Preview requires a WebContainer environment (desktop browser) or a configured Remote Runtime.
+                Live Server Preview requires a WebContainer environment (desktop browser) or a configured Remote
+                Runtime.
               </p>
               {runtime.mode === 'remote' && (
                 <div className="bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded-xl p-4 max-w-sm mb-3 text-left">
@@ -1220,7 +1219,8 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                     <span className="text-xs font-semibold text-bolt-elements-textPrimary">Remote Preview</span>
                     <span
                       className={classNames('text-[10px] uppercase px-2 py-0.5 rounded-full border', {
-                        'bg-gray-500/10 border-gray-500/30 text-gray-400': !remotePreview || remotePreview.status === 'none',
+                        'bg-gray-500/10 border-gray-500/30 text-gray-400':
+                          !remotePreview || remotePreview.status === 'none',
                         'bg-purple-500/10 border-purple-500/30 text-purple-400': remotePreview?.status === 'starting',
                         'bg-green-500/10 border-green-500/30 text-green-400': remotePreview?.status === 'running',
                         'bg-red-500/10 border-red-500/30 text-red-400': remotePreview?.status === 'failed',
@@ -1236,20 +1236,27 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                   ) : (
                     <>
                       <p className="text-xs text-bolt-elements-textSecondary leading-relaxed mb-3">
-                        {remotePreviewError ?? remotePreview?.message ?? 'Run npm run dev or pnpm run dev, then refresh preview status.'}
+                        {remotePreviewError ??
+                          remotePreview?.message ??
+                          'Run npm run dev or pnpm run dev, then refresh preview status.'}
                       </p>
                       {remotePreview?.port && (
-                        <p className="text-[10px] text-bolt-elements-textTertiary mb-2">Detected port: {remotePreview.port}</p>
+                        <p className="text-[10px] text-bolt-elements-textTertiary mb-2">
+                          Detected port: {remotePreview.port}
+                        </p>
                       )}
                       <p className="text-[10px] text-bolt-elements-textTertiary leading-relaxed mb-3">
-                        On Android, laptop localhost is not reachable. Run Vite with --host 0.0.0.0 and use your laptop LAN IP.
+                        On Android, laptop localhost is not reachable. Run Vite with --host 0.0.0.0 and use your laptop
+                        LAN IP.
                       </p>
                       <button
                         onClick={() => refreshRemotePreview()}
                         disabled={remotePreviewLoading}
                         className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
                       >
-                        <span className={remotePreviewLoading ? 'i-ph:spinner-gap animate-spin' : 'i-ph:arrow-clockwise'} />
+                        <span
+                          className={remotePreviewLoading ? 'i-ph:spinner-gap animate-spin' : 'i-ph:arrow-clockwise'}
+                        />
                         Refresh Preview
                       </button>
                     </>
@@ -1259,7 +1266,8 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
               {hasStaticHtml ? (
                 <div className="bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded-xl p-4 max-w-sm">
                   <p className="text-xs text-bolt-elements-textSecondary mb-3">
-                    A local <strong>index.html</strong> was detected in your workspace! You can run a basic static preview of it directly in this WebView.
+                    A local <strong>index.html</strong> was detected in your workspace! You can run a basic static
+                    preview of it directly in this WebView.
                   </p>
                   <button
                     onClick={handleStartStaticPreview}
@@ -1276,7 +1284,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                       if (isCapacitor()) {
                         window.dispatchEvent(new CustomEvent('open-mobile-tab', { detail: 'settings' }));
                       } else {
-                        toast.info("Please open Settings > Runtime Mode from the sidebar to configure Remote Runtime.");
+                        toast.info('Please open Settings > Runtime Mode from the sidebar to configure Remote Runtime.');
                       }
                     }
                   }}

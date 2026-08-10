@@ -100,10 +100,11 @@ export function GitHubSyncPanel() {
       const client = new RemoteRuntimeClient(
         runtime.remoteRuntimeUrl,
         runtime.remoteAuthToken,
-        runtime.remoteWorkspaceId
+        runtime.remoteWorkspaceId,
       );
 
       const res = await client.gitInit();
+
       if (res.ok) {
         setGitOutput(res.output || 'Git repository initialized successfully.');
         toast.success('Git repository initialized.');
@@ -132,10 +133,11 @@ export function GitHubSyncPanel() {
       const client = new RemoteRuntimeClient(
         runtime.remoteRuntimeUrl,
         runtime.remoteAuthToken,
-        runtime.remoteWorkspaceId
+        runtime.remoteWorkspaceId,
       );
 
       const res = await client.gitStatus();
+
       if (res.ok) {
         setGitOutput(res.status || 'git status output was empty.');
         toast.success('Git status checked.');
@@ -164,10 +166,11 @@ export function GitHubSyncPanel() {
       const client = new RemoteRuntimeClient(
         runtime.remoteRuntimeUrl,
         runtime.remoteAuthToken,
-        runtime.remoteWorkspaceId
+        runtime.remoteWorkspaceId,
       );
 
       const res = await client.gitCommit(commitMessage.trim());
+
       if (res.ok) {
         setGitOutput(res.output || 'Changes committed successfully.');
         toast.success('Changes committed.');
@@ -190,6 +193,7 @@ export function GitHubSyncPanel() {
     }
 
     const token = githubConnectionStore.get().token;
+
     if (!token) {
       toast.error('GitHub token is required to push. Please connect your GitHub account in Settings → GitHub.');
       return;
@@ -203,7 +207,7 @@ export function GitHubSyncPanel() {
       const client = new RemoteRuntimeClient(
         runtime.remoteRuntimeUrl,
         runtime.remoteAuthToken,
-        runtime.remoteWorkspaceId
+        runtime.remoteWorkspaceId,
       );
 
       const res = await client.gitPush({
@@ -261,9 +265,16 @@ export function GitHubSyncPanel() {
         <div className="i-ph:info-fill w-4 h-4 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
         <div className="text-blue-800 dark:text-blue-200 leading-snug">
           {!isRemoteMode ? (
-            <span><strong>Remote Runtime Required:</strong> Git operations (status, commit, push) require a connected Remote Runtime. To configure, go to <strong>Settings → Runtime Mode</strong>.</span>
+            <span>
+              <strong>Remote Runtime Required:</strong> Git operations (status, commit, push) require a connected Remote
+              Runtime. To configure, go to <strong>Settings → Runtime Mode</strong>.
+            </span>
           ) : (
-            <span><strong>Remote Git Workflow Scaffolded:</strong> Predefined allowlisted Git API endpoints are active on your Remote Runtime. Client integration will be completed in the next phase. Actions currently run in simulation to avoid faking success.</span>
+            <span>
+              <strong>Remote Git Workflow Scaffolded:</strong> Predefined allowlisted Git API endpoints are active on
+              your Remote Runtime. Client integration will be completed in the next phase. Actions currently run in
+              simulation to avoid faking success.
+            </span>
           )}
         </div>
       </motion.div>
@@ -419,10 +430,12 @@ export function GitHubSyncPanel() {
               'px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border border-bolt-elements-borderColor transition-all duration-200',
               isGitActionDisabled || isLoading
                 ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-[#1A1A1A] text-gray-400 dark:text-gray-600'
-                : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2 active:scale-95'
+                : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2 active:scale-95',
             )}
           >
-            <div className={isLoading ? 'i-ph:spinner-gap animate-spin w-3.5 h-3.5' : 'i-ph:folder-plus-fill w-3.5 h-3.5'} />
+            <div
+              className={isLoading ? 'i-ph:spinner-gap animate-spin w-3.5 h-3.5' : 'i-ph:folder-plus-fill w-3.5 h-3.5'}
+            />
             Git Init
           </button>
 
@@ -433,10 +446,12 @@ export function GitHubSyncPanel() {
               'px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border border-bolt-elements-borderColor transition-all duration-200',
               isGitActionDisabled || isLoading
                 ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-[#1A1A1A] text-gray-400 dark:text-gray-600'
-                : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2 active:scale-95'
+                : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2 active:scale-95',
             )}
           >
-            <div className={isLoading ? 'i-ph:spinner-gap animate-spin w-3.5 h-3.5' : 'i-ph:git-diff-fill w-3.5 h-3.5'} />
+            <div
+              className={isLoading ? 'i-ph:spinner-gap animate-spin w-3.5 h-3.5' : 'i-ph:git-diff-fill w-3.5 h-3.5'}
+            />
             Git Status
           </button>
         </div>
@@ -458,7 +473,7 @@ export function GitHubSyncPanel() {
               'focus:outline-none focus:ring-1 focus:ring-purple-500',
               'transition-all duration-200',
               'placeholder:text-bolt-elements-textTertiary',
-              (isGitActionDisabled || isLoading) && 'opacity-50 cursor-not-allowed'
+              (isGitActionDisabled || isLoading) && 'opacity-50 cursor-not-allowed',
             )}
           />
         </div>
@@ -469,9 +484,9 @@ export function GitHubSyncPanel() {
           disabled={isGitActionDisabled || isLoading || !commitMessage.trim()}
           className={classNames(
             'w-full px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200',
-            (isGitActionDisabled || isLoading || !commitMessage.trim())
+            isGitActionDisabled || isLoading || !commitMessage.trim()
               ? 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-400 dark:text-gray-600 cursor-not-allowed'
-              : 'bg-purple-600 hover:bg-purple-700 text-white transform active:scale-95'
+              : 'bg-purple-600 hover:bg-purple-700 text-white transform active:scale-95',
           )}
         >
           <div className={isLoading ? 'i-ph:spinner-gap animate-spin w-4 h-4' : 'i-ph:git-commit-fill w-4 h-4'} />
@@ -485,9 +500,9 @@ export function GitHubSyncPanel() {
             disabled={isGitActionDisabled || isLoading}
             className={classNames(
               'w-full px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200',
-              (isGitActionDisabled || isLoading)
+              isGitActionDisabled || isLoading
                 ? 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 text-white transform active:scale-95'
+                : 'bg-blue-600 hover:bg-blue-700 text-white transform active:scale-95',
             )}
           >
             <div className={isLoading ? 'i-ph:spinner-gap animate-spin w-4 h-4' : 'i-ph:cloud-arrow-up-fill w-4 h-4'} />
@@ -521,11 +536,11 @@ export function GitHubSyncPanel() {
                 Clear
               </button>
             </div>
-            {gitOutput && (
-              <pre className="text-green-400 whitespace-pre-wrap">{gitOutput}</pre>
-            )}
+            {gitOutput && <pre className="text-green-400 whitespace-pre-wrap">{gitOutput}</pre>}
             {gitError && (
-              <pre className="text-red-400 whitespace-pre-wrap"><strong>Error:</strong> {gitError}</pre>
+              <pre className="text-red-400 whitespace-pre-wrap">
+                <strong>Error:</strong> {gitError}
+              </pre>
             )}
           </div>
         )}
@@ -562,7 +577,9 @@ export function GitHubSyncPanel() {
       >
         <div className="i-ph:wrench-fill w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-gray-400" />
         <div className="text-gray-500 dark:text-gray-500 leading-relaxed">
-          <strong>Future Workflow Scaffolded:</strong> Predefined allowlisted Git operations (status, init, commit, push) are ready on the Remote Runtime backend. In-memory sync changes will be committed directly inside the isolated workspace directory without running arbitrary shell commands.
+          <strong>Future Workflow Scaffolded:</strong> Predefined allowlisted Git operations (status, init, commit,
+          push) are ready on the Remote Runtime backend. In-memory sync changes will be committed directly inside the
+          isolated workspace directory without running arbitrary shell commands.
         </div>
       </motion.div>
     </div>

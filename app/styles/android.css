@@ -24,7 +24,11 @@
   overflow: hidden;
   background-color: var(--bolt-elements-bg-depth-1, #0c0c0c);
   color: var(--bolt-elements-textPrimary, #e4e4e7);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
 
   /* Prevent text selection on UI elements (feels native) */
   -webkit-user-select: none;
@@ -34,7 +38,7 @@
 /* Allow text selection inside chat messages and inputs */
 .android-shell textarea,
 .android-shell input,
-.android-shell [data-role="message"],
+.android-shell [data-role='message'],
 .android-shell .message-content,
 .android-shell code,
 .android-shell pre {
@@ -129,7 +133,7 @@
 }
 
 .mobile-bottom-nav button.active,
-.mobile-bottom-nav button[aria-current="page"] {
+.mobile-bottom-nav button[aria-current='page'] {
   color: var(--bolt-elements-textPrimary, #e4e4e7);
 }
 

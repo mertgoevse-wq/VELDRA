@@ -368,6 +368,7 @@ function RemoteCommandPanel({
         } else if (payload.output) {
           appendOutput(`[remote] ${payload.output}`);
         }
+
         return;
       }
 
@@ -448,6 +449,7 @@ function RemoteCommandPanel({
           lastOutputAt: new Date().toISOString(),
           exitCode: undefined,
         });
+
         const command = await createClient().runCommand(commandProfile);
         setActiveCommandId(command.commandId);
         setRunningProfile(commandProfile);
@@ -571,7 +573,11 @@ function RemoteCommandPanel({
           />
           <CommandSummaryField
             label="Exit code"
-            value={lastCommand.exitCode === undefined || lastCommand.exitCode === null ? 'None' : String(lastCommand.exitCode)}
+            value={
+              lastCommand.exitCode === undefined || lastCommand.exitCode === null
+                ? 'None'
+                : String(lastCommand.exitCode)
+            }
           />
         </div>
 
