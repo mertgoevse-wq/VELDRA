@@ -21,8 +21,36 @@ import { createSampler } from '~/utils/sampler';
 import type { ActionAlert, DeployAlert, SupabaseAlert } from '~/types/actions';
 import { resetAndroidFallbackStorage, updateAndroidFallbackSession } from '~/lib/persistence/androidFallbackStorage';
 import { runtimeModeStore } from './runtime-mode';
+import { isCapacitor } from '~/lib/adapters/platform';
 
 const { saveAs } = fileSaver;
+
+/*
+ * Blob-download links (file-saver's saveAs()) are not a reliable delivery mechanism inside the
+ * Android WebView -- there is no download manager UI to catch them. Capacitor's own guidance for
+ * "let the user save/send a generated file" is Filesystem (write it somewhere real) + Share (let
+ * the user pick where it goes: Downloads, Drive, another app). Dynamically imported so desktop/
+ * web bundles never pull in these Android-only plugins.
+ */
+async function exportZipViaShareSheet(zip: JSZip, zipFileName: string): Promise<void> {
+  const base64Content = await zip.generateAsync({ type: 'base64' });
+  const [filesystemModule, shareModule] = await Promise.all([
+    import('@capacitor/filesystem'),
+    import('@capacitor/share'),
+  ]);
+
+  const written = await filesystemModule.Filesystem.writeFile({
+    path: zipFileName,
+    data: base64Content,
+    directory: filesystemModule.Directory.Cache,
+  });
+
+  await shareModule.Share.share({
+    title: zipFileName,
+    dialogTitle: 'Export project',
+    files: [written.uri],
+  });
+}
 
 export interface ArtifactState {
   id: string;
@@ -651,32 +679,49 @@ export class WorkbenchStore {
     // Generate a simple 6-character hash based on the current timestamp
     const timestampHash = Date.now().toString(36).slice(-6);
     const uniqueProjectName = `${projectName}_${timestampHash}`;
+    const zipFileName = `${uniqueProjectName}.zip`;
 
     for (const [filePath, dirent] of Object.entries(files)) {
-      if (dirent?.type === 'file' && !dirent.isBinary) {
+      if (dirent?.type === 'file') {
         const relativePath = extractRelativePath(filePath);
 
         // split the path into segments
         const pathSegments = relativePath.split('/');
 
         // if there's more than one segment, we need to create folders
-        if (pathSegments.length > 1) {
-          let currentFolder = zip;
+        let currentFolder = zip;
 
+        if (pathSegments.length > 1) {
           for (let i = 0; i < pathSegments.length - 1; i++) {
             currentFolder = currentFolder.folder(pathSegments[i])!;
           }
-          currentFolder.file(pathSegments[pathSegments.length - 1], dirent.content);
+        }
+
+        const fileName = pathSegments[pathSegments.length - 1];
+
+        /*
+         * dirent.content for a binary file is base64 (see FilesStore#createFile) -- JSZip
+         * decodes it directly with { base64: true
+         * } instead of double-encoding a text blob. The
+         * previous `!dirent.isBinary` guard here silently dropped every binary file (e.g. an
+         * imported/generated image) from every exported zip.
+         */
+        if (dirent.isBinary) {
+          currentFolder.file(fileName, dirent.content, { base64: true });
         } else {
-          // if there's only one segment, it's a file in the root
-          zip.file(relativePath, dirent.content);
+          currentFolder.file(fileName, dirent.content);
         }
       }
     }
 
+    if (isCapacitor()) {
+      await exportZipViaShareSheet(zip, zipFileName);
+      return;
+    }
+
     // Generate the zip file and save it
     const content = await zip.generateAsync({ type: 'blob' });
-    saveAs(content, `${uniqueProjectName}.zip`);
+    saveAs(content, zipFileName);
   }
 
   async syncFiles(targetHandle: FileSystemDirectoryHandle) {

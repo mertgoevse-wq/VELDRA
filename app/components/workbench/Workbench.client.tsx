@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react';
 import { motion, type HTMLMotionProps, type Variants } from 'framer-motion';
 import { computed } from 'nanostores';
-import { memo, useCallback, useEffect, useState, useMemo } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { Popover, Transition } from '@headlessui/react';
 import { diffLines, type Change } from 'diff';
@@ -29,6 +29,7 @@ import { ExportChatButton } from '~/components/chat/chatExportAndImport/ExportCh
 import { useChatHistory } from '~/lib/persistence';
 import { streamingState } from '~/lib/stores/streaming';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { importFilesIntoWorkspace } from '~/lib/services/workspaceFileImport';
 
 interface WorkspaceProps {
   chatStarted?: boolean;
@@ -357,7 +358,19 @@ export const Workbench = memo(
       workbenchStore.currentView.set('diff');
     }, []);
 
+    /*
+     * showDirectoryPicker() is a File System Access API only Chromium desktop implements --
+     * it does not exist in the Android WebView. Feature-detect instead of letting the click
+     * throw "showDirectoryPicker is not a function".
+     */
+    const canSyncToLocalDirectory = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
+
     const handleSyncFiles = useCallback(async () => {
+      if (!canSyncToLocalDirectory) {
+        toast.error('Syncing to a local folder is not supported in this app.');
+        return;
+      }
+
       setIsSyncing(true);
 
       try {
@@ -370,7 +383,47 @@ export const Workbench = memo(
       } finally {
         setIsSyncing(false);
       }
-    }, []);
+    }, [canSyncToLocalDirectory]);
+
+    const [isImporting, setIsImporting] = useState(false);
+    const importFilesInputRef = useRef<HTMLInputElement>(null);
+    const importFolderInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImportFileSelection = useCallback(
+      async (event: React.ChangeEvent<HTMLInputElement>, stripTopLevelFolder: boolean) => {
+        const selected = Array.from(event.target.files ?? []);
+        event.target.value = '';
+
+        if (selected.length === 0) {
+          return;
+        }
+
+        setIsImporting(true);
+
+        const loadingToast = toast.loading(`Importing ${selected.length} file(s)...`);
+
+        try {
+          const result = await importFilesIntoWorkspace(selected, { stripTopLevelFolder });
+
+          if (result.importedCount > 0) {
+            toast.success(
+              `Imported ${result.importedCount} file(s)${result.errorCount > 0 ? `, ${result.errorCount} failed` : ''}`,
+            );
+          } else if (result.errorCount > 0) {
+            toast.error(`Failed to import ${result.errorCount} file(s)`);
+          } else {
+            toast.info('No importable files found in the selection.');
+          }
+        } catch (error) {
+          console.error('Error importing files into workspace:', error);
+          toast.error(error instanceof Error ? error.message : 'Failed to import files');
+        } finally {
+          setIsImporting(false);
+          toast.dismiss(loadingToast);
+        }
+      },
+      [],
+    );
 
     return (
       chatStarted && (
@@ -410,18 +463,38 @@ export const Workbench = memo(
                       {/* Export Chat Button */}
                       <ExportChatButton exportChat={exportChat} />
 
-                      {/* Sync Button */}
+                      {/* Hidden pickers backing the Import menu items below */}
+                      <input
+                        ref={importFilesInputRef}
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(event) => handleImportFileSelection(event, false)}
+                      />
+                      {/* webkitdirectory/directory are non-standard but widely supported, same pattern as ImportFolderButton.tsx */}
+                      <input
+                        ref={importFolderInputRef}
+                        type="file"
+                        webkitdirectory=""
+                        directory=""
+                        multiple
+                        className="hidden"
+                        onChange={(event) => handleImportFileSelection(event, true)}
+                        {...({} as any)}
+                      />
+
+                      {/* Import / Sync Button */}
                       <div className="flex border border-bolt-elements-borderColor rounded-md overflow-hidden ml-1">
                         <DropdownMenu.Root>
                           <DropdownMenu.Trigger
-                            disabled={isSyncing || streaming}
+                            disabled={isSyncing || isImporting || streaming}
                             className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs bg-accent-500 text-white hover:text-bolt-elements-item-contentAccent [&:not(:disabled,.disabled)]:hover:bg-bolt-elements-button-primary-backgroundHover outline-accent-500 flex gap-1.7"
                           >
-                            {isSyncing ? (
+                            {isSyncing || isImporting ? (
                               '…'
                             ) : (
                               <>
-                                <span className="hidden lg:inline">Sync</span>
+                                <span className="hidden lg:inline">Import</span>
                                 <span className="lg:hidden i-ph:cloud-arrow-down" />
                               </>
                             )}
@@ -443,18 +516,44 @@ export const Workbench = memo(
                               className={classNames(
                                 'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
                               )}
-                              onClick={handleSyncFiles}
-                              disabled={isSyncing}
+                              onClick={() => importFilesInputRef.current?.click()}
+                              disabled={isImporting}
                             >
                               <div className="flex items-center gap-2">
-                                {isSyncing ? (
-                                  <div className="i-ph:spinner" />
-                                ) : (
-                                  <div className="i-ph:cloud-arrow-down" />
-                                )}
-                                <span>{isSyncing ? 'Syncing...' : 'Sync Files'}</span>
+                                <div className="i-ph:file-plus" />
+                                <span>Import Files</span>
                               </div>
                             </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                              className={classNames(
+                                'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
+                              )}
+                              onClick={() => importFolderInputRef.current?.click()}
+                              disabled={isImporting}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="i-ph:folder-plus" />
+                                <span>Import Folder</span>
+                              </div>
+                            </DropdownMenu.Item>
+                            {canSyncToLocalDirectory && (
+                              <DropdownMenu.Item
+                                className={classNames(
+                                  'cursor-pointer flex items-center w-full px-4 py-2 text-sm text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive gap-2 rounded-md group relative',
+                                )}
+                                onClick={handleSyncFiles}
+                                disabled={isSyncing}
+                              >
+                                <div className="flex items-center gap-2">
+                                  {isSyncing ? (
+                                    <div className="i-ph:spinner" />
+                                  ) : (
+                                    <div className="i-ph:cloud-arrow-down" />
+                                  )}
+                                  <span>{isSyncing ? 'Syncing...' : 'Sync Files'}</span>
+                                </div>
+                              </DropdownMenu.Item>
+                            )}
                           </DropdownMenu.Content>
                         </DropdownMenu.Root>
                       </div>
