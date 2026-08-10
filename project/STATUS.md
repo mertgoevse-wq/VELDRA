@@ -2,8 +2,21 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `c7176a9` — "feat(workbench): native file import/export for the active workspace (Priority 1)"
+**Current commit:** `9cd4a61` — "test: add parser-to-ActionRunner integration coverage (Phase C)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Workspace persistence hardening + parser→ActionRunner integration test (2026-08-10, sixth loop)
+
+**Phase B — persistence hardening.** Read `FilesStore#persistFallbackState()` directly and found a real silent-data-loss bug: on a failed IndexedDB write (device storage full is realistic now that binary file import exists), the error was only logged to the console. `createFile()`/`saveFile()` etc. already updated the in-memory files map and returned success *before* persistence was attempted, so the UI showed a change as saved while it silently never reached disk — an app restart would lose it with zero warning.
+
+- `app/lib/stores/androidPersistenceHealth.ts` (+ `.spec.ts`): reactive `ok`/`quota-exceeded`/`error` status atom `FilesStore` updates on every persist attempt.
+- `files.ts`: classifies `QuotaExceededError` distinctly, updates the health store, shows a de-duplicated toast (only on the failure transition, not every write).
+- `AndroidFallbackBanner.tsx`: shows a persistent, high-visibility warning instead of a toast the user could miss mid-stream.
+- `androidFallbackStorage.ts` (+ `.spec.ts`, 14 tests): added `isValidWorkspaceState()`/`isValidSessionState()` — IndexedDB enforces no schema, so a record malformed by an interrupted write or future incompatible version previously propagated straight into `FilesStore` unvalidated. Now discarded in favor of the safe default with a logged warning.
+
+**Phase C — first real integration test for the core product loop.** Neither `message-parser.spec.ts` (tests the parser in isolation) nor `action-runner.spec.ts` (tests `ActionRunner` with hand-built fixtures) covered the actual seam: raw streamed model text → parser → `ActionRunner` → a real file write. Added `app/lib/runtime/parser-to-action-runner.spec.ts` (4 tests) wiring `EnhancedStreamingMessageParser` to a real `ActionRunner` with the exact callback sequencing `useMessageParser.ts` uses in production, covering: single complete response, streamed multi-chunk response, multi-file artifact (landing page scenario), and a plain conversational response correctly producing zero file writes. This is the deterministic, credential-free version of the "hello.txt" acceptance test the product mandate keeps asking for.
+
+**Validated**: 258/258 tests (was 234; +24 new across both slices), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, debug APK builds (8.98 MB). New integration test verified non-flaky across 4 consecutive full-suite runs. **NOT VERIFIED**: an actual `QuotaExceededError` or genuinely corrupted IndexedDB record on a real device (persistence hardening); the full chain has never run against a live, credentialed LLM (integration test uses a fixed model-output string, not a real streamed response) — both **NEED DEVICE / CREDENTIAL VALIDATION.**
 
 ## Native file import/export (2026-08-10, fifth loop)
 
