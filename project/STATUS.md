@@ -2,8 +2,18 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `e25f74a` — "feat(android): handle hardware back button (Priority 3)"
+**Current commit:** `c7176a9` — "feat(workbench): native file import/export for the active workspace (Priority 1)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Native file import/export (2026-08-10, fifth loop)
+
+Researched existing import/export first: `ImportFolderButton.tsx`/`ImportButtons.tsx` only ever create a *new chat* from a synthetic message, explicitly skip binary files, and never touch `FilesStore` — there was no way to import a file into an *already open* project. `workbenchStore.downloadZip()` silently dropped every binary file from every exported zip — a real, pre-existing bug, fixed in the same slice since it directly blocked re-exporting anything imported through the new path.
+
+- `app/lib/services/workspaceFileImport.ts` (+ `.spec.ts`, 7 tests): `importFilesIntoWorkspace()` takes `File` objects from a plain `<input type="file">` picker (works in Android WebView via the native file chooser — no Capacitor plugin needed for import) and writes them through `workbenchStore.createFile()`/`createFolder()`, the same path the agent's artifact system uses. Handles binary files correctly (`Uint8Array`, not decoded text). Reuses existing `fileUtils.ts` helpers rather than reimplementing them. Wired into the Workbench's Sync dropdown as "Import Files"/"Import Folder".
+- Fixed alongside it: "Sync Files" called `window.showDirectoryPicker()` with no feature detection (Chromium-desktop-only API) — now hidden when unsupported instead of present-but-broken.
+- Export, Android-specific: `downloadZip()` now branches on `isCapacitor()`. Blob-download links have no reliable landing spot in the Android WebView, so on Android the zip is written to `Directory.Cache` (via new `@capacitor/filesystem@^7.1.8`) and handed to the native share sheet (`@capacitor/share@^7.0.4`, MIT, both official Capacitor plugins) so the user picks where it lands. Desktop/web keeps the unchanged `saveAs()` path. No new Android permissions required.
+
+**Validated**: 234/234 tests (+7 new), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds with both new plugin modules compiling and linking, debug APK builds (8.98 MB, no new permissions). **NOT VERIFIED**: on-device behavior of the native file picker or the share sheet — confirmed by successful build and unit tests only. **NEEDS DEVICE VALIDATION.**
 
 ## Chat history + back button fixed (2026-08-10, fourth loop)
 

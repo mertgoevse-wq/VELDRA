@@ -2,12 +2,32 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `e25f74a` — "feat(android): handle hardware back button (Priority 3)"
+**Current commit:** `c7176a9` — "feat(workbench): native file import/export for the active workspace (Priority 1)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `e25f74a` pushed successfully to `origin/main`
+**Last successful push:** `c7176a9` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slice — Android chat history + hardware back button (2026-08-10, fourth loop)
+## Latest product slice — native file import/export (2026-08-10, fifth loop)
+
+Mandate: "VELDRA — LARGE-SCALE ANDROID PORTING + WORKBENCH INTEGRATION," Priority 1 ("Native file import/export"). Full vertical slice: user action → File API → workspace write → persistence → Workbench UI → export → native share.
+
+**What was researched first** (per "extend, don't duplicate" and the mandate's own "research before reimplementation" rule): grepped for every existing import/export entry point before writing anything.
+- `ImportFolderButton.tsx`/`ImportButtons.tsx` (existing): only ever build a *synthetic chat message* from file contents and call `importChat()` — they never touch `FilesStore`, and `ImportFolderButton.tsx` explicitly skips binary files (`isBinaryFile()` check, files matching get logged and dropped). This is a "start a new chat about this project" feature, not a "add files to my currently open project" feature — genuinely different use case, confirmed no overlap with what Priority 1 needs.
+- `workbenchStore.downloadZip()` (existing, `app/lib/stores/workbench.ts`): the "Download Code" / `ExportChatButton` path. Found a real, pre-existing, unrelated-to-me bug while reading it: `if (dirent?.type === 'file' && !dirent.isBinary)` — every binary file (e.g. an image) was silently excluded from every exported zip, always, on every platform. Fixed in this slice per the "fix any real bug you find, immediately" rule, since it directly blocks the value of the new binary-capable import (importing an image only to have it silently vanish on export would be a broken round-trip).
+- `workbenchStore.syncFiles()` / the "Sync Files" button (existing): calls `window.showDirectoryPicker()` with zero feature detection — a Chromium-desktop-only File System Access API method that does not exist in the Android WebView. Would throw "showDirectoryPicker is not a function" if tapped on Android. Fixed: now hidden from the menu when unsupported instead of being a present-but-broken button.
+- `FilesStore.createFile(filePath, content: string | Uint8Array)` (existing) already supports binary content directly (base64-encodes it internally on the Android IndexedDB-fallback path) — confirmed this was the correct, already-built extension point; no FilesStore changes were needed.
+
+**What was built**:
+- `app/lib/services/workspaceFileImport.ts` (+ `.spec.ts`, 7 tests): `importFilesIntoWorkspace(fileList, { stripTopLevelFolder })` takes `File[]` from a plain `<input type="file">` picker — this works in the Android WebView via the OS's native file chooser / Storage Access Framework with **no Capacitor plugin required for import**, since browsers' (and WebView's) `<input type="file">` already bridges to the native picker. Writes through `workbenchStore.createFile()`/`createFolder()` — the exact same path the agent's artifact system uses — so imported files appear in the file tree/diff immediately and persist through the existing WebContainer/Android-IndexedDB-fallback paths with zero new persistence code. Reuses `fileUtils.ts`'s `isBinaryFile()`/`shouldIncludeFile()`/`MAX_FILES` rather than reimplementing file-type detection or ignore-pattern matching.
+- `app/components/workbench/Workbench.client.tsx`: added "Import Files" and "Import Folder" items to the existing Sync dropdown menu (hidden `<input>` refs + click handlers), alongside the "Sync Files" feature-detection fix above.
+- `app/lib/stores/workbench.ts`: `downloadZip()` now (a) includes binary files correctly via JSZip's `{ base64: true }` option instead of skipping them, and (b) branches delivery on `isCapacitor()` — desktop/web keeps the existing `saveAs()` blob-download path unchanged; Android writes the zip to `Directory.Cache` via the new `@capacitor/filesystem@^7.1.8` and hands it to the native share sheet via the new `@capacitor/share@^7.0.4` (both MIT, official Capacitor plugins, matching the existing `@capacitor/core@^7.6.7` major — same pattern already proven with `@capacitor/app` last loop). Both plugins imported dynamically (`await import(...)`), gated behind `isCapacitor()`, so desktop/web bundles never pull them in.
+- Synced into the native Android project (`npx cap sync android`): 3 Capacitor plugins now registered (`capacitor-app`, `capacitor-filesystem`, `capacitor-share`), all compiling and linking successfully in the Gradle build. **No new Android permissions** — `Directory.Cache` is app-private (no storage permission needed) and `Share` uses the native Android share intent (no permission needed either).
+
+Validation: 234/234 tests (was 227; +7 new), typecheck clean, lint clean, Cloudflare build clean, `android:webbuild` clean, native Gradle build succeeds (`:capacitor-filesystem:assembleDebug` and `:capacitor-share:assembleDebug` both confirm the new native modules actually compile and link), debug APK builds (`BUILD SUCCESSFUL in 1m53s`, 8.98 MB, no new permissions in `aapt dump badging`). **NOT VERIFIED**: on-device behavior of the native file picker (does tapping "Import Files" actually open Android's file chooser and correctly hand back `File` objects with real content) or the share sheet (does `Share.share({ files: [...] })` actually present a working Android share dialog with the zip attached). Both are confirmed only by successful builds and unit tests with mocked `workbenchStore` — genuinely **NEEDS DEVICE VALIDATION**, same caveat pattern as every Android UI-facing change this session.
+
+**Next highest-value step** (per the mandate's own priority order): Priority 2, "Android workspace persistence hardening" — audit `androidFallbackStorage.ts`/`FilesStore`'s IndexedDB persistence for edge cases (large files, quota errors, corruption recovery, concurrent writes) now that binary file import means larger payloads are a realistic scenario. Priority 3 ("Create/edit/delete/rename/move files robust") and Priority 4 ("Agent artifact workflow") follow. Device validation of everything shipped across loops 3–5 (Workbench visibility, chat history, back button, file import/export) remains the single highest-value action if a physical device becomes available.
+
+## Earlier product slice — Android chat history + hardware back button (2026-08-10, fourth loop)
 
 Mandate: "VELDRA — LARGE-SCALE ANDROID PORT / INTEGRATION / EXECUTION LOOP," priority order Section 49. Closed exactly the two items the previous loop identified and explicitly deferred (Priority 2 and Priority 3), both now resolved rather than re-deferred:
 
