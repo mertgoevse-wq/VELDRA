@@ -2,12 +2,31 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `5771579` — "fix: mount Workbench on Android so agent file changes are actually visible"
+**Current commit:** `e25f74a` — "feat(android): handle hardware back button (Priority 3)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `5771579` pushed successfully to `origin/main`
+**Last successful push:** `e25f74a` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slice — Workbench mounted on Android; agent file changes are now visible (2026-08-10, third loop)
+## Latest product slice — Android chat history + hardware back button (2026-08-10, fourth loop)
+
+Mandate: "VELDRA — LARGE-SCALE ANDROID PORT / INTEGRATION / EXECUTION LOOP," priority order Section 49. Closed exactly the two items the previous loop identified and explicitly deferred (Priority 2 and Priority 3), both now resolved rather than re-deferred:
+
+**Priority 2 — Chat history (commit `27e09d9`).** Root cause, precisely: bolt.diy's entire chat-identity model is `/chat/:id` URL-path-based via Remix loaders. The Android SPA has no server, no matching route, and its `@remix-run/react` shim (`src/shims/remix-react.tsx`) makes `useLoaderData()` always return `{}` and `useNavigate()` a no-op console.warn. Every launch was therefore a brand-new chat; `HistoryItem.tsx`'s `<a href="/chat/...">` rendered correctly but led nowhere. Rather than trying to fake a working router in the shim (which would be a much larger, riskier change touching every Remix-coupled hook in the app), added a narrowly-scoped substitute:
+- `app/lib/stores/androidChatSession.ts` (+ `.spec.ts`, 3 tests): one atom, `androidActiveChatId`, updated only by explicit user actions. Specifically NOT updated by `useChatHistory.ts`'s "fresh chat gets a persistent id after its first message" flow (`storeMessageHistory` → `navigateChat`) — this was the key design decision that avoids a subtle regression: if that flow touched the store, `Chat.client.tsx`'s new remount key (see below) would change mid-send, unmounting `useChat()` while a response is actively streaming.
+- `useChatHistory.ts`: `mixedId` reads from this store on Android instead of the loader; the "chat not found" fallback, `duplicateCurrentChat`, and `importChat` all branch on `isCapacitor()` to use the store instead of `navigate()`/`window.location.href`.
+- `HistoryItem.tsx`: tapping an item sets the store (`preventDefault()`s the dead `<a href>` on Android only); active-chat highlighting reads the store instead of the always-empty `useParams()`.
+- `Menu.client.tsx`: "Start new chat" resets the store on Android instead of following `<a href="/">`.
+- `Chat.client.tsx`: `ChatImpl` is now keyed on `androidChatId ?? 'new-chat'` (Android only) so switching chats actually resets `useChat()`'s internal state — there's no route change to remount it for free like on the web build.
+
+**Priority 3 — Hardware back button (commit `e25f74a`).** No handler existed at all (`grep` for `backButton`/`hardwareBackPress`: nothing, confirmed twice now). Added `@capacitor/app@^7.1.2` (MIT, matches the existing `@capacitor/core@^7.6.7` major), ran `npx cap sync android` (regenerated `capacitor.settings.gradle`/`capacitor.plugins.json`, both gitignored/generated, correctly picked up `capacitor-app` as a Gradle subproject and JS plugin classpath, no `MainActivity.java` changes needed — Capacitor 7 auto-discovers plugins). `AndroidShell.tsx` registers a `backButton` listener, re-registered on every `activeTab` change (avoids a stale-closure ref workaround): Workbench overlay open → close it, back to chat; non-chat tab → chat; otherwise → `App.exitApp()`. Important nuance documented in-code: once a JS listener is registered, Capacitor stops applying ANY default back behavior — every case must be handled explicitly, there's no "handle some, fall through to platform default."
+
+**Found, documented, deliberately NOT fixed this slice**: back button doesn't reach drawer/dialog-level state (`MobileFileTreeDrawer`, `MobileTerminalDrawer`, Settings `ControlPanel` sub-panels, delete-confirmation dialogs) because that state is local to components the shell-level listener can't see. A correct fix needs a shared "back handler stack" pattern (components register/unregister an intercept callback) — a distinct, larger piece of architecture, explicitly not bolted on here per the mandate's own "don't dangerously widen the current slice" exception clause.
+
+Validation across both fixes: 227/227 tests (was 224; +3 new), typecheck clean, lint clean, Cloudflare build clean, `android:webbuild` clean, native Gradle build succeeds (`:capacitor-app:assembleDebug` confirms the new native module actually compiles and links, not just that the JS side type-checks), debug APK builds twice (48s then 13s incremental), no new Android permissions introduced. **NOT VERIFIED**: on-device behavior of either fix. Chat-switching correctness (no stale messages, no visual flash) and back-button correctness (does it actually feel right on a real press, does `exitApp()` behave as expected) are both confirmed only by code inspection + successful builds — genuinely **NEEDS DEVICE VALIDATION**, same caveat as the last two loops' UI-facing work.
+
+**Next highest-value step** (per the mandate's Section 49 priority order): Priority 4, native file import/export (Capacitor Filesystem / Storage Access Framework — import a project file, export a generated file, without requiring broad storage permissions where the system picker suffices). Priority 5 (remote runtime end-to-end) is the next large one after that. Device validation of everything shipped in loops 3–4 remains the single highest-value action if a physical device becomes available before further static-analysis-only work continues.
+
+## Earlier product slice — Workbench mounted on Android; agent file changes are now visible (2026-08-10, third loop)
 
 Mandate: "VELDRA — LARGE-SCALE ANDROID PRODUCTIZATION / END-TO-END RUNTIME / AGENT WORKBENCH LOOP." Started with a fresh audit (parallel Explore agent) targeting the exact next gap in the chain "UI → chat bridge → provider → model → streaming → agent → artifact → workspace → diff → user sees result," since the previous loop's optimistic conclusion ("the hello.txt slice should already work, `Workbench.client.tsx` has no `isCapacitor()` gating") turned out to be checking the wrong render path.
 

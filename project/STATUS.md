@@ -2,8 +2,19 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `5771579` — "fix: mount Workbench on Android so agent file changes are actually visible"
+**Current commit:** `e25f74a` — "feat(android): handle hardware back button (Priority 3)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Chat history + back button fixed (2026-08-10, fourth loop)
+
+Both items the previous loop found and deliberately deferred are now fixed:
+
+- **Chat history (Priority 2)**: was completely broken on Android — every app launch was a brand-new chat, saved conversations could never be reopened, because bolt.diy's chat identity is entirely URL-path-based (`/chat/:id` via Remix loaders) and the Android build's `@remix-run/react` shim makes `useLoaderData()`/`useNavigate()` no-ops. Fixed with a new `androidActiveChatId` store (`app/lib/stores/androidChatSession.ts`) that substitutes for the URL-derived chat id only on Android, changed only by explicit user actions (tap history item, start new chat, duplicate/import) — never by the "first message gets a persistent id" flow, so sending a message never interrupts itself mid-stream by remounting. `Chat.client.tsx`'s `ChatImpl` is now keyed on this store so switching chats actually resets `useChat()`'s message state (there's no route change to do that for free, unlike the web build). Desktop/web chat identity is untouched.
+- **Android back button (Priority 3)**: no handler existed anywhere. Added `@capacitor/app@^7.1.2` (MIT, official Capacitor plugin), synced into the native Android project, registered a `backButton` listener in `AndroidShell.tsx`: Workbench overlay open → close it; non-chat tab → switch to chat; otherwise → `App.exitApp()`. Verified: native `capacitor-app` Gradle module compiles and links (`:capacitor-app:assembleDebug` succeeded), debug APK builds with no new Android permissions.
+
+**Deliberately NOT handled** (documented, not silently dropped): drawers/dialogs owned by deeper components (`MobileFileTreeDrawer`, `MobileTerminalDrawer`, Settings `ControlPanel` sub-panels, delete-confirmation dialogs) have local state the shell-level back listener can't see — back currently skips past them to the tab/overlay level while they're open. A correct fix needs a shared "back handler stack" components can register into; that's a distinct, larger architectural addition for a future loop, not a same-slice extension.
+
+**Validated**: 227/227 tests (+3 new for the chat-session store), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (9.36 MB). **NOT VERIFIED**: actual on-device behavior of either fix — chat switching without visual glitches, and the hardware back button actually doing the right thing when pressed. Both are confirmed correct by code inspection and successful builds only. **NEEDS DEVICE VALIDATION.**
 
 ## Critical gap found and fixed: agent file changes were invisible on Android (2026-08-10)
 
