@@ -2,12 +2,24 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `5072bc7` — "fix(workbench): repair Android editor/preview narrow-viewport rendering (Phase D)"
+**Current commit:** `27640bb` — "fix(android): remove dead/unreachable AndroidApiClient methods (Loop 8)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `5072bc7` pushed successfully to `origin/main`
+**Last successful push:** `27640bb` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slice — Android editor/preview narrow-viewport fixes (2026-08-10, seventh loop, "Phase D")
+## Latest product slice — provider/model router audit + dead-code cleanup (2026-08-10, eighth loop, "Loop 8")
+
+Per the newest mandate's "VELDRA — AUTONOMOUS PORTING, ANDROID PRODUCTIZATION & FULL FUNCTIONALITY GAUNTLET," Loop 8 ("Provider/Model Router"). Delegated a static-analysis audit (Explore subagent) to answer the crux question: does Android actually have a *working* way to choose a provider/model, or is chat-sending fixed (earlier loops) while selection itself is decorative?
+
+**Finding: it already works, no gap.** `AndroidSettingsPanel.tsx` has no provider/model UI at all — selection lives entirely in the chat composer, where `ChatBox.tsx` renders the exact same `ModelSelector.tsx` desktop uses (not a separate Android component, not gated behind any `isCapacitor()` check), including the "Auto (capability router)" option. `Chat.client.tsx` embeds the selection as `[Model:]`/`[Provider:]` tags into every outgoing message (same as desktop), and `api.android.chat.ts` deliberately delegates to the identical `chatAction()`/`stream-text.ts` path `/api/chat` uses (comment in the route confirms this is intentional, not incidental) — so tag parsing, Auto resolution, and per-provider server-env credential fallback all apply identically on Android. `api.android.models.ts` reuses the same `getModelsData()` as desktop, so the models payload carries the same capability metadata Auto routing needs. Net: model/provider selection is real, not fake, on Android today.
+
+**What the audit did find and what got fixed**: `AndroidApiClient.ts` — a class only ever instantiated once (in `AndroidSettingsPanel.tsx`, for its "Test API Backend" health check) — carried four methods nobody calls anywhere in the app: `sendChatMessage`/`streamChatResponse` (already self-documented in-code as "NOT YET BACKED," a deliberate choice from an earlier loop to keep them as a shape for a hypothetical future non-streaming route) and `enhancePrompt`/`validateProviderConfig` (no such disclaimer at all, and pointing at paths — bare `/enhance`, `/provider-config/validate` — that were never even part of the `/api/android/*` route design, let alone implemented). Since the real chat/enhance/models functionality is fully implemented elsewhere and bypasses this class entirely, removed all four methods and their exclusively-associated request/response types (`AndroidApiChatMessage/Request/Response`, `AndroidApiEnhancePromptRequest/Response`, `AndroidApiProviderConfigValidationRequest/Response`) rather than continue shipping public API surface guaranteed to fail if anyone ever calls it — this is precisely the class of "fake API" bug the project's no-fake-success rule targets, even though it was self-documented rather than silent. Kept `.health()` and `.listModels()`, both backed by real, working routes.
+
+Validation: 258/258 tests (unchanged — pure dead-code removal, no test file existed for this class, nothing else referenced the removed surface per grep), typecheck clean, lint clean (one trailing-newline `prettier/prettier` finding after the removal, fixed via `lint:fix`), Android web build clean, native Gradle build succeeds, debug APK builds (`BUILD SUCCESSFUL in 5s` incremental, size/permissions unchanged).
+
+**Next highest-value step**: the newest mandate's Loop 9 (agent tool loop — likely already largely covered by the existing `<boltArtifact>`/`ActionRunner` mechanism per the fourth-loop architectural finding; needs a fresh audit for gaps specific to *tool-calling* beyond file actions, e.g. shell/build/start actions on Android, which `project/STATUS.md`'s "Known execution integration" section already flags as capability-gated pending a session bridge) or Loop 10 (remote runtime end-to-end). Device validation of the now seven-plus-loop Android-UI backlog remains the single highest-value blocked action if a physical device becomes available.
+
+## Earlier product slice — Android editor/preview narrow-viewport fixes (2026-08-10, seventh loop, "Phase D")
 
 Continuation of the "VELDRA — AUTONOMOUS PORTING, ANDROID PRODUCTIZATION & FULL FUNCTIONALITY GAUNTLET" mandate's Loop 1 audit, picking up exactly where the sixth loop's own "next highest-value step" left off: whether the editor and static preview actually render correctly now that Files/Preview tabs are reachable (loop 3) — never exercised even via static analysis before this loop.
 

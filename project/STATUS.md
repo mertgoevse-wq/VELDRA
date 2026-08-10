@@ -2,8 +2,18 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `5072bc7` — "fix(workbench): repair Android editor/preview narrow-viewport rendering (Phase D)"
+**Current commit:** `27640bb` — "fix(android): remove dead/unreachable AndroidApiClient methods (Loop 8)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Provider/model router audit on Android + dead-code cleanup (2026-08-10, eighth loop)
+
+Audited whether Android's provider/model *selection* is actually functional end-to-end, not just chat-sending (already fixed in earlier loops). Result: **it already works**, no gap found — `ModelSelector.tsx` (the same component desktop uses) renders in Android's chat composer, embeds `[Model:]`/`[Provider:]` tags into the outgoing message, and `api.android.chat.ts` delegates to the identical shared `chatAction()`/`stream-text.ts` path desktop uses, which parses those tags and resolves the backend's own per-provider server-side credential. "Auto (capability router)" is live on Android too — same code path, not desktop-only.
+
+What the audit did find: `AndroidApiClient.ts` had four methods (`sendChatMessage`, `streamChatResponse`, `enhancePrompt`, `validateProviderConfig`) called nowhere in the app and pointing at routes that either don't exist at all (`enhancePrompt` → bare `/enhance`, not `/api/android/enhance`; `validateProviderConfig` → `/provider-config/validate`, never implemented) or that the real chat path never uses. The real, working chat/enhance/models functionality is fully implemented elsewhere and bypasses this class except for `.health()`. Removed the four dead methods and their exclusively-associated types rather than continue shipping API surface that will always fail if called — this is exactly the "fake API" class of bug the project's own no-fake-success rule targets.
+
+**Validated**: 258/258 tests, typecheck clean, lint clean, Android web build clean, native Gradle build succeeds, debug APK builds (size/permissions unchanged). No test file existed for `AndroidApiClient.ts`; grep-confirmed nothing else referenced the removed surface.
+
+**Next highest-value step**: continue the newest mandate's loop sequence (Loop 9: agent tool loop, Loop 10: remote runtime, or device validation of the growing Android-UI backlog if a device becomes available) — see `project/SESSION-HANDOFF.md` for the specific next call.
 
 ## Editor/preview narrow-viewport rendering fixed (2026-08-10, seventh loop)
 
