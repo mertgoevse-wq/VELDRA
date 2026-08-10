@@ -203,6 +203,21 @@ export class ActionRunner {
       });
       toast.warning(`Action "${action.type}" blocked: ${errorMsg}`);
 
+      /*
+       * Unlike a toast (easy to miss, auto-dismisses), this reaches the same ChatAlert UI real
+       * shell/build/start failures use -- without it, the model has no way to learn the command
+       * it just emitted never ran (it isn't told this session has no shell/build capability in
+       * the first place), and will keep talking as if setup succeeded. The user still has to
+       * click "Ask Bolt" to feed it back, same as any other terminal error in this UI.
+       */
+      this.onAlert?.({
+        type: 'error',
+        title: 'Command Execution Unavailable',
+        description: errorMsg,
+        content: 'content' in action ? action.content : '',
+        source: 'terminal',
+      });
+
       return;
     }
 

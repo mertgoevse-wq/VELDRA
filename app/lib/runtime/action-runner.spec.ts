@@ -80,6 +80,33 @@ describe('file action runtime policy', () => {
     expect(runner.actions.get()['query-action']?.executed).toBe(false);
   });
 
+  it('feeds a blocked shell action into onAlert so the model can learn it never ran', async () => {
+    const onAlert = vi.fn();
+    const webcontainer = Promise.reject(new Error('WebContainer unavailable'));
+    void webcontainer.catch(() => undefined);
+
+    const runner = new ActionRunner(webcontainer, () => undefined as never, onAlert);
+
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'shell-action',
+      action: { type: 'shell', content: 'npm install && npm run dev' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+
+    expect(runner.actions.get()['shell-action']?.status).toBe('failed');
+    expect(onAlert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'error',
+        content: 'npm install && npm run dev',
+        source: 'terminal',
+      }),
+    );
+  });
+
   it('reads local file history without requiring WebContainer', async () => {
     runtimeModeStore.set({
       ...initialRuntime,
