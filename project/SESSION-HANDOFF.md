@@ -2,12 +2,39 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `2f32629` — "fix(terminal): stop showing dead tab-bar controls in Remote Runtime fallback mode (Loop 15)"
+**Current commit:** `06037e6` — "feat(chat): add Guided Build project creation flow (Loop 16)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `2f32629` pushed successfully to `origin/main`
+**Last successful push:** `06037e6` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slices — deterministic acceptance test + Terminal dead-UI fix (2026-08-10, loops 14-15)
+## Mandate update: "VELDRA — LARGE-SCALE PRODUCT BUILD / PORTING MANDATE" (2026-08-10)
+
+A third mandate arrived, explicitly reversing the micro-slice cadence of the previous ~9 loops: "Do not spend an entire loop merely running tests... Build substantial functionality first, then validate it... one coherent implementation... EXTEND, DON'T DUPLICATE." Its P0 list leads with "project creation workflow," matching exactly what Loop 15's own "next step" note already flagged as the biggest unaddressed gap. Its architectural section (54/58) explicitly names the same principle this session has followed throughout: one coherent core (Project → Workspace → Context → Agent Runtime → Model Router → Tool Registry → FilesStore → Preview → UI), Android/Web/Desktop as client surfaces, never a second competing system.
+
+## Latest product slice — Guided Build project creation flow (2026-08-10, Loop 16)
+
+First large slice under the new mandate. Chose "project creation workflow" as named P0 priority #1 by both the new mandate and this session's own prior audit trail (Loop 15's SESSION-HANDOFF entry: "No dedicated project-creation/beginner-mode UX exists — real, large P1/P2-adjacent gap, not yet scoped").
+
+**Scoping decision**: the mandate's full vision (Sections 7-9) describes Quick Start / Guided Build / Expert Build modes, structured clarification questions, an editable project plan, and a task graph with agent/skill/model assignment per task. Building all of that in one slice would mean inventing a second orchestration layer alongside the chat pipeline this session has spent 9 loops verifying actually works (parser → ActionRunner → FilesStore, the multi-turn edit acceptance test from Loop 14) — directly against the mandate's own "extend, don't duplicate" and "don't over-engineer" rules (Sections 54, 58). Scoped down to the smallest version that's still genuinely useful and non-fake: **Guided Build**, a structured-details step that augments the existing chat send path rather than replacing it. "Expert Build" was not built and is not claimed to exist — no fake third mode.
+
+**What shipped**:
+- `app/lib/stores/projectBrief.ts` — `ProjectBrief` (platform: web/android/both, visual style, integrations, offline requirement), all fields optional. `composeMessageWithProjectBrief(userMessage, brief)` is a pure function: empty brief → message returned completely unchanged (byte-identical); filled brief → a short, readable `Project details:\n- ...\n\n<message>` preamble prepended. 9 unit tests, including explicit coverage that whitespace-only fields don't leak empty bullet lines and that an empty brief is a true no-op.
+- `app/components/chat/ProjectGuidedBuild.tsx` — a `Guided Build` toggle rendered in `BaseChat.tsx`'s existing empty-state (`#intro`, the "Where ideas begin" screen), collapsed by default. Opens to platform chips, two optional text fields, and an offline checkbox (reuses the existing `Checkbox` UI primitive — no new design-system component invented).
+- `BaseChat.tsx`'s `handleSendMessage` (the function `sendMessage`/`ExamplePrompts`/the chat composer all already funnel through) now checks `!chatStarted && hasProjectBriefDetails(brief)` before composing — every other path (later messages, ExamplePrompts' explicit message override, a Quick-Start send with the panel never opened) is provably untouched, since the composed-message branch is skipped entirely and the original `messageInput` is passed straight through. Resets the brief after use so it can't leak into an unrelated later message.
+
+**Reused, not duplicated**: the existing `Checkbox` UI primitive, the existing `handleSendMessage`/`sendMessage` chat-send path, the existing empty-state screen layout, the existing nanostore (`atom`) pattern already used by `runtime-mode.ts`/`androidChatSession.ts`/`androidPersistenceHealth.ts`. Zero new agent runtime, zero new execution path, zero new FilesStore/ActionRunner variant.
+
+**Android**: live automatically. `AndroidShell.tsx` mounts the identical `Chat.client.tsx` → `BaseChat.tsx` component tree desktop uses (confirmed in the Loop 8 provider/model-router audit — `ModelSelector.tsx` and the rest of the composer are already shared, not Android-specific copies), so this feature required zero Android-specific code and is reachable the same way on the real Android app.
+
+**Verification went beyond static analysis this loop**: started the actual Vite dev server and drove it with a real headless browser (Playwright, invoked via the environment's global install at `/opt/node22/lib/node_modules/playwright` since this repo has no Playwright devDependency of its own) rather than only trusting a successful build. Confirmed: the panel expands/collapses on click, the platform chips/text fields/checkbox all update visibly and correctly reflect state, and — checked specifically because this session is Android-first — zero horizontal overflow (`document.documentElement.scrollWidth > clientWidth` is `false`) at a 390px viewport, with a full-page screenshot confirming the layout looks clean and usable at that width. This is genuinely `MANUAL VERIFIED`, not just `BUILD VERIFIED`, though still explicitly `NOT DEVICE VERIFIED` (no physical Android hardware in this environment).
+
+**Real, unrelated finding surfaced incidentally during manual verification, not fixed this loop**: the dev-server terminal banner still prints a "B O L T . D I Y" ASCII-art welcome message (from `pre-start.cjs`, run before `remix vite:dev`), and the chat composer's placeholder text still reads "How can Bolt help you today?" — both genuine leftover legacy branding, exactly the class of thing Section 3 of the newest mandate ("bolt/StackBlitz naming cleanup — separate product identity from technical legacy from required attribution") calls out. Not fixed here to keep this slice scoped to project creation; flagged as a concrete, scoped candidate for the next loop rather than left for someone to rediscover from scratch.
+
+Validation: 273/273 tests (+9 new), typecheck clean, lint clean (one formatting autofix), Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (`BUILD SUCCESSFUL in 1m38s`, unchanged permissions).
+
+**Next highest-value step**: per the newest mandate's own P0 list and this loop's incidental finding — either (a) the bolt/StackBlitz naming cleanup (Section 3: separate product-facing identity from required upstream attribution from technical compatibility identifiers; the dev banner and composer placeholder are two concrete, already-located starting points), (b) deepen agent/tool execution (the newest mandate's Section 6 envisions a full agent/skill registry; this session's earlier loops confirmed the *file*-action tool loop works end-to-end and fixed the *shell/build/start*-action feedback gap, but no registry/permissions/entitlement layer exists yet), or (c) the Remote Runtime session bridge scoped out back in Loop 10 (agent-issued commands still don't route to a real remote shell). Physical-device validation of the now sixteen-loop-deep backlog remains the single largest blocked item if hardware ever becomes available.
+
+## Earlier product slices — deterministic acceptance test + Terminal dead-UI fix (2026-08-10, loops 14-15)
 
 Continuing the new master-loop mandate's P0/P1 priority order.
 

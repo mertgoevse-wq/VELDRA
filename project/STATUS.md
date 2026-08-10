@@ -2,8 +2,30 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `2f32629` — "fix(terminal): stop showing dead tab-bar controls in Remote Runtime fallback mode (Loop 15)"
+**Current commit:** `06037e6` — "feat(chat): add Guided Build project creation flow (Loop 16)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## New mandate: "VELDRA — LARGE-SCALE PRODUCT BUILD / PORTING MANDATE" (2026-08-10)
+
+A third, even larger mandate arrived, explicitly changing development strategy: build large coherent vertical slices instead of micro-fixes, validate after a meaningful block rather than after every tiny change, and prioritize project-creation UX / the full generate-edit-diff-preview loop / agent-tool execution / remote runtime as P0. Its own architectural rule (Section 54/58) matches this session's established practice exactly: one coherent core, extend existing systems (FilesStore/ActionRunner/Workbench/provider system), never build a second competing architecture.
+
+## Loop 16 (IMPLEMENTED, first large slice): Guided Build project creation flow
+
+VELDRA had **no dedicated project-creation experience** — users had to already know to type a description directly into the chat box. This is the single largest, most-repeatedly-flagged gap across this session's audits (SESSION-HANDOFF flagged it explicitly after Loop 15). Built a real, working "Guided Build" step rather than the much larger plan/task-graph/agent-orchestration system the full mandate eventually envisions — deliberately scoped to plug into the existing, already-verified chat pipeline with zero new execution machinery.
+
+- `app/lib/stores/projectBrief.ts`: optional structured fields (platform, visual style, integrations, offline requirement) + a pure `composeMessageWithProjectBrief()` that folds a filled-in brief into plain text prepended to the user's first message. Empty brief → message unchanged, so "Quick Start" (today's only flow) is completely unaffected unless a user opens the new panel.
+- `app/components/chat/ProjectGuidedBuild.tsx`: collapsed-by-default panel in the existing chat empty-state screen.
+- `BaseChat.tsx`: `handleSendMessage` composes the brief into the outgoing message only for a chat's first message, only when the brief has details, then resets it.
+
+Live on Android automatically (AndroidShell mounts the same `Chat.client.tsx`/`BaseChat.tsx` tree, confirmed in an earlier loop's provider-router audit) — no platform-specific code needed.
+
+**MANUAL VERIFIED** (not just BUILD VERIFIED): ran the actual dev server and drove it with a real headless browser (Playwright) — confirmed the panel expands, platform/style/integration fields update visibly, and there's zero horizontal overflow at a 390px Android-class viewport. Screenshots taken at desktop and 390px widths.
+
+**Validated**: 273/273 tests (+9 new), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged permissions). **NOT DEVICE VERIFIED** — standing blocker, unchanged.
+
+**Also observed during manual verification, not yet fixed**: the dev-server startup banner still prints "B O L T . D I Y" ASCII art, and the chat composer's placeholder text still reads "How can Bolt help you today?" — genuine leftover legacy branding (Section 3 of the newest mandate: bolt/StackBlitz naming cleanup) that hasn't been addressed this session. Real, scoped candidate for a future loop — cosmetic-only, not a functional bug, so not blocking.
+
+**Next highest-value step**: continue P0 per the newest mandate — the full generate→edit→diff→preview loop already works (verified via this session's Loop 14 acceptance test) and now has a real entry point; next candidates are (a) the bolt/StackBlitz naming cleanup surfaced above, (b) Agent/tool execution deepening, or (c) Remote Runtime's actual session bridge (the one real missing piece identified in Loop 10, now well-scoped).
 
 ## Loop 14-15: deterministic multi-turn acceptance test + Terminal dead-UI fix
 
