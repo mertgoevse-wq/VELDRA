@@ -2,10 +2,32 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `d55d8fd` — "fix(branding): the AI no longer calls itself Bolt (Loop 17)"
+**Current commit:** `ef0183c` — "feat(branding): apply new VELDRA logo, fix bolt.diy home-screen icon (Loop 18)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
-## Loop 17 (IMPLEMENTED): the AI no longer identifies itself as "Bolt"
+## Loop 18 (IMPLEMENTED): new VELDRA logo applied, bolt.diy home-screen icon bug fixed
+
+The product owner supplied 8 new VELDRA brand images (a refreshed "V + cursor + sparkle" logomark, two hero banners, a concept illustration, a pattern texture) as message attachments. Located them on disk at the harness's upload path (`/root/.claude/uploads/<session>/`) and organized them into `public/assets/brand/` rather than leaving them unintegrated.
+
+**Real, live bug found and fixed**: `public/apple-touch-icon.png` was the literal bolt.diy wordmark logo. iOS Safari auto-discovers this file by filename convention (no code reference needed) — every VELDRA user who added the app to their iPhone home screen got a bolt.diy icon. Installed Pillow (not previously available) to generate properly-sized icons from the new logomark: apple-touch-icon (180×180), favicon PNG fallbacks, 192/512 icons, and a 1200×630 OG-standard social-preview image.
+
+**Also found and fixed**: zero `og:image`/`twitter:image` meta tags existed anywhere — sharing a VELDRA link showed no preview. Added proper Open Graph + Twitter Card tags plus explicit icon `<link>` tags. Verified via the real dev server (not just a successful build) that every new asset URL resolves with 200.
+
+Removed 8 genuinely orphaned bolt.diy-branded dead files (confirmed via repository-wide grep, not just `app/`) and updated every doc that named the old `.svg` social preview as canonical to reference the new `.png`.
+
+**Deliberately not done**: `veldra-icon.svg`/`veldra-logo.svg`/`veldra-favicon.svg` and the Android adaptive launcher icon's vector foreground still use the earlier lightning-bolt mark. Redrawing the new logomark as a clean vector needs tooling this session doesn't have (no vectorization/tracing capability) — rasterizing the JPG source into these vector-native slots would be a real quality regression, not a fix. Documented as a scoped follow-up in `BRANDING.md`.
+
+**Validated**: 273/273 tests (unchanged), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions). MANUAL VERIFIED via dev server.
+
+**Next highest-value step**: per the newest (largest) mandate's own priority order — foreign-terminology sweep continuation (e.g. "stacks" wording, checked not yet done this loop), responsive/overflow audit, or the agent/tool/skill registry. Given the sheer scope of that mandate (registry architecture, provider catalog overhaul, connectors, premium feature flags, QR transfer protocol, Bluetooth/WebRTC transport, FFmpeg, GitHub-first workflow), most of it remains explicitly NOT started — see SESSION-HANDOFF for the full honest scope accounting.
+
+### Reconciliation: direct GitHub upload landed on `origin/main` on top of Loop 18
+
+Between the Loop 18 push (`ef0183c`) and this session resuming, the product owner pushed a direct "Add files via upload" commit (`2e20b52`) via the GitHub web UI. Its parent was `5e1f194` (the commit right before Loop 18), not `ef0183c` — i.e. it was built from a pre-Loop-18 local snapshot. Net effect relative to `ef0183c`: the 8 bolt.diy dead files Loop 18 removed came back, the 5 Loop-18-generated icon PNGs were gone, `apple-touch-icon.png` reverted to the bolt.diy wordmark, and the OG/icon `<link>` tags in `root.tsx`/`_index.tsx` were reverted — but it also added 7 of the 8 brand source images back under clearly better, intent-revealing names (e.g. `veldra-logomark-v3.jpg` → `veldra-favicon.jpg`, `veldra-hero-banner.jpg` → `veldra-social-preview.jpg`), dropping the 8th (`veldra-logomark-v1.jpg`, superseded by v2/v3) entirely.
+
+Resolved with a real `git merge` (no force-push, no history rewrite): the 3-way merge (base `5e1f194`) correctly kept every Loop 18 fix intact — root/base only diverged from `origin/main` on new paths the base never had, so nothing conflicted. The 7 renamed source images landed as new files at the repo root (an artifact of the GitHub upload not preserving the `public/assets/brand/` subpath); moved them into `public/assets/brand/` under their new names with `git mv`, removed the same 8 old-named originals a second time, and updated `BRANDING.md`'s asset list/generation note to the new filenames. No content was lost from either side.
+
+## Earlier: Loop 17 (IMPLEMENTED): the AI no longer identifies itself as "Bolt"
 
 Found the highest-impact naming bug this session: all four system prompt files (`new-prompt.ts`, `prompts.ts`, `discuss-prompt.ts`, `optimized.ts`) told the model "You are Bolt... created by StackBlitz" — meaning VELDRA's own assistant introduced itself as a different, unbranded product on every single chat turn. Classified every "Bolt" occurrence per the mandate's Section 3 framework before touching anything: renamed genuine product-identity strings (system-prompt self-identification and all in-prompt self-references, chat composer placeholder, alert/button text, terminal tab label, dev-server banner, several user-visible messages); made the `discuss-prompt.ts` support-resources block's wording honest (it redirects users to real, working `support.bolt.new` docs — kept the real URLs since they remain accurate general guidance and no VELDRA-specific support domain exists to fabricate, but stopped calling them "official Bolt support resources" as if VELDRA owned them); removed a suggestion to "use Bolt desktop app" entirely rather than rename it, since no verified shipping VELDRA desktop build exists (`vite-electron.config.ts` is unverified scaffolding); left technical/internal identifiers (`boltAction`/`BoltShell`/`bolt-elements`/CSS-prefix/storage-key names) and all legal attribution (LICENSE, package.json contributors) untouched.
 

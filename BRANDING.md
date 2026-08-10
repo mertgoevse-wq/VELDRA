@@ -17,13 +17,13 @@ VELDRA uses original product assets that are separate from upstream branding:
 - `public/veldra-icon.svg` — square app icon source
 - `public/veldra-favicon.svg` — browser favicon
 - `public/veldra-social-preview.png` — repository/social preview source (raster; see "New brand assets" below)
-- `public/assets/brand/` — newly supplied raw source images (logomark variants, hero banners, concept illustration, pattern texture) the generated web/social assets above were derived from
+- `public/assets/brand/` — raw source images the generated web/social assets above were derived from: `veldra-favicon.jpg` (favicon/touch-icon source), `veldra-logo-master.jpg` (master logomark), `veldra-social-preview.jpg` (social card source), `veldra-app-icon.jpg` (app icon mockup reference), `veldra-github-banner.jpg`, `veldra-hero-art.jpg`, `veldra-brand-background.jpg` (pattern texture)
 
 The legacy `public/logo-dark*.png`/`public/logo-light*.png` and `public/bolt-diy-android-*.svg` files were removed (2026-08-10): confirmed via repository-wide search that no code, config, or build script referenced them by name, and they carried old bolt.diy branding.
 
 ## New brand assets (2026-08-10)
 
-A refreshed VELDRA mark (a stylized "V" combined with a cursor/click shape and a sparkle, in cream-on-navy) was supplied as raster source images and used to regenerate the web-facing icons: `apple-touch-icon.png`, `favicon-16x16.png`/`favicon-32x32.png`, `veldra-icon-192.png`/`veldra-icon-512.png`, and `veldra-social-preview.png` (all generated from `public/assets/brand/veldra-logomark-v3.jpg` / `veldra-hero-banner.jpg` via Pillow).
+A refreshed VELDRA mark (a stylized "V" combined with a cursor/click shape and a sparkle, in cream-on-navy) was supplied as raster source images and used to regenerate the web-facing icons: `apple-touch-icon.png`, `favicon-16x16.png`/`favicon-32x32.png`, `veldra-icon-192.png`/`veldra-icon-512.png`, and `veldra-social-preview.png` (all generated from `public/assets/brand/veldra-favicon.jpg` / `veldra-social-preview.jpg` via Pillow). The source images were renamed to their current, more descriptive names on 2026-08-10 after an initial pass used placeholder names (`veldra-logomark-v3.jpg`, `veldra-hero-banner.jpg`); the generated PNGs themselves are unchanged, only the source filenames referenced here were updated.
 
 **Not yet updated to match**: `public/veldra-icon.svg`, `public/veldra-logo.svg`, `public/veldra-favicon.svg`, and the Android adaptive launcher icon (`android/app/src/main/res/drawable/veldra_launcher_foreground.xml`) still use the earlier abstract lightning-bolt vector mark, not the new logomark. Redrawing the new mark as a clean vector (rather than tracing/rasterizing the JPG source, which would be a quality regression for these specific vector-native assets) is a scoped follow-up, not done in this pass.
 
