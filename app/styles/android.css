@@ -95,6 +95,14 @@
  */
 .android-shell .fixed.top-\[calc\(var\(--header-height\)\+1\.2rem\)\] {
   bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+
+  /*
+   * mobile.scss's own mobile override still reserves --header-height (48px) at the top for
+   * the desktop app-header bar that this rule's `+1.2rem` offset was originally meant to
+   * clear. AndroidShell renders no header above the Files/Preview Workbench panel at all, so
+   * that reservation is just empty space eating into an already narrow viewport -- remove it.
+   */
+  top: 0 !important;
 }
 
 /* =========================================================

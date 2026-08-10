@@ -65,6 +65,12 @@ export const EditorPanel = memo(
     const theme = useStore(themeStore);
     const showTerminal = useStore(workbenchStore.showTerminal);
 
+    // The 12px desktop default is uncomfortably small to read/edit on a phone screen.
+    const resolvedEditorSettings = useMemo<EditorSettings>(
+      () => (isMobileDevice() ? { ...editorSettings, fontSize: '15px', gutterFontSize: '13px' } : editorSettings),
+      [],
+    );
+
     const activeFileSegments = useMemo(() => {
       if (!editorDocument) {
         return undefined;
@@ -164,7 +170,7 @@ export const EditorPanel = memo(
           <CodeMirrorEditor
             theme={theme}
             editable={!isStreaming && editorDocument !== undefined}
-            settings={editorSettings}
+            settings={resolvedEditorSettings}
             doc={editorDocument}
             autoFocusOnDocumentChange={!isMobile()}
             onScroll={onEditorScroll}
@@ -208,7 +214,13 @@ export const EditorPanel = memo(
           {/* Terminal as bottom sheet (only if enabled) */}
           {showTerminal && (
             <MobileTerminalDrawer>
-              <TerminalTabs />
+              {/* TerminalTabs' root element is itself a react-resizable-panels Panel (see
+                  the desktop layout below, which uses it the same way), which throws if it
+                  isn't rendered inside a PanelGroup -- the bottom sheet supplies the actual
+                  height, so this PanelGroup only exists to satisfy that context. */}
+              <PanelGroup direction="vertical" className="h-full">
+                <TerminalTabs />
+              </PanelGroup>
             </MobileTerminalDrawer>
           )}
         </div>
