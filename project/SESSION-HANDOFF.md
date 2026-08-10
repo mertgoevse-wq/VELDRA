@@ -2,12 +2,28 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `06961f8` — "fix(runtime): feed capability-gated shell/build/start blocks back to the model (Loop 9)"
+**Current commit:** `525248d` — "fix(runtime): stop claiming Remote Runtime supports command execution (Loop 10)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `06961f8` pushed successfully to `origin/main`
+**Last successful push:** `525248d` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slice — agent tool-calling: model now learns when shell/build/start is blocked (2026-08-10, ninth loop, "Loop 9")
+## Latest product slice — Remote Runtime audit + silent-failure fix (2026-08-10, tenth loop, "Loop 10")
+
+Per the newest mandate's Loop 10 ("Remote Runtime"). Delegated a static-analysis audit (Explore subagent) to answer: is Remote Runtime real, usable infrastructure, or scaffolding? And specifically: does an agent-issued `shell`/`build`/`start` action ever actually reach it?
+
+**What's real**: `remote-runtime/src/server.ts` (638 lines) is a genuine Express+`ws` server with `/health`, `/workspace`, file read/write, allowlisted `/commands` with WS event broadcast, and `git status/init/commit/push` — real dependencies, real `start`/`dev`/`build` scripts in `remote-runtime/package.json`. `app/lib/remote-runtime/RemoteRuntimeClient.ts` is a complete, matching client (health, workspace, file sync, run/status/stop command, preview URL, WebSocket events, safe git ops). File sync and the manual `RemoteCommandPanel` (`TerminalTabs.tsx`'s user-driven safe-command-profile UI) both work end-to-end against a correctly configured server. `RuntimeModeTab.tsx`'s own description text for Remote Runtime already says, correctly: *"Command execution stays disabled."*
+
+**What was broken**: `runtime-mode.ts`'s `getCapabilitiesForMode()` set `commandExecution: true` for `'remote'` mode unconditionally — its own comment admitted this was always a placeholder ("mark all as available optimistically... (when implemented)"), directly contradicting the UI's own honest copy right next to it. Grepped this flag's only production consumer: `action-runner.ts:198`, the exact capability gate Loop 9 just fixed to alert the model gracefully when execution is unavailable. Because `commandExecution` lied and said `true` for remote mode, that gate let agent-issued `shell`/`build`/`start` actions straight through — but `#runShellAction`/`#runStartAction` (`action-runner.ts:325-384`) unconditionally call `this.#shellTerminal()`, typed as the WebContainer-only `BoltShell` terminal, with **zero** branch anywhere in the file for `RemoteRuntimeClient` (grep-confirmed: it's imported by `TerminalTabs.tsx`, `Preview.tsx`, `AndroidSettingsPanel.tsx`, `GitHubSyncPanel.tsx`, `RemoteWorkspaceSync.ts` — never by `action-runner.ts`). On Android with no real `BoltShell`, this throws a plain (non-`ActionCommandError`) exception that the outer `catch` block at `action-runner.ts:286-307` swallows silently — logs it, sets the action `'failed'`, and `return`s without calling `onAlert`. Net effect: **worse than the bug Loop 9 just fixed** for `android-fallback` — no toast, no `ChatAlert`, nothing the model or user can act on, just a console log.
+
+Fix: `commandExecution` now correctly reports `false` for `'remote'` mode, matching the UI's own already-honest copy and routing agent-issued remote-mode commands through the same graceful `onAlert` path Loop 9 built. `fileSystem`/`terminal`/`packageInstall`/`devServer`/`preview` capabilities were deliberately left unchanged — this audit specifically confirmed only `commandExecution` as broken (its only consumer, `ActionRunner`, is the only place this flag's truth value actually matters); changing the others without the same level of audited confidence would have been unjustified scope creep.
+
+**Not fixed, the real remaining gap (unchanged, now precisely scoped)**: Remote Runtime has zero integration with the agent tool-calling loop. A real fix would mean `ActionRunner` routing `shell`/`build`/`start` through `RemoteRuntimeClient.runCommand()`/`connectEvents()` when `runtime.mode === 'remote'` — correlating command IDs, streaming output back into the terminal UI, handling the async command lifecycle. That's a substantial, distinct feature (a real "session bridge," matching `project/STATUS.md`'s pre-existing framing), not a same-slice fix.
+
+Validation: 262/262 tests (+3 new — `app/lib/stores/runtime-mode.spec.ts` didn't exist before this loop; added tests asserting `commandExecution` is `false` for both `remote` and `android-fallback`, and that `fileSystem`/`preview` remain `true` for `remote` since those paths are real and unaffected), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: the Remote Runtime → `ActionRunner` session bridge is now a well-understood, scoped candidate for a dedicated future loop — genuinely new integration work, not a bug fix, sized similarly to earlier loops' bigger builds (native file import/export, Android chat bridge). Otherwise continue with the newest mandate's Loop 11 (local model architecture) per its own sequence, or device-validate the now ten-loop-deep Android-UI/runtime backlog if a physical device becomes available.
+
+## Earlier product slice — agent tool-calling: model now learns when shell/build/start is blocked (2026-08-10, ninth loop, "Loop 9")
 
 Per the newest mandate's Loop 9 ("Agent Tool Loop"). File actions were already confirmed working end-to-end via a real integration test (`parser-to-action-runner.spec.ts`, sixth loop); this loop audited the rest of the tool-calling surface — `shell`/`build`/`start` actions — via an Explore subagent, static analysis only.
 

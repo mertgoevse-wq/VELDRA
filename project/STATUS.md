@@ -2,8 +2,22 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `06961f8` — "fix(runtime): feed capability-gated shell/build/start blocks back to the model (Loop 9)"
+**Current commit:** `525248d` — "fix(runtime): stop claiming Remote Runtime supports command execution (Loop 10)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Remote Runtime audit: real infra, but no agent integration — fixed a silent-failure bug (2026-08-10, tenth loop)
+
+Audited how much of Remote Runtime (`remote-runtime/`, a separate Express+WebSocket server for command execution VELDRA can't do locally on Android) is real vs. aspirational. Finding: the server and its client (`RemoteRuntimeClient.ts`) are both genuinely complete — file sync, the manual `RemoteCommandPanel` (safe predefined command profiles), git ops, and preview status all work end-to-end against a configured server. `RuntimeModeTab.tsx`'s own UI copy already says correctly: "Command execution stays disabled."
+
+But `runtime-mode.ts`'s capability table contradicted its own UI: `commandExecution: true` for `'remote'` mode unconditionally, with a comment self-admitting it was placeholder ("mark all as available optimistically... when implemented"). This flag has exactly one production consumer — `ActionRunner`'s capability gate, which exists to catch agent-issued `shell`/`build`/`start` actions before they reach code that can't run them (Loop 9 just made that gate feed the model an alert instead of silently failing). Since `ActionRunner` has zero path to `RemoteRuntimeClient` — `#runShellAction`/`#runStartAction` unconditionally call the WebContainer-only `BoltShell` terminal — an agent-issued command in remote mode was slipping past the gate entirely (which trusted the false `true`) into a terminal that doesn't exist on Android, failing with a plain, non-`ActionCommandError` exception the outer catch swallows silently (no `onAlert`, no toast — worse than the bug Loop 9 just fixed for `android-fallback`).
+
+Fixed: `commandExecution` now correctly reports `false` for `'remote'` mode. `fileSystem`/`terminal`/`packageInstall`/`devServer`/`preview` capabilities were left unchanged — only `commandExecution` was confirmed broken by this audit, kept the fix precisely scoped.
+
+**Not fixed (the real, larger remaining gap)**: Remote Runtime still has zero integration with the agent tool-calling loop. Building that bridge (`ActionRunner` routing `shell`/`build`/`start` through `RemoteRuntimeClient` when in remote mode) is a substantial, separate feature — matches `project/STATUS.md`'s pre-existing "Remote Runtime has no registered sandbox adapter" framing, now with a concrete, audited understanding of exactly what's missing.
+
+**Validated**: 262/262 tests (+3 new — no spec file existed for `runtime-mode.ts` before this loop), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: the Remote Runtime → ActionRunner session bridge is now a well-understood, scoped feature for a dedicated future loop (not a bug fix — genuinely new integration work). Otherwise continue with Loop 11 (local model architecture) per the newest mandate's sequence, or device-validate the accumulated backlog.
 
 ## Agent tool-calling gap fixed: model now learns when shell/build/start is blocked (2026-08-10, ninth loop)
 
