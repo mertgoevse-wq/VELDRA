@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runImageJob } from './jobs';
+import { ImageGenerationUnavailableError } from './types';
 import type { ImageGenerationOptions, ImageProvider } from './types';
 
 const options: ImageGenerationOptions = { modelId: 'test-model', prompt: 'A test image' };
@@ -41,6 +42,31 @@ describe('runImageJob', () => {
     expect(execution.job.status).toBe('failed');
     expect(execution.job.metadata.error).toBe('Provider unavailable');
     expect(JSON.stringify(execution.job)).not.toContain('apiKey');
+  });
+
+  it('transitions the job to failed (not stuck in running) when the provider is unavailable, then rethrows', async () => {
+    let thrown: ImageGenerationUnavailableError | undefined;
+
+    try {
+      await runImageJob(
+        provider(async () => {
+          throw new ImageGenerationUnavailableError('No image generation provider is configured');
+        }),
+        options,
+        { id: 'unavailable-job' },
+      );
+
+      expect.unreachable('runImageJob should have rejected');
+    } catch (error) {
+      if (!(error instanceof ImageGenerationUnavailableError)) {
+        throw error;
+      }
+
+      thrown = error;
+    }
+
+    expect(thrown?.job?.status).toBe('failed');
+    expect(thrown?.job?.metadata.error).toBe('No image generation provider is configured');
   });
 
   it('cancels before invoking a provider when the signal is already aborted', async () => {

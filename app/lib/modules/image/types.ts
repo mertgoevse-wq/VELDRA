@@ -127,6 +127,13 @@ export type ImageJobEvent =
 export class ImageGenerationUnavailableError extends Error {
   readonly code = 'image_generation_not_configured';
 
+  /**
+   * Set by runImageJob() before rethrowing, so a caller that persists/inspects jobs (unlike
+   * api.image.ts's current single-request flow, which only needs the error itself) can still see
+   * the job reached its terminal 'failed' state rather than being left stuck in 'running'.
+   */
+  job?: ImageJob;
+
   constructor(message = 'No image generation provider is configured') {
     super(message);
     this.name = 'ImageGenerationUnavailableError';

@@ -30,6 +30,15 @@ export async function runImageJob(
     return { job: transitionImageJob(job, { type: 'complete', result }), result };
   } catch (error) {
     if (error instanceof ImageGenerationUnavailableError) {
+      /*
+       * The job was already transitioned to 'running' above -- without this it would stay stuck
+       * there forever (job lifecycle is documented as always reaching a terminal state: queued/
+       * running/completed/failed/cancelled). The caller (api.image.ts) still gets the original
+       * error to distinguish "provider unavailable" (503) from "job ran and failed" (502); this
+       * only fixes the job object's own internal consistency, which matters to any future caller
+       * that inspects/persists it rather than discarding it on catch, as today's single route does.
+       */
+      error.job = transitionImageJob(job, { type: 'fail', error: error.message });
       throw error;
     }
 
