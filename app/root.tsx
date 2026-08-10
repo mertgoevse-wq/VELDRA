@@ -3,6 +3,7 @@ import type { LinksFunction } from '@remix-run/cloudflare';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
 import tailwindReset from '@unocss/reset/tailwind-compat.css?url';
 import { themeStore } from './lib/stores/theme';
+import { skinStore } from './lib/stores/skin';
 import { stripIndents } from './utils/stripIndent';
 import { createHead } from 'remix-island';
 import { useEffect } from 'react';
@@ -70,6 +71,9 @@ const inlineThemeCode = stripIndents`
     }
 
     document.querySelector('html')?.setAttribute('data-theme', theme);
+
+    const skin = localStorage.getItem('bolt_skin') || 'veldra';
+    document.querySelector('html')?.setAttribute('data-skin', skin);
   }
 `;
 
@@ -108,10 +112,15 @@ function getDndBackend() {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const theme = useStore(themeStore);
+  const skin = useStore(skinStore);
 
   useEffect(() => {
     document.querySelector('html')?.setAttribute('data-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.querySelector('html')?.setAttribute('data-skin', skin);
+  }, [skin]);
 
   return (
     <>

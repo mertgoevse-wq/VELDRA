@@ -1,0 +1,33 @@
+import { atom } from 'nanostores';
+
+/*
+ * A skin is a named palette layered on top of the light/dark mode from theme.ts via a
+ * separate `data-skin` attribute, so switching skins never touches the light/dark toggle.
+ * 'veldra' has no CSS override (see variables.scss) and is a deliberate no-op — it's the
+ * palette already shipping today, kept as the explicit default rather than an implicit one.
+ */
+export type Skin = 'veldra' | 'obsidian';
+
+export const kSkin = 'bolt_skin';
+
+export const DEFAULT_SKIN: Skin = 'veldra';
+
+export const skinStore = atom<Skin>(initStore());
+
+function initStore(): Skin {
+  if (!import.meta.env.SSR) {
+    const persisted = localStorage.getItem(kSkin) as Skin | null;
+
+    if (persisted === 'veldra' || persisted === 'obsidian') {
+      return persisted;
+    }
+  }
+
+  return DEFAULT_SKIN;
+}
+
+export function setSkin(skin: Skin) {
+  skinStore.set(skin);
+  localStorage.setItem(kSkin, skin);
+  document.querySelector('html')?.setAttribute('data-skin', skin);
+}

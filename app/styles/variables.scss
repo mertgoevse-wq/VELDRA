@@ -215,6 +215,28 @@
 }
 
 /*
+ * Skins layer on top of a theme (light/dark) via a separate `data-skin` attribute (see
+ * app/lib/stores/skin.ts) instead of replacing it, so a skin never has to redefine text/accent
+ * colors it isn't actually changing. 'obsidian' is the first of several planned named skins
+ * (see BRANDING.md) — proof that the token architecture supports more than one skin; the rest
+ * are a scoped follow-up, not fabricated here.
+ */
+:root[data-theme='dark'][data-skin='obsidian'] {
+  --bolt-elements-bg-depth-1: #08090d;
+  --bolt-elements-bg-depth-2: #0d0f16;
+  --bolt-elements-bg-depth-3: #161925;
+  --bolt-elements-bg-depth-4: rgba(255, 255, 255, 0.04);
+
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.08);
+
+  --bolt-elements-artifacts-background: #0d0f16;
+  --bolt-elements-actions-background: #0d0f16;
+  --bolt-elements-messages-background: #12141d;
+  --bolt-elements-prompt-background: rgba(8, 9, 13, 0.85);
+  --bolt-elements-terminals-background: #08090d;
+}
+
+/*
  * Element Tokens
  *
  * Hierarchy: Element Token -> (Element Token | Color Tokens) -> Primitives
