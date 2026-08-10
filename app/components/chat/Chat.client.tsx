@@ -30,6 +30,7 @@ import { useMCPStore } from '~/lib/stores/mcp';
 import type { LlmErrorAlertType } from '~/types/actions';
 import { isCapacitor } from '~/lib/adapters/platform';
 import { getAndroidApiBackendConfig } from '~/lib/android-api/backend-config';
+import { androidActiveChatId } from '~/lib/stores/androidChatSession';
 
 const logger = createScopedLogger('Chat');
 
@@ -38,14 +39,26 @@ export function Chat() {
 
   const { ready, initialMessages, storeMessageHistory, importChat, exportChat } = useChatHistory();
   const title = useStore(description);
+  const androidChatId = useStore(androidActiveChatId);
   useEffect(() => {
     workbenchStore.setReloadedMessages(initialMessages.map((m) => m.id));
   }, [initialMessages]);
+
+  /*
+   * On Android there's no URL/route change (and thus no natural remount) when the user switches
+   * chats via history -- see app/lib/stores/androidChatSession.ts. Keying ChatImpl on it forces
+   * it (and useChat()'s internal message state) to reset to the newly loaded initialMessages
+   * exactly when the user explicitly switches chats, without remounting mid-stream when a fresh
+   * chat's id is silently assigned after its first message (androidActiveChatId is deliberately
+   * not updated by that flow).
+   */
+  const chatImplKey = isCapacitor() ? (androidChatId ?? 'new-chat') : undefined;
 
   return (
     <>
       {ready && (
         <ChatImpl
+          key={chatImplKey}
           description={title}
           initialMessages={initialMessages}
           exportChat={exportChat}

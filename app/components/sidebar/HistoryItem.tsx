@@ -1,10 +1,13 @@
 import { useParams } from '@remix-run/react';
+import { useStore } from '@nanostores/react';
 import { classNames } from '~/utils/classNames';
 import { type ChatHistoryItem } from '~/lib/persistence';
 import WithTooltip from '~/components/ui/Tooltip';
 import { useEditChatDescription } from '~/lib/hooks';
 import { forwardRef, type ForwardedRef, useCallback } from 'react';
 import { Checkbox } from '~/components/ui/Checkbox';
+import { isCapacitor } from '~/lib/adapters/platform';
+import { androidActiveChatId } from '~/lib/stores/androidChatSession';
 
 interface HistoryItemProps {
   item: ChatHistoryItem;
@@ -26,7 +29,18 @@ export function HistoryItem({
   onToggleSelection,
 }: HistoryItemProps) {
   const { id: urlId } = useParams();
-  const isActiveChat = urlId === item.urlId;
+  const androidChatId = useStore(androidActiveChatId);
+  const isActiveChat = isCapacitor() ? androidChatId === item.id : urlId === item.urlId;
+
+  const handleOpenChat = useCallback(
+    (event: React.MouseEvent) => {
+      if (isCapacitor()) {
+        event.preventDefault();
+        androidActiveChatId.set(item.id);
+      }
+    },
+    [item.id],
+  );
 
   const { editing, handleChange, handleBlur, handleSubmit, handleKeyDown, currentDescription, toggleEditMode } =
     useEditChatDescription({
@@ -106,7 +120,7 @@ export function HistoryItem({
         <a
           href={`/chat/${item.urlId}`}
           className="flex w-full relative truncate block"
-          onClick={selectionMode ? handleItemClick : undefined}
+          onClick={selectionMode ? handleItemClick : handleOpenChat}
         >
           <WithTooltip tooltip={currentDescription}>
             <span className="truncate pr-24">{currentDescription}</span>

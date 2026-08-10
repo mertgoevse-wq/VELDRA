@@ -14,6 +14,8 @@ import { useSearchFilter } from '~/lib/hooks/useSearchFilter';
 import { classNames } from '~/utils/classNames';
 import { useStore } from '@nanostores/react';
 import { profileStore } from '~/lib/stores/profile';
+import { isCapacitor } from '~/lib/adapters/platform';
+import { startNewAndroidChat } from '~/lib/stores/androidChatSession';
 
 const menuVariants = {
   closed: {
@@ -366,6 +368,13 @@ export const Menu = () => {
               <a
                 href="/"
                 className="flex-1 flex gap-2 items-center bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-500/20 rounded-lg px-4 py-2 transition-colors"
+                onClick={(event) => {
+                  if (isCapacitor()) {
+                    event.preventDefault();
+                    startNewAndroidChat();
+                    setOpen(false);
+                  }
+                }}
               >
                 <span className="inline-block i-ph:plus-circle h-4 w-4" />
                 <span className="text-sm font-medium">Start new chat</span>

@@ -1,10 +1,13 @@
 import { useLoaderData, useNavigate, useSearchParams } from '@remix-run/react';
 import { useState, useEffect, useCallback } from 'react';
+import { useStore } from '@nanostores/react';
 import { atom } from 'nanostores';
 import { generateId, type JSONValue, type Message } from 'ai';
 import { toast } from 'react-toastify';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { logStore } from '~/lib/stores/logs'; // Import logStore
+import { isCapacitor } from '~/lib/adapters/platform';
+import { androidActiveChatId } from '~/lib/stores/androidChatSession';
 import {
   getMessages,
   getNextId,
@@ -41,7 +44,9 @@ export const description = atom<string | undefined>(undefined);
 export const chatMetadata = atom<IChatMetadata | undefined>(undefined);
 export function useChatHistory() {
   const navigate = useNavigate();
-  const { id: mixedId } = useLoaderData<{ id?: string }>();
+  const { id: mixedIdFromLoader } = useLoaderData<{ id?: string }>();
+  const androidChatId = useStore(androidActiveChatId);
+  const mixedId = isCapacitor() ? androidChatId : mixedIdFromLoader;
   const [searchParams] = useSearchParams();
 
   const [archivedMessages, setArchivedMessages] = useState<Message[]>([]);
@@ -179,6 +184,8 @@ ${value.content}
             description.set(storedMessages.description);
             chatId.set(storedMessages.id);
             chatMetadata.set(storedMessages.metadata);
+          } else if (isCapacitor()) {
+            androidActiveChatId.set(undefined);
           } else {
             navigate('/', { replace: true });
           }
@@ -349,7 +356,13 @@ ${value.content}
 
       try {
         const newId = await duplicateChat(db, mixedId || listItemId);
-        navigate(`/chat/${newId}`);
+
+        if (isCapacitor()) {
+          androidActiveChatId.set(newId);
+        } else {
+          navigate(`/chat/${newId}`);
+        }
+
         toast.success('Chat duplicated successfully');
       } catch (error) {
         toast.error('Failed to duplicate chat');
@@ -363,7 +376,13 @@ ${value.content}
 
       try {
         const newId = await createChatFromMessages(db, description, messages, metadata);
-        window.location.href = `/chat/${newId}`;
+
+        if (isCapacitor()) {
+          androidActiveChatId.set(newId);
+        } else {
+          window.location.href = `/chat/${newId}`;
+        }
+
         toast.success('Chat imported successfully');
       } catch (error) {
         if (error instanceof Error) {
