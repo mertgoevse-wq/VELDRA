@@ -5,6 +5,7 @@ import { useStore } from '@nanostores/react';
 import { chatId } from '~/lib/persistence/useChatHistory';
 import { fetchSupabaseStats } from '~/lib/stores/supabase';
 import { Dialog, DialogRoot, DialogClose, DialogTitle, DialogButton } from '~/components/ui/Dialog';
+import { BrandIcon } from '~/components/ui/BrandIcon';
 
 export function SupabaseConnection() {
   const {
@@ -84,12 +85,12 @@ export function SupabaseConnection() {
           onClick={() => setIsDialogOpen(!isDialogOpen)}
           className="hover:bg-bolt-elements-item-backgroundActive !text-white flex items-center gap-2"
         >
-          <img
+          <BrandIcon
+            slug="supabase"
+            alt="Supabase"
             className="w-4 h-4"
-            height="20"
-            width="20"
-            crossOrigin="anonymous"
-            src="https://cdn.simpleicons.org/supabase"
+            fallbackIconClass="i-ph:database"
+            fallbackColorClass="!text-[#3ECF8E]"
           />
           {isConnected && supabaseConn.project && (
             <span className="ml-1 text-xs max-w-[100px] truncate">{supabaseConn.project.name}</span>
@@ -103,13 +104,7 @@ export function SupabaseConnection() {
             {!isConnected ? (
               <div className="space-y-4">
                 <DialogTitle>
-                  <img
-                    className="w-5 h-5"
-                    height="24"
-                    width="24"
-                    crossOrigin="anonymous"
-                    src="https://cdn.simpleicons.org/supabase"
-                  />
+                  <BrandIcon slug="supabase" alt="Supabase" className="w-5 h-5" fallbackIconClass="i-ph:database" />
                   Connect to Supabase
                 </DialogTitle>
 
@@ -175,13 +170,7 @@ export function SupabaseConnection() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-2">
                   <DialogTitle>
-                    <img
-                      className="w-5 h-5"
-                      height="24"
-                      width="24"
-                      crossOrigin="anonymous"
-                      src="https://cdn.simpleicons.org/supabase"
-                    />
+                    <BrandIcon slug="supabase" alt="Supabase" className="w-5 h-5" fallbackIconClass="i-ph:database" />
                     Supabase Connection
                   </DialogTitle>
                 </div>
