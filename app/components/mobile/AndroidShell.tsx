@@ -20,6 +20,7 @@ import { useStore } from '@nanostores/react';
 import { DndProvider } from 'react-dnd';
 import { TouchBackend } from 'react-dnd-touch-backend';
 import { cssTransition, ToastContainer } from 'react-toastify';
+import { App as CapacitorApp } from '@capacitor/app';
 import { themeStore } from '~/lib/stores/theme';
 import { runtimeModeStore } from '~/lib/stores/runtime-mode';
 import { workbenchStore } from '~/lib/stores/workbench';
@@ -156,6 +157,56 @@ export default function AndroidShell() {
     } else {
       workbenchStore.setShowWorkbench(false);
     }
+  }, [activeTab]);
+
+  /*
+   * Android hardware back button: once a JS listener is registered, Capacitor stops applying
+   * its own default behavior (WebView back / minimize) entirely -- every case must be handled
+   * explicitly here, or back does nothing. Handles the two levels of navigation state this
+   * shell itself owns: the Files/Preview Workbench overlay, and the bottom-nav tab. Re-registers
+   * on every activeTab change instead of using a ref so the listener always closes over the
+   * current tab without needing extra indirection.
+   *
+   * NOT handled here (known, deferred gap -- see project/SESSION-HANDOFF.md): drawers/dialogs
+   * owned by deeper components (MobileFileTreeDrawer, MobileTerminalDrawer, the Settings
+   * ControlPanel's own sub-panels, delete-confirmation dialogs) have local state this shell
+   * can't see, so back skips past them straight to the tab/overlay level while they're open.
+   * A proper fix needs a shared "back handler stack" components can register into -- a bigger
+   * change than this slice.
+   */
+  useEffect(() => {
+    let handle: { remove: () => void } | undefined;
+    let cancelled = false;
+
+    CapacitorApp.addListener('backButton', () => {
+      if (workbenchStore.showWorkbench.get()) {
+        setActiveTab('chat');
+        return;
+      }
+
+      if (activeTab !== 'chat') {
+        setActiveTab('chat');
+        return;
+      }
+
+      CapacitorApp.exitApp();
+    })
+      .then((registered) => {
+        if (cancelled) {
+          registered.remove();
+          return;
+        }
+
+        handle = registered;
+      })
+      .catch((error) => {
+        console.warn('[AndroidShell] Failed to register back button handler', error);
+      });
+
+    return () => {
+      cancelled = true;
+      handle?.remove();
+    };
   }, [activeTab]);
 
   const isStreaming = useStore(streamingState);
