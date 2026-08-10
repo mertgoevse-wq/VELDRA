@@ -28,6 +28,8 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import type { TextUIPart, FileUIPart, Attachment } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
 import type { LlmErrorAlertType } from '~/types/actions';
+import { isCapacitor } from '~/lib/adapters/platform';
+import { getAndroidApiBackendConfig } from '~/lib/android-api/backend-config';
 
 const logger = createScopedLogger('Chat');
 
@@ -117,6 +119,16 @@ export const ChatImpl = memo(
     const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
     const mcpSettings = useMCPStore((state) => state.settings);
 
+    /*
+     * Remix API routes don't exist inside the Android WebView (no server process to run them
+     * against) -- docs/ANDROID_LLM_API_BRIDGE.md. On Android, chat is instead sent to the
+     * user-configured Android API Backend's Bearer-token-authenticated bridge route, which
+     * delegates to the exact same chatAction() as /api/chat (see api.android.chat.ts). On
+     * desktop/web this stays null and behavior is unchanged.
+     */
+    const androidBackend = isCapacitor() ? getAndroidApiBackendConfig() : null;
+    const androidChatNotConfigured = isCapacitor() && !androidBackend;
+
     const {
       messages,
       isLoading,
@@ -132,7 +144,8 @@ export const ChatImpl = memo(
       setData,
       addToolResult,
     } = useChat({
-      api: '/api/chat',
+      api: androidBackend ? `${androidBackend.url}/api/android/chat` : '/api/chat',
+      headers: androidBackend?.token ? { Authorization: `Bearer ${androidBackend.token}` } : undefined,
       body: {
         apiKeys,
         files,
@@ -395,6 +408,11 @@ export const ChatImpl = memo(
 
       if (isLoading) {
         abort();
+        return;
+      }
+
+      if (androidChatNotConfigured) {
+        toast.error('Set an Android API Backend URL in Settings before sending a message.');
         return;
       }
 

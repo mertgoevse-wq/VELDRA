@@ -28,6 +28,7 @@ import { getAndroidFallbackPersistenceStatus } from '~/lib/persistence/androidFa
 import { workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { AndroidApiClient } from '~/lib/android-api/AndroidApiClient';
+import { ANDROID_API_BACKEND_TOKEN_KEY, ANDROID_API_BACKEND_URL_KEY } from '~/lib/android-api/backend-config';
 import { RemoteRuntimeClient } from '~/lib/remote-runtime/RemoteRuntimeClient';
 import {
   getMissingRemoteRuntimeConfig,
@@ -43,9 +44,6 @@ interface PersistenceStatus {
   hasSavedFiles: boolean;
   lastOpenedFile?: string;
 }
-
-const ANDROID_API_BACKEND_URL_KEY = 'bolt_android_api_backend_url';
-const ANDROID_API_BACKEND_TOKEN_KEY = 'bolt_android_api_backend_token';
 
 function loadLocalSetting(key: string): string {
   try {
