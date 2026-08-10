@@ -2,8 +2,16 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `06037e6` — "feat(chat): add Guided Build project creation flow (Loop 16)"
+**Current commit:** `d55d8fd` — "fix(branding): the AI no longer calls itself Bolt (Loop 17)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Loop 17 (IMPLEMENTED): the AI no longer identifies itself as "Bolt"
+
+Found the highest-impact naming bug this session: all four system prompt files (`new-prompt.ts`, `prompts.ts`, `discuss-prompt.ts`, `optimized.ts`) told the model "You are Bolt... created by StackBlitz" — meaning VELDRA's own assistant introduced itself as a different, unbranded product on every single chat turn. Classified every "Bolt" occurrence per the mandate's Section 3 framework before touching anything: renamed genuine product-identity strings (system-prompt self-identification and all in-prompt self-references, chat composer placeholder, alert/button text, terminal tab label, dev-server banner, several user-visible messages); made the `discuss-prompt.ts` support-resources block's wording honest (it redirects users to real, working `support.bolt.new` docs — kept the real URLs since they remain accurate general guidance and no VELDRA-specific support domain exists to fabricate, but stopped calling them "official Bolt support resources" as if VELDRA owned them); removed a suggestion to "use Bolt desktop app" entirely rather than rename it, since no verified shipping VELDRA desktop build exists (`vite-electron.config.ts` is unverified scaffolding); left technical/internal identifiers (`boltAction`/`BoltShell`/`bolt-elements`/CSS-prefix/storage-key names) and all legal attribution (LICENSE, package.json contributors) untouched.
+
+**Validated**: 273/273 tests (unchanged), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged permissions).
+
+**Next highest-value step**: continue P0 per the newest mandate — the project-creation entry point (Loop 16) and core identity (Loop 17) are both in place; next candidates are deepening agent/tool execution toward a real registry, or the Remote Runtime session bridge scoped out in Loop 10.
 
 ## New mandate: "VELDRA — LARGE-SCALE PRODUCT BUILD / PORTING MANDATE" (2026-08-10)
 

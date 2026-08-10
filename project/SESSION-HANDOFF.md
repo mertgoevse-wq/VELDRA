@@ -2,16 +2,35 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `06037e6` — "feat(chat): add Guided Build project creation flow (Loop 16)"
+**Current commit:** `d55d8fd` — "fix(branding): the AI no longer calls itself Bolt (Loop 17)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `06037e6` pushed successfully to `origin/main`
+**Last successful push:** `d55d8fd` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Mandate update: "VELDRA — LARGE-SCALE PRODUCT BUILD / PORTING MANDATE" (2026-08-10)
+## Latest product slice — Bolt/StackBlitz naming cleanup (2026-08-10, Loop 17)
+
+Second slice under the newest mandate, picked up directly from a finding surfaced incidentally during Loop 16's manual browser verification: the dev-server banner said "B O L T . D I Y" and the chat composer placeholder said "How can Bolt help you today?" — flagged then, fixed now, per Section 3 ("bolt/StackBlitz naming cleanup").
+
+**The real finding, bigger than the two cosmetic strings that started the search**: grepping for `\bBolt\b` across `app/` turned up that all four system-prompt files (`app/lib/common/prompts/{new-prompt,prompts,discuss-prompt,optimized}.ts`) open with "You are Bolt, an expert AI assistant... created by StackBlitz." This is the literal identity the model is given on every single request — VELDRA's own AI would, if asked "what's your name," say "Bolt." This is the single most consequential branding bug found this session, well above the cosmetic strings.
+
+**Classification discipline** (Section 3's explicit framework — legal attribution vs. technical legacy identifier vs. internal/user-visible branding — applied before any edit, not a blind find-and-replace):
+
+- **Renamed** (category 4/5, genuine product identity): the four prompts' self-identification lines and every in-prompt third-person self-reference ("Bolt ALWAYS uses stock photos," "Bolt may create a SINGLE artifact," "handled by Bolt," etc. — all shape the model's own self-concept and could echo back to the user); `ChatBox.tsx`'s composer placeholder; `ChatAlert.tsx`'s two "would you like Bolt to analyze" strings plus its "Ask Bolt" button; `DeployAlert.tsx`'s matching "Ask Bolt" button; `TerminalTabs.tsx`'s "Bolt Terminal" tab label (left `BoltShell`/`attachBoltTerminal` — the internal identifiers behind that same tab — untouched, category 3); `select-context.ts`'s thrown error message; `useChatHistory.ts`'s chat-snapshot-restore assistant message; `selectStarterTemplate.ts`'s template-initialization assistant message; `pre-start.cjs`'s dev banner; two code comments (`action-runner.ts`, `DataVisualization.tsx`).
+- **Removed rather than renamed**: `localModelHealthMonitor.ts`'s CORS-error message suggested "use Bolt desktop app" as a workaround. Renaming to "VELDRA desktop app" would have been a fabricated capability claim — checked first, and no verified, shipping VELDRA desktop build exists in this repo (`vite-electron.config.ts`/`electron/` exist but are unverified scaffolding per `project/STATUS.md`, not a confirmed product). Dropped the clause entirely rather than either leave it wrong or invent something.
+- **Wording fixed, real resource kept** (the genuinely nuanced case): `discuss-prompt.ts`'s `<support_resources>` block instructs the model to redirect users to `support.bolt.new` documentation pages for topics like token efficiency, prompting, Supabase, and hosting. These are real, currently-working URLs, and the actual content remains accurate general guidance since VELDRA's runtime/artifact system is built directly on bolt.diy's architecture — blindly fabricating a `support.veldra.*` URL that doesn't exist would have been strictly worse (a broken link presented as authoritative). Instead, kept the real URLs but stopped the prompt from calling them "the official Bolt support resources" (implying VELDRA's own support desk) — reworded to explain honestly that VELDRA's runtime is built on bolt.diy's architecture and these remain accurate reference docs for these general topics. Also generalized "Bolt Expo apps" to "Expo-based mobile apps" since that's describing a general capability (building an Expo mobile app via the AI), not a VELDRA-accurate product name.
+- **Left untouched** (category 3, technical/internal, or too low-value to justify the risk): `boltAction`/`boltArtifact` XML-style tag names the parser matches on, `BoltShell`/`attachBoltTerminal`/`BoltTerminal` internal class/method names, `bolt-elements`/`bolt_*` CSS class and localStorage-key prefixes used throughout the app (renaming any of these is a real, separate, much larger and riskier compatibility-affecting change — not in scope here), `ImportButtons.tsx`'s "Standard Bolt format" comment (documents an actual JSON export/import format-compatibility fact, not branding), and `diff.ts`'s illustrative example comment (`console.log('Hello, Bolt!')`, purely a docstring example, zero product-identity weight). All legal attribution (`LICENSE`, `package.json`'s `"StackBlitz Labs and bolt.diy contributors"`) confirmed untouched — did not even attempt to edit these files.
+
+Verified no existing test asserted any of the changed exact strings before editing (grep across `*.spec.ts`/`*.spec.tsx` for the relevant phrases returned nothing), so no test updates were needed alongside the string changes.
+
+Validation: 273/273 tests (unchanged), typecheck clean, lint clean (one formatting autofix), Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged permissions).
+
+**Next highest-value step**: per the newest mandate's P0 list — both the project-creation entry point (Loop 16) and the model's own product identity (Loop 17) are now in place. Strong next candidates: (a) deepen agent/tool execution toward a real registry with permissions/entitlement (the newest mandate's Section 6) — this session's earlier loops proved the *file*-action loop works end-to-end and fixed the *shell/build/start*-action feedback gap, but there's still no agent/skill registry, no tool permission model, and no `.claude/agents`/`.claude/skills` (repeatedly confirmed genuinely absent, not to be fabricated); (b) the Remote Runtime → `ActionRunner` session bridge scoped out in Loop 10 (agent-issued commands still can't reach a real remote shell); (c) physical-device validation of the now seventeen-loop-deep backlog, still the single largest blocked item if hardware ever becomes available.
+
+## Earlier: Mandate update: "VELDRA — LARGE-SCALE PRODUCT BUILD / PORTING MANDATE" (2026-08-10)
 
 A third mandate arrived, explicitly reversing the micro-slice cadence of the previous ~9 loops: "Do not spend an entire loop merely running tests... Build substantial functionality first, then validate it... one coherent implementation... EXTEND, DON'T DUPLICATE." Its P0 list leads with "project creation workflow," matching exactly what Loop 15's own "next step" note already flagged as the biggest unaddressed gap. Its architectural section (54/58) explicitly names the same principle this session has followed throughout: one coherent core (Project → Workspace → Context → Agent Runtime → Model Router → Tool Registry → FilesStore → Preview → UI), Android/Web/Desktop as client surfaces, never a second competing system.
 
-## Latest product slice — Guided Build project creation flow (2026-08-10, Loop 16)
+## Earlier product slice — Guided Build project creation flow (2026-08-10, Loop 16)
 
 First large slice under the new mandate. Chose "project creation workflow" as named P0 priority #1 by both the new mandate and this session's own prior audit trail (Loop 15's SESSION-HANDOFF entry: "No dedicated project-creation/beginner-mode UX exists — real, large P1/P2-adjacent gap, not yet scoped").
 
