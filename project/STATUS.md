@@ -2,8 +2,16 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `515b0df` — "fix(workbench): clean up dead diff CSS, tighten fullscreen padding on Android (Loop 13)"
+**Current commit:** `2f32629` — "fix(terminal): stop showing dead tab-bar controls in Remote Runtime fallback mode (Loop 15)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Loop 14-15: deterministic multi-turn acceptance test + Terminal dead-UI fix
+
+**Loop 14 (P1, Phase 26 acceptance testing).** Added a deterministic, fixture-based test proving the core "vibe coding" iterative-edit workflow: generate a file in one chat turn, edit the same file in a second turn, verify the final content reflects the edit — through the real production parser→ActionRunner wiring, not a simplified mock. While writing it, found (and correctly ruled out as a false positive, not a real product bug) that reusing one `ActionRunner` across two turns causes an artificial `actionId` collision (`EnhancedStreamingMessageParser` restarts its per-message action counter at 0 for every new `messageId`, and `ActionRunner`'s internal map is keyed by that bare counter with no message-scoping). Confirmed production never hits this because `workbenchStore.addArtifact()` creates a fresh `ActionRunner` per artifact/turn, all writing through the same shared file layer — fixed the test to match that real pattern instead of "fixing" correctly-working production code. 264/264 tests (+1). Test-only, no build re-run needed.
+
+**Loop 15 (P1, Terminal audit).** Audited the Terminal UI for Android touch/narrow-viewport correctness. Mostly fine — the real xterm terminal never renders in the shipped Android app (confirmed via `runtime-mode.ts`'s capability table), `RemoteCommandPanel` has no text inputs (no soft-keyboard concern), its layout fits 360px, all interactive elements are real `<button>`s covered by the existing 44px touch-target rule. One real dead-UI bug found and fixed: `TerminalTabs.tsx` rendered its full tab bar (add-terminal, per-tab close, reset) unconditionally even when `RemoteCommandPanel` (which ignores that state entirely) is shown instead of real terminals — tapping those controls did nothing visible on Android. Now shows a plain label in fallback mode instead; desktop/WebContainer behavior unchanged. 264/264 tests, full build gauntlet clean, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: continue P0/P1 per the new mandate. Remaining candidates not yet audited this session: Build system unification (Phase 24, mostly already true — web/Android/Gradle pipelines already work as documented), Project creation/beginner-mode UX (Phase 12/13, currently no dedicated UX mode exists beyond the single chat interface — real gap but large scope), or device-validate the now fifteen-loop-deep backlog if a physical device becomes available.
 
 ## New mandate received: "VELDRA PRODUCT COMPLETION MASTER LOOP" (2026-08-10)
 

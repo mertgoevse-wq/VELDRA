@@ -2,12 +2,30 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `515b0df` — "fix(workbench): clean up dead diff CSS, tighten fullscreen padding on Android (Loop 13)"
+**Current commit:** `2f32629` — "fix(terminal): stop showing dead tab-bar controls in Remote Runtime fallback mode (Loop 15)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `515b0df` pushed successfully to `origin/main`
+**Last successful push:** `2f32629` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Mandate update: "VELDRA PRODUCT COMPLETION MASTER LOOP" (2026-08-10)
+## Latest product slices — deterministic acceptance test + Terminal dead-UI fix (2026-08-10, loops 14-15)
+
+Continuing the new master-loop mandate's P0/P1 priority order.
+
+**Loop 14** — Phase 26 asks for a deterministic (fixture-based, no live provider needed) end-to-end acceptance test proving the core vibe-coding loop: generate → user requests a change → same file updated. Every test in `parser-to-action-runner.spec.ts` before this loop proved single-shot creation only; none proved the iterative-edit case. Added one that does, through the real production parser→`ActionRunner` wiring.
+
+While writing it, an early draft (reusing one `ActionRunner` across both turns, matching this file's existing single-turn test pattern) failed: `writeFile` was called once instead of twice. Investigated rather than assuming either "test bug" or "product bug" — traced it to `EnhancedStreamingMessageParser` restarting its per-message `actionId` counter at `0` for every new `messageId` (`message-parser.ts:82-96`), combined with `ActionRunner.addAction()`/`runAction()` keying their internal `actions` map by that bare, message-unscoped counter (`action-runner.ts:131-158`) — so two different chat turns' first actions both land on key `"0"`, and the second turn's `addAction` is treated as "already added" while its `runAction` is treated as "already executed," both silently no-op. This looked like a severe, fundamental bug at first (any second turn's first action would be dropped) — surprising for a bug that would surely have been noticed in a mature product like upstream bolt.diy. Checked before concluding: `workbenchStore.addArtifact()` (`app/lib/stores/workbench.ts:515-531`) creates a **fresh `ActionRunner` per artifact** — i.e. per chat turn, never reused across the conversation — specifically avoiding this exact collision, with all runners writing through the same shared `FilesStore`/webcontainer so file state still accumulates correctly across turns. Confirmed: not a product bug, a test-design mismatch. Fixed the test to instantiate two runners (matching production), not one.
+
+Validation: 264/264 tests (+1). Test-only change, no production code touched — builds not re-run, consistent with established practice for test-only commits (`9cd4a61`'s precedent from earlier this session).
+
+**Loop 15** — Audited the Terminal UI (P1) for Android touch/narrow-viewport correctness, the one Workbench sub-area not yet covered by this session's earlier UI audits (which covered agent-issued shell-action handling, not the Terminal UI itself). Mostly clean: the real xterm `Terminal` component never renders inside the shipped Android APK — `runtime-mode.ts`'s capability table forces `android-fallback` mode whenever `isCapacitor()`, which sets `terminal: false`, which forces `TerminalTabs.tsx`'s `showTerminalFallback` to `true` unconditionally, regardless of whether the user separately configures `'remote'` mode (Android also forces `showRemoteCommandPanel` there). `RemoteCommandPanel` has zero text inputs (no soft-keyboard overlap concern), its `grid-cols-2` command-profile buttons and `CommandSummaryField` grid both fit and stay readable at 360px, and every interactive element is a real `<button>` already covered by `mobile.scss`'s 44px touch-target rule.
+
+One real, concrete bug found: `TerminalTabs.tsx`'s tab bar (the "Bolt Terminal" tab, per-tab close, "+" add-terminal, "Reset Terminal") rendered unconditionally, even when `showTerminalFallback` is true and `RemoteCommandPanel` — which completely ignores `terminalCount`/`activeTerminal` state — is shown below instead of real terminals. On Android this meant dead UI: tapping "+" silently added an invisible tab with no visible effect, switching tabs did nothing, and "Reset Terminal" looked up a `terminalRefs` entry that's never populated in fallback mode and silently no-op'd. Same class of bug as the `showDirectoryPicker`-without-feature-detection "Sync Files" button fixed in an earlier loop this session (a control that looks functional but does nothing on Android). Fixed: fallback mode now shows a plain "Remote Runtime Commands" label instead of the dead tab/add/reset controls; the always-relevant "Close" button is unchanged; desktop/WebContainer behavior (`showTerminalFallback === false`) is byte-identical to before.
+
+Validation: 264/264 tests (unchanged — UI-only), typecheck clean, lint clean (two formatting autofixes, including the recurring `@blitz/lines-around-comment`/`prettier` circular-fix conflict this session has hit before — resolved the same way, moving the comment above the JSX expression rather than inline), Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: continue P0/P1 per the new mandate's tiers. Candidates not yet audited this session: Project creation / beginner-mode UX (Phase 12/13 — currently there is exactly one chat interface with no dedicated "what do you want to build" onboarding flow or beginner/standard/developer/expert mode distinction; this is a real, large gap, likely too big for one loop and worth scoping carefully before starting), or device-validate the now fifteen-loop-deep Android backlog if a physical device becomes available — the single highest-value blocked action across this entire session remains unchanged: nothing shipped since the very first Android loop has been observed running on a real device or emulator.
+
+## Earlier: Mandate update: "VELDRA PRODUCT COMPLETION MASTER LOOP" (2026-08-10)
 
 A new, much larger 50-phase mandate arrived mid-session, superseding the prior 20-loop mandate's specific numbering (this doc's "Loop N" numbering below continues counting sessions/slices, not the new mandate's phase numbers, to keep the handoff trail continuous). Key points that change how work should be selected going forward:
 
@@ -17,7 +35,7 @@ A new, much larger 50-phase mandate arrived mid-session, superseding the prior 2
 - Re-confirmed per the mandate's explicit instruction not to trust prior claims blindly: `.claude/agents/`, `.claude/skills/`, and any `.mcp*` config are genuinely absent from this repository — checked directly this loop, not assumed.
 - The mandate names "Phase 13/theme work" as a specific thing to inspect first. Current theme system reality (checked): `app/lib/stores/theme.ts` + `ThemeSwitch.tsx` implement a plain dark/light binary toggle — nothing resembling the mandate's envisioned 8-theme system (Obsidian/Aurora/Glass/Terminal/etc.) exists. That's explicitly P3 work per the mandate's own tiers, so it was **not** started this loop; a P0 item (DiffView, below) was picked instead, consistent with "don't work on P3 while P0 items remain."
 
-## Latest product slice — DiffView audit + dead-CSS/fullscreen-padding fix (2026-08-10, thirteenth loop, "Loop 13")
+## Earlier product slice — DiffView audit + dead-CSS/fullscreen-padding fix (2026-08-10, thirteenth loop, "Loop 13")
 
 First slice under the new mandate. Picked from P0 ("Workbench... Diff... Preview") rather than the mandate's explicitly-named "Phase 13/theme work" (P3) — themes are lower priority per the mandate's own tier rules, and no P0 gaps were left unaudited in Workbench/Editor/Preview specifically, except `DiffView.tsx`, which the earlier narrow-viewport audit (loop 7/"Phase D") never covered.
 
