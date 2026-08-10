@@ -100,15 +100,19 @@ function getCapabilitiesForMode(mode: RuntimeMode, webContainerAvailable: boolea
 
   if (mode === 'remote') {
     /*
-     * Remote runtime — full capabilities (when implemented).
-     * For now, file system is local (in-memory) and runtime ops
-     * go through the remote URL. We mark all as available optimistically
-     * since the user explicitly chose this mode.
+     * File sync, the manual RemoteCommandPanel (safe predefined command profiles), and preview
+     * status genuinely work end-to-end against a configured Remote Runtime server today. Agent-
+     * issued shell/build/start actions do not: ActionRunner has no code path that routes them to
+     * RemoteRuntimeClient -- ActionRunner only knows how to talk to the WebContainer-backed
+     * BoltShell terminal, which doesn't exist on Android. commandExecution must stay false until
+     * that session bridge exists, or ActionRunner's capability gate (action-runner.ts) lets
+     * agent-issued commands fall through to a terminal that was never there, failing without even
+     * the graceful onAlert path the gate itself provides for genuinely unsupported runtimes.
      */
     return {
       fileSystem: true,
       terminal: true,
-      commandExecution: true,
+      commandExecution: false,
       packageInstall: true,
       devServer: true,
       preview: true,
