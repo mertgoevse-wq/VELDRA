@@ -2,8 +2,24 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `9cd4a61` — "test: add parser-to-ActionRunner integration coverage (Phase C)"
+**Current commit:** `5072bc7` — "fix(workbench): repair Android editor/preview narrow-viewport rendering (Phase D)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Editor/preview narrow-viewport rendering fixed (2026-08-10, seventh loop)
+
+Static audit (Explore agent, no device) of the editor/preview/terminal layout now that it's actually reachable on Android (loop 3 mounted `Workbench` there) — nothing had ever checked whether this desktop-authored three-panel layout renders usably on a 360-412px phone screen. Found six real bugs, one of them a crash:
+
+- **Critical**: `EditorPanel.tsx`'s mobile layout rendered `<TerminalTabs />` (root element is a `react-resizable-panels` `Panel`) inside `MobileTerminalDrawer` with no `PanelGroup` ancestor. `Panel` throws `"must be rendered within a PanelGroup container"` outside one (confirmed directly in the library source) — tapping "Toggle Terminal" on Android would crash the render, not just look cramped. Fixed by wrapping it in a `PanelGroup` (the bottom sheet already controls the actual visible height, so this only exists to satisfy the context requirement).
+- `Workbench.client.tsx`'s code-view action-button row used `overflow-y-auto` on a horizontal `flex` row (axis mistake) — buttons got clipped by the parent's `overflow-hidden` instead of becoming scrollable. Fixed to `overflow-x-auto` + `max-w-full`.
+- `mobile.scss`'s `.workbench-container` / `.workbench-container > div` rules (meant to strip padding/rounded corners on mobile) never matched anything — dead CSS, the class name was never attached to the actual panel wrapper despite the DOM structure matching the CSS author's intent exactly. Added the class.
+- `android.css`'s Workbench clearance override only handled the bottom edge (bottom-nav clash, from loop 3); the top still reserved `--header-height` (48px) for a desktop app-header bar that `AndroidShell` never renders above the Files/Preview panel — a dead empty gap on an already-cramped screen. Added a `top: 0` override scoped to `.android-shell`.
+- `Preview.tsx`'s toolbar (reload/selection/device-mode/inspector/fullscreen/window-size buttons + address bar) had no wrap or scroll; combined with `mobile.scss`'s 44px min-touch-target rule the buttons alone need ~330-420px, more than a 360-412px screen has. Added `flex-wrap` plus a `min-w-[140px]` floor on the address bar so it wraps to its own row instead of getting squeezed unreadable.
+- `FileModifiedDropdown`'s popover was a fixed 320px, right-aligned, no collision detection — could run off the left edge of a ~360px viewport. Capped to `min(20rem, calc(100vw-1.5rem))`.
+- CodeMirror's editor/gutter font defaulted to a fixed 12px with no mobile override anywhere in the codebase (confirmed via grep). Bumped to 15px/13px when `isMobileDevice()`.
+
+**Deliberately not fixed this slice** (documented, not silently dropped): the device-mode resize-handle stays a visually 15px hit target (uses Pointer Events so it's not literally mouse-only, just below a comfortable touch-target size) and the window-size dropdown still offers desktop-scale presets (up to 3840px) with no scale-to-fit — both are part of the opt-in device-frame-simulation feature, not the core editor/preview path everyone uses.
+
+**Validated**: 258/258 tests (unchanged — this slice is CSS/layout-only, no new logic to unit test), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (8.98 MB, `com.veldra.app` v1.0, targetSdk 35, permissions unchanged — verified via `aapt dump badging`). **NOT VERIFIED**: none of this has rendered on an actual device or even a browser at a narrow viewport width — the terminal-crash fix is confirmed by reading `react-resizable-panels`' own source (`Panel` component throws without `PanelGroupContext`, confirmed by grep in `node_modules`), not by reproducing the crash and then not-reproducing it. **NEEDS DEVICE VALIDATION** like every other Android UI slice this session.
 
 ## Workspace persistence hardening + parser→ActionRunner integration test (2026-08-10, sixth loop)
 

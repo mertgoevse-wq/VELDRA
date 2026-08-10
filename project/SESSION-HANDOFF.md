@@ -2,12 +2,27 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `9cd4a61` — "test: add parser-to-ActionRunner integration coverage (Phase C)"
+**Current commit:** `5072bc7` — "fix(workbench): repair Android editor/preview narrow-viewport rendering (Phase D)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `9cd4a61` pushed successfully to `origin/main`
+**Last successful push:** `5072bc7` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slice — persistence hardening + core-loop integration test (2026-08-10, sixth loop)
+## Latest product slice — Android editor/preview narrow-viewport fixes (2026-08-10, seventh loop, "Phase D")
+
+Continuation of the "VELDRA — AUTONOMOUS PORTING, ANDROID PRODUCTIZATION & FULL FUNCTIONALITY GAUNTLET" mandate's Loop 1 audit, picking up exactly where the sixth loop's own "next highest-value step" left off: whether the editor and static preview actually render correctly now that Files/Preview tabs are reachable (loop 3) — never exercised even via static analysis before this loop.
+
+Delegated the audit to an Explore subagent (static-analysis-only, no device) targeting `Workbench.client.tsx`/`EditorPanel.tsx`/`Preview.tsx`/`mobile.scss`/`android.css`/CodeMirror theme setup for narrow-viewport (360-412px) problems. It found six real issues, one of them severe:
+
+- **Crash, not just ugly**: `EditorPanel.tsx`'s mobile branch rendered `<TerminalTabs />` — whose root JSX element is a `react-resizable-panels` `Panel` — inside `MobileTerminalDrawer` with no `PanelGroup` ancestor anywhere above it. Verified directly against the library source (`node_modules/react-resizable-panels/dist/*.cjs.js`): `Panel` throws `Error("Panel components must be rendered within a PanelGroup container")` when mounted outside one. This would throw the instant a user tapped the terminal toggle on Android — confirmed by reading the throwing code, not by reproducing the crash in a running app (no device/browser-at-360px available). Fixed by wrapping `<TerminalTabs />` in a `<PanelGroup direction="vertical" className="h-full">` — matching exactly how the desktop layout already uses `TerminalTabs` (as a direct `PanelGroup` child, not nested inside an extra `Panel`).
+- Five more real-but-non-crashing layout bugs, each traced to a specific line and fixed with a scoped, minimal change (not a redesign): a horizontal button row scrolling on the wrong axis (`overflow-y-auto` → `overflow-x-auto`), dead CSS whose selector never matched the actual DOM (`mobile.scss`'s `.workbench-container` rules — added the missing class rather than rewriting the CSS, since the rules themselves were already correct for the DOM shape they assumed), an Android-only top-clearance gap left over from a header bar Android never renders (`android.css` already had the equivalent fix for the *bottom* edge from loop 3 — this is the same pattern applied to `top`), a Preview toolbar with too many 44px-min-touch-target buttons and no wrap (added `flex-wrap` + an address-bar min-width so it wraps predictably instead of squeezing to zero), a fixed-320px popover with no viewport collision handling (capped with `min(20rem, calc(100vw-1.5rem))`), and CodeMirror's hardcoded 12px font with zero mobile override anywhere in the codebase (bumped via a `useMemo`'d settings object gated on `isMobileDevice()`, computed inside the component body rather than at module scope to avoid calling a `window`-touching function during SSR/import).
+
+**Deliberately deferred, not silently dropped**: the Preview's device-mode resize-handle (touch-usable via Pointer Events, just visually 15px — below a comfortable touch-target size) and the window-size dropdown's desktop-scale-only presets (no scale-to-fit for a narrow container) — both belong to the opt-in device-frame-simulation feature, not the core editor/preview path, and fixing them well would mean redesigning that sub-feature rather than a scoped fix; explicitly out of this slice per the mandate's own "don't dangerously widen the current slice" exception.
+
+Validation: 258/258 tests (unchanged — CSS/layout-only slice, nothing here has unit-testable logic beyond what's already covered), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (`BUILD SUCCESSFUL in 1m15s`, 8.98 MB, `com.veldra.app` v1.0, targetSdk 35, permissions unchanged per `aapt dump badging`). **NOT VERIFIED**: none of the six fixes have been seen rendering, on a device or even a resized desktop browser — every finding and every fix is justified by reading component/library source and CSS selectors, not by observing broken-then-fixed rendering. This is the most "confident from code reading, unconfirmed by any render" slice yet; **device validation remains the single highest-value blocked action**, now stacked across seven consecutive Android-UI-touching loops with zero runtime observation of any of them.
+
+**Next highest-value step**: per the mandate's own Loop 5 (provider/model router) and the accumulated device-validation backlog — either (a) install the now-repeatedly-rebuilt debug APK on the product owner's device and validate loops 3-7 in one pass (terminal crash fix, chat history, back button, file import/export, persistence, and this loop's six layout fixes all at once, since they're all Android-UI/runtime-only claims with zero device observation), or (b) if no device becomes available, continue static-analysis-only work on Loop 8 (provider/model router) per the newest mandate's sequence, since that area doesn't depend on Android-specific rendering and has real, testable logic.
+
+## Earlier product slice — persistence hardening + core-loop integration test (2026-08-10, sixth loop)
 
 Mandate: "VELDRA — AUTONOMOUS LARGE-SCALE PORTING, REPAIR, AND PRODUCTIZATION LOOP," execution order Phase B (workspace persistence hardening) then Phase C (end-to-end project-generation workflow, "first critical product test").
 
