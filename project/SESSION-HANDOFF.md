@@ -2,12 +2,30 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `27640bb` — "fix(android): remove dead/unreachable AndroidApiClient methods (Loop 8)"
+**Current commit:** `06961f8` — "fix(runtime): feed capability-gated shell/build/start blocks back to the model (Loop 9)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `27640bb` pushed successfully to `origin/main`
+**Last successful push:** `06961f8` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slice — provider/model router audit + dead-code cleanup (2026-08-10, eighth loop, "Loop 8")
+## Latest product slice — agent tool-calling: model now learns when shell/build/start is blocked (2026-08-10, ninth loop, "Loop 9")
+
+Per the newest mandate's Loop 9 ("Agent Tool Loop"). File actions were already confirmed working end-to-end via a real integration test (`parser-to-action-runner.spec.ts`, sixth loop); this loop audited the rest of the tool-calling surface — `shell`/`build`/`start` actions — via an Explore subagent, static analysis only.
+
+**What's already fine**: `ActionRunner#executeAction` (`app/lib/runtime/action-runner.ts:191-207`) has an explicit `needsWebContainer` gate that catches `shell`/`build`/`start` actions before they ever reach `#runShellAction`/`#runBuildAction`/`#runStartAction` when `runtimeModeStore`'s `capabilities.commandExecution` is false (Android fallback, or Remote mode with nothing configured). It fails the action cleanly (`status: 'failed'`) rather than throwing uncaught or hanging.
+
+**What was actually broken**: that gate only ever called `toast.warning(...)` — a transient, easy-to-miss notification — and updated the action's own status icon to red/failed in the chat's action list. It never called `this.onAlert?.()`, the exact callback the two *real* shell/dev-server failure paths a few lines below it already use (`action-runner.ts:264-270`, `298-303`) to populate `workbenchStore.actionAlert` and render `ChatAlert.tsx`'s error box with an "Ask Bolt" button that posts the failure back into the conversation. Net effect: on Android (or any `commandExecution: false` runtime), a model that emits `<boltAction type="shell">npm install && npm run dev</boltAction>` gets zero feedback that it didn't run — it has no in-conversation signal to correct course, apologize, or suggest an alternative. The user sees a red icon they may not connect to "the setup never actually happened."
+
+Also confirmed and explicitly **not** fixed this loop (real, larger root cause): Android's system prompt is the exact same one desktop gets — `api.android.chat.ts` passes no platform/capability field into `chatAction()`/`stream-text.ts`, and `promptId` (which selects among `new-prompt.ts`/`prompts.ts`/`optimized.ts`, all of which describe full shell/npm/dev-server capability) comes from the same client-side user setting on both platforms, with zero `isCapacitor()` branching anywhere near it. So the model isn't just unaware a specific command failed — it's never told in advance that shell/build/start don't exist in this session at all, and will confidently plan around capabilities it doesn't have. Fixing that requires threading a capability/platform signal through the shared chat request pipeline and deciding how each prompt-library variant should describe Android's limits (three separate prompt files, `new-prompt.ts`/`prompts.ts`/`optimized.ts`, all shell-capability-describing) — a distinct, materially larger slice than this one, deliberately scoped out per the mandate's own "don't dangerously widen the current slice" exception. Documented here rather than silently left for a future session to rediscover from scratch.
+
+Also confirmed: `TerminalTabs.tsx`'s `RemoteCommandPanel` (the manual, user-driven safe-command-profile UI) is a completely separate code path gated on `mode === 'remote'`, with zero wiring to `ActionRunner`/agent-issued actions — it doesn't apply here and isn't shown at all in default `android-fallback` mode, so there's no existing fallback UI for agent-issued shell commands to reuse beyond `ChatAlert`.
+
+Fix shipped: `action-runner.ts`'s capability-gate branch now also calls `this.onAlert?.({ type: 'error', title: 'Command Execution Unavailable', description: errorMsg, content: action.content, source: 'terminal' })` — reusing the exact `ChatAlert` UI and user-triggered "Ask Bolt" flow that real terminal errors already use (note: even real errors require a user click before reaching the model in this codebase's existing design — there's no fully-automatic feedback loop anywhere, so this matches established UX rather than inventing a new automatic one).
+
+Validation: 259/259 tests (+1 regression test in `action-runner.spec.ts` asserting `onAlert` fires with the blocked shell action's content), typecheck clean, lint clean, Android web build clean, native Gradle build succeeds, debug APK builds (`BUILD SUCCESSFUL in 4s` incremental, unchanged size/permissions).
+
+**Next highest-value step**: the prompt-layer fix flagged above is the more complete resolution to this same product problem (stop the model from promising shell/build/start at all on capability-less runtimes, rather than only recovering gracefully after the fact) — worth a dedicated future loop given its size. Otherwise, continue with the newest mandate's Loop 10 (Remote Runtime end-to-end) per its own sequence, or device-validate the accumulated Android-UI backlog if a physical device becomes available.
+
+## Earlier product slice — provider/model router audit + dead-code cleanup (2026-08-10, eighth loop, "Loop 8")
 
 Per the newest mandate's "VELDRA — AUTONOMOUS PORTING, ANDROID PRODUCTIZATION & FULL FUNCTIONALITY GAUNTLET," Loop 8 ("Provider/Model Router"). Delegated a static-analysis audit (Explore subagent) to answer the crux question: does Android actually have a *working* way to choose a provider/model, or is chat-sending fixed (earlier loops) while selection itself is decorative?
 

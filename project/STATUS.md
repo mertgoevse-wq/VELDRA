@@ -2,8 +2,20 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `27640bb` — "fix(android): remove dead/unreachable AndroidApiClient methods (Loop 8)"
+**Current commit:** `06961f8` — "fix(runtime): feed capability-gated shell/build/start blocks back to the model (Loop 9)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Agent tool-calling gap fixed: model now learns when shell/build/start is blocked (2026-08-10, ninth loop)
+
+Audited the agent tool-calling loop beyond file actions (file actions were already verified working via a real integration test in an earlier loop). Found: `ActionRunner` already blocks `shell`/`build`/`start` actions cleanly when `commandExecution` is unavailable (`android-fallback`, or `remote` mode with no Remote Runtime configured) — it doesn't throw or hang. But the only signal was a `toast.warning` (easy to miss, auto-dismisses) plus a red failed-icon in the action list. Crucially, the failure was **never fed into the same `onAlert` → `ChatAlert` path** real terminal/dev-server errors already use — so the model that just emitted `<boltAction type="shell">npm install && npm run dev</boltAction>` had no way to learn it never ran, and would keep talking as if setup succeeded.
+
+Root cause context (audited, deliberately not changed this slice — bigger, riskier change): Android's system prompt is byte-identical to desktop's and still describes full shell/npm/dev-server capability (`api.android.chat.ts` sends no platform/capability field to `chatAction()`/`stream-text.ts`, and prompt selection depends only on the user's `promptId` setting, same on both platforms). Fixing that means threading capability info through the shared chat pipeline and deciding whether/how each prompt-library variant should describe Android's limits — a distinct, larger slice.
+
+Fix shipped this loop: `app/lib/runtime/action-runner.ts`'s existing capability-gate branch in `#executeAction` now also calls `this.onAlert?.()` with the blocked action's content, exactly like the real shell/dev-server failure paths immediately below it — reusing the existing `ChatAlert` UI and its user-triggered "Ask Bolt" button rather than building a new feedback mechanism (real terminal errors already require a user click before reaching the model, so this matches the established pattern rather than inventing an "automatic" one that didn't exist before).
+
+**Validated**: 259/259 tests (+1 regression test), typecheck clean, lint clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: either the prompt-layer fix flagged above (thread platform/capability awareness into the system prompt so the model stops promising commands it can't run in the first place — the more complete fix), Loop 10 (Remote Runtime end-to-end), or device validation of the growing backlog.
 
 ## Provider/model router audit on Android + dead-code cleanup (2026-08-10, eighth loop)
 
