@@ -2,10 +2,35 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `9b65c07` — "fix: resolve GitHub-hosted node-gyp install blocker and ESLint backlog"
+**Current commit:** `24872f6` — "feat: wire real Android LLM chat through a Bearer-authenticated bridge"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `9b65c07` pushed successfully to `origin/main`
+**Last successful push:** `24872f6` pushed successfully to `origin/main`
 **Working tree:** clean
+
+## Latest product slice — Android LLM chat bridge, real end-to-end wiring (2026-08-10)
+
+Implements the first concrete goal of the "NEXT MAJOR IMPLEMENTATION LOOP" mandate: real (non-mock) Android chat, reusing the existing provider abstraction end-to-end rather than building a parallel one.
+
+- **Design already existed** in `docs/ANDROID_LLM_API_BRIDGE.md` (written by a prior session, Option B: separate Bearer-token-authenticated backend reusing the existing server logic, provider keys stay server-side) — implemented that design rather than re-deciding architecture.
+- New: `app/lib/.server/android-auth.ts` (+ `.spec.ts`, 9 tests) — constant-time Bearer token check against `ANDROID_API_BACKEND_TOKEN`, fails closed (500) if unconfigured, matching the `REMOTE_RUNTIME_TOKEN` fail-closed pattern already established for Remote Runtime.
+- New: `app/routes/api.android.health.ts`, `api.android.models.ts`, `api.android.chat.ts` — Bearer-gated routes. `api.android.chat.ts` strips the `Cookie` header before delegating to `chatAction()`, so `apiKeys`/`providerSettings` resolve to `{}` and `BaseProvider`'s existing `serverEnv`/`process.env` fallback (no new code needed) supplies provider credentials from the backend's own environment — they never reach the Android app.
+- **Build-breaking bug found and fixed same-session**: exporting `chatAction` directly from the `api.chat.ts` route file broke `pnpm build` (`Server-only module referenced by client` — Remix only auto-strips `loader`/`action`/`headers` from route files, not other named exports, so the client bundler tried to include `chatAction`'s `.server/`-module imports). Fixed by moving the full implementation to `app/lib/.server/llm/chat-action.ts` (a directory Remix never bundles client-side by convention) and reducing `api.chat.ts` to a thin wrapper. Re-ran the full build after the fix to confirm — see Validation below.
+- New: `app/lib/android-api/backend-config.ts` (+ `.spec.ts`, 4 tests) reads the Android app's already-stored backend URL/token (`AndroidSettingsPanel.tsx` previously declared these `localStorage` keys locally; now imports the shared constants instead of duplicating them).
+- `app/components/chat/Chat.client.tsx`: `useChat()` now points at the Android backend's `/api/android/chat` with an `Authorization: Bearer` header when `isCapacitor()` and a backend is configured; blocks sending with a toast (not a silent failed request) when Android has no backend configured yet.
+- `app/routes/api.models.ts`: extracted the existing model-list-building logic into an exported `getModelsData()` so `api.android.models.ts` reuses it instead of duplicating the `LLMManager` lookup — the cookie-authenticated web route's behavior is unchanged, just refactored.
+
+Validation for this slice:
+
+- Full root Vitest suite: 27/27 files, **218/218 tests** passed (was 205; +13 new: 9 auth + 4 config parsing).
+- Root typecheck: passed.
+- Root ESLint: 0 errors.
+- `pnpm build`: passed (confirms the Remix client/server bundling fix worked).
+- `git diff --check` and a secret-pattern grep over the diff: no findings.
+- Pre-commit hook (typecheck + lint) passed on commit.
+
+**NOT verified this slice (needs device + credentials, unavailable in this environment):** an actual streamed provider response reaching the Android app on a physical device. To validate: deploy this backend with `ANDROID_API_BACKEND_TOKEN` and at least one real provider API key set, then enter that backend's URL/token in the Android app's Settings → Android API Backend panel and send a message from the device.
+
+**Next highest-value step:** device/credential validation of the above, then continuing the acceptance-criteria checklist (A–U) from the "ERSTES GROSSES ZIEL" mandate — model selector wiring to the capability router with AUTO display, provider configuration UI polish, and the first real agent/tool task (`hello.txt` example) on Android.
 
 ## Latest infrastructure slice — dependencies unblocked, first working debug APK (2026-08-10)
 
@@ -18,7 +43,7 @@ Attached the VELDRA repo fresh in a new session/environment (previous consolidat
 - Ran `npm run android:apk:debug` (Capacitor sync + `./gradlew assembleDebug`): **BUILD SUCCESSFUL in 2m 28s.** Produced `android/app/build/outputs/apk/debug/app-debug.apk` (8.4 MB). Verified with `aapt dump badging`: `package: name='com.veldra.app' versionCode='1' versionName='1.0'`, `application-label:'VELDRA'`, `targetSdkVersion:'35'`, `minSdk 23`. **Delivered the APK directly to the product owner** for installation on their Samsung Galaxy A56.
 - This is the first debug APK actually built and handed to the product owner in this project's history (per the repo's own docs, APK compilation had previously only been validated locally in an earlier, since-lost environment and via a not-yet-triggered CI workflow).
 
-**Known limitation of this build:** it is the Android app shell/workspace UI, not a fully wired chat backend — per `CURRENT_STATUS.md`'s own "Known Limitations" #1, LLM chat requires server-side API routes that don't exist in a WebView; a safe Android API Backend bridge is scaffolded but production chat is not connected. This was not silently overclaimed to the product owner.
+**Known limitation of this build:** at the time this APK was built, it was the Android app shell/workspace UI without a wired chat backend. The Android LLM chat bridge was implemented in the following slice (see above) — `Chat.client.tsx` now sends real requests to `/api/android/chat` when a backend is configured, but this specific delivered APK predates that change and device/credential end-to-end validation is still outstanding.
 
 ## Latest product slice — Auto capability model routing
 

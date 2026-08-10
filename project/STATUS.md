@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `9b65c07` — "fix: resolve GitHub-hosted node-gyp install blocker and ESLint backlog"
+**Current commit:** `24872f6` — "feat: wire real Android LLM chat through a Bearer-authenticated bridge"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
 ## Validation baseline (2026-08-10, this session/environment)
@@ -11,12 +11,23 @@
 |---|---|
 | Git status/fetch | Clean; `main` synchronized with `origin/main` |
 | `pnpm install` | Was blocked by a GitHub 403 fetching `@electron/node-gyp`'s tarball; fixed with the same `pnpm.overrides` entry already proven in the bolt-android source (`npm:@electron/node-gyp@10.2.0-electron.2`) |
-| `pnpm test` | Passed: 25 files / 205 tests |
+| `pnpm test` | Passed: 27 files / 218 tests (was 205; +13 from the Android LLM chat bridge auth/config specs) |
 | `pnpm typecheck` | Passed |
 | `pnpm lint` | Passed: 0 errors (142 auto-fixable formatting/style findings resolved via `lint:fix`, re-verified with tests/typecheck) |
 | `pnpm build` | **Passed** in this environment (15 GB RAM) — the previously documented Miniflare/tcmalloc 1 GiB OOM does not reproduce here; environment-dependent, not a code defect |
 | Android debug APK | **Built successfully** — `android/app/build/outputs/apk/debug/app-debug.apk` (8.4 MB, `com.veldra.app`, label "VELDRA"), delivered directly to the product owner for device install. Android SDK (platform 35, build-tools 35.0.0, platform-tools) installed ad hoc at `/opt/android-sdk` in this ephemeral container — **not persisted**; a future session/CI run needs the SDK available again (the repo's `.github/workflows/android-debug-apk.yml` already handles this for CI). Java 21 and Gradle were already present in this environment. |
 | Secret scan | No private-key or obvious literal-token findings; `.env.example` and `.env.production` remain tracked templates/configuration files and require review before release |
+
+## Android LLM chat bridge (2026-08-10)
+
+Implemented per `docs/ANDROID_LLM_API_BRIDGE.md` Option B: the Android app (no server process of its own) sends chat/model requests to a Bearer-token-authenticated bridge on the same backend deployment that already serves `/api/chat` for the web app.
+
+- `app/routes/api.android.{health,models,chat}.ts` — new routes, gated by `checkAndroidApiAuth()` (`app/lib/.server/android-auth.ts`, constant-time comparison against `ANDROID_API_BACKEND_TOKEN`, fails closed with 500 if unconfigured).
+- `chatAction()` moved from the `api.chat.ts` route file into `app/lib/.server/llm/chat-action.ts` so both `api.chat.ts` (cookie-authenticated) and `api.android.chat.ts` (Bearer-authenticated) can import the identical streaming/MCP/context-selection logic — no duplicated chat logic, no per-platform provider special-casing.
+- `api.android.chat.ts` strips the `Cookie` header before delegating, so `apiKeys`/`providerSettings` resolve to `{}` and `BaseProvider`'s existing `serverEnv`/`process.env` fallback chain supplies provider credentials from this backend's own environment — provider API keys never reach the Android app or its local storage.
+- `app/lib/android-api/backend-config.ts` reads the Android app's locally-stored backend URL/token (`AndroidSettingsPanel.tsx` already wrote these keys); `Chat.client.tsx` now points `useChat()` at the Android backend when `isCapacitor()` and a backend is configured, and blocks sending with a toast otherwise instead of calling a route that can't exist in-app.
+- **Tested**: auth gate (9 cases) and backend-config parsing (4 cases) — 218/218 total tests, clean typecheck/lint/build.
+- **NOT YET VERIFIED**: real end-to-end streaming against a live provider from a physical device — no provider credentials exist in this environment. This is the next highest-value step (see Known blockers).
 
 ## State matrix
 
@@ -59,6 +70,7 @@
 
 - Production build requires an environment with sufficient address space for Miniflare/tcmalloc — succeeded in this session's 15 GB environment; still worth tracking since a smaller environment can reproduce the OOM.
 - Physical-device/APK-install verification still requires the product owner's own device — a debug APK now builds successfully and was delivered; on-device functional testing itself remains **NEEDS DEVICE VALIDATION**.
+- Android LLM chat bridge (`/api/android/*`) is implemented and unit-tested but **NEEDS DEVICE + CREDENTIAL VALIDATION**: an `ANDROID_API_BACKEND_TOKEN`-configured backend deployment with at least one real provider API key, plus entering that backend's URL/token in the Android app's Settings, are both required before a real end-to-end streamed response can be confirmed on-device.
 - No verified image-generation credentials or local image runtime are available; Image Studio remains unavailable by design.
 - Remote Runtime must be configured with `REMOTE_RUNTIME_TOKEN`; predictable defaults are not accepted.
 - Live Bedrock/NVIDIA connections were not executed because credentials are absent and tests must not incur provider costs.
