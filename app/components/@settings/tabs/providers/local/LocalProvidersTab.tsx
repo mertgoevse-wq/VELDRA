@@ -9,6 +9,7 @@ import { logStore } from '~/lib/stores/logs';
 import { providerBaseUrlEnvKeys } from '~/utils/constants';
 import { useToast } from '~/components/ui/use-toast';
 import { useLocalModelHealth } from '~/lib/hooks/useLocalModelHealth';
+import { isCapacitor } from '~/lib/adapters/platform';
 import ErrorBoundary from './ErrorBoundary';
 import { ModelCardSkeleton } from './LoadingSkeleton';
 import SetupGuide from './SetupGuide';
@@ -17,7 +18,18 @@ import ProviderCard from './ProviderCard';
 import ModelCard from './ModelCard';
 import { OLLAMA_API_URL } from './types';
 import type { OllamaModel, LMStudioModel } from './types';
-import { Cpu, Server, BookOpen, Activity, PackageOpen, Monitor, Loader2, RotateCw, ExternalLink } from 'lucide-react';
+import {
+  Cpu,
+  Server,
+  BookOpen,
+  Activity,
+  PackageOpen,
+  Monitor,
+  Loader2,
+  RotateCw,
+  ExternalLink,
+  AlertTriangle,
+} from 'lucide-react';
 
 // Type definitions
 type ViewMode = 'dashboard' | 'guide' | 'status';
@@ -344,6 +356,32 @@ export default function LocalProvidersTab() {
             </div>
           </div>
         </div>
+
+        {/*
+         * Ollama/LM Studio default to http://127.0.0.1:... -- inside the Android WebView that
+         * address means the phone itself, not the desktop machine actually running the local
+         * model server, and there's nothing else in this screen that explains why the resulting
+         * "not reachable" status happens. Only shown on Android; desktop's default is correct.
+         */}
+        {isCapacitor() && (
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-bolt-elements-textPrimary">
+              <p className="font-medium mb-1">127.0.0.1 won&apos;t reach anything on Android</p>
+              <p className="text-bolt-elements-textSecondary">
+                Ollama and LM Studio run on your desktop computer, not on this phone. Replace{' '}
+                <code className="px-1 py-0.5 rounded bg-bolt-elements-background-depth-3 font-mono text-xs">
+                  127.0.0.1
+                </code>{' '}
+                below with your desktop&apos;s LAN IP address (e.g.{' '}
+                <code className="px-1 py-0.5 rounded bg-bolt-elements-background-depth-3 font-mono text-xs">
+                  http://192.168.1.42:11434
+                </code>
+                ), and make sure your phone and desktop are on the same network.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Provider Cards */}
         <div className="space-y-6">

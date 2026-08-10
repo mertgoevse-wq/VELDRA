@@ -275,6 +275,20 @@ function SetupGuide({ onBack }: { onBack: () => void }) {
                   <li>• Web UI available at localhost:11434</li>
                 </ul>
               </div>
+              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 md:col-span-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-red-500" />
+                  <span className="font-medium text-red-500">On Android: use your desktop's LAN IP, not localhost</span>
+                </div>
+                <p className="text-xs text-bolt-elements-textSecondary">
+                  Ollama runs on the desktop computer, not on your phone. In VELDRA's Local Providers base URL field,
+                  replace{' '}
+                  <code className="bg-bolt-elements-background-depth-4 px-1 rounded">http://localhost:11434</code> with
+                  your desktop's LAN IP address (e.g.{' '}
+                  <code className="bg-bolt-elements-background-depth-4 px-1 rounded">http://192.168.1.42:11434</code>)
+                  and make sure your phone and desktop are on the same network.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -425,6 +439,12 @@ function SetupGuide({ onBack }: { onBack: () => void }) {
                     <li>
                       Alternatively, use CLI:{' '}
                       <code className="bg-bolt-elements-background-depth-4 px-1 rounded">lms server start --cors</code>
+                    </li>
+                    <li>
+                      In VELDRA's Local Providers base URL field, use your desktop's LAN IP (e.g.{' '}
+                      <code className="bg-bolt-elements-background-depth-4 px-1 rounded">http://192.168.1.42:1234</code>
+                      ), not <code className="bg-bolt-elements-background-depth-4 px-1 rounded">127.0.0.1</code> -- on
+                      Android, 127.0.0.1 means the phone itself, not the desktop running LM Studio
                     </li>
                   </ol>
                 </div>
