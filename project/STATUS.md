@@ -2,8 +2,20 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `87ebbe7` — "fix(providers): warn Android users that 127.0.0.1 won't reach Ollama/LM Studio (Loop 11)"
+**Current commit:** `718838e` — "fix(image): stop leaving image jobs stuck in 'running' when unavailable (Loop 12)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Image Studio audit: job lifecycle bug fixed, no fake generation added (2026-08-10, twelfth loop)
+
+Audited Image Studio for a real, credential-free bug rather than attempting to wire up live generation (no image provider/credentials exist in this environment, and this project never fabricates generation capability — the existing empty-catalog/"not configured" UI state remains honest and unchanged).
+
+**Found and fixed**: `runImageJob()` transitions a job to `'running'` before calling the provider, but rethrew `ImageGenerationUnavailableError` (the "no provider configured" case — the one path guaranteed to be exercised in any credential-less environment) without ever transitioning the job to a terminal state, violating the documented job lifecycle (`queued/running/completed/failed/cancelled`, always terminal). No user-visible bug today (`api.image.ts`'s single-request flow discards the job either way and already correctly returns 503), but a real contract violation for the "persistent image-job storage" work the project's own docs already flag as future work. Fixed by giving `ImageGenerationUnavailableError` an optional `job` field and transitioning the job to `'failed'` before attaching and rethrowing — the route's existing catch/503 behavior is completely unchanged.
+
+**Also confirmed, not fixed (deliberately out of scope)**: `registry.ts`'s `UnconfiguredImageProvider` is dead code (never registered, never imported outside its own file, missing a spec file unlike every sibling module) — real but low-severity, left for a future loop. No image-generation provider adapter exists anywhere (confirmed zero infrastructure, unlike Ollama's uncredentialed-but-real code) — nothing to wire up without inventing fake capability.
+
+**Validated**: 263/263 tests (+1 new), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: Loop 13 (theme system) per the newest mandate's sequence, or device-validate the now twelve-loop-deep backlog if a physical device becomes available.
 
 ## Local model architecture audit: Ollama/LM Studio reachable but silently unusable on Android as configured (2026-08-10, eleventh loop)
 

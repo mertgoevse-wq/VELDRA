@@ -2,12 +2,28 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `87ebbe7` — "fix(providers): warn Android users that 127.0.0.1 won't reach Ollama/LM Studio (Loop 11)"
+**Current commit:** `718838e` — "fix(image): stop leaving image jobs stuck in 'running' when unavailable (Loop 12)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `87ebbe7` pushed successfully to `origin/main`
+**Last successful push:** `718838e` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slice — local model architecture audit + Android LAN-IP fix (2026-08-10, eleventh loop, "Loop 11")
+## Latest product slice — Image Studio job-lifecycle fix, no fake generation added (2026-08-10, twelfth loop, "Loop 12")
+
+Per the newest mandate's Loop 12 ("Image Studio"). This project has an explicit, repeatedly-reaffirmed hard rule against fabricating image-generation capability — no image provider or credentials exist in this environment, and `project/STATUS.md`'s existing Image Studio section already documents an honest empty catalog and "not configured" UI state rather than a fake generator. So this loop's audit (Explore subagent) was framed around one question: is there real, credential-independent work available here, the way earlier loops found real UI/integration bugs without needing live provider access?
+
+**What's correct as documented**: `validation.ts`/`request.ts`/`types.ts`'s contract layer is internally consistent (capability-aware option validation, base64/MIME/size bounds all line up). `ImageStudioTab.tsx` is honest — the catalog filter (`availability === 'available' && status === 'active'`) is always empty today, so the "No verified image provider configured" panel always renders instead of a generation form; no dead buttons or misleading affordances reachable, and no Android-specific gating issue (it's a plain settings form, renders fine on a narrow viewport). `api.image.ts`'s validation/error layering (size checks → parse → model-lookup → option validation → generation) is correctly ordered and will deterministically 503 `model_not_configured` for any request today. Workspace asset import (`assets.ts`'s `base64ToBytes` → `FilesStore.createFile`) is correctly wired to the Android binary-persistence fix from an earlier loop this session.
+
+**The real, scoped bug found**: `runImageJob()` (`app/lib/modules/image/jobs.ts`) transitions the job to `'running'` before calling the provider — but when the provider throws `ImageGenerationUnavailableError` (the "no provider configured" case, the *only* path guaranteed to be exercised in a credential-less environment like this one), it rethrew the error without ever transitioning the job to a terminal state. This violates the job lifecycle `project/STATUS.md` documents as complete: `queued/running/completed/failed/cancelled`, always reaching a terminal state. `jobs.spec.ts` covered success, generic provider failure, and pre-abort cancel — but had no test for the unavailable-error branch, the one branch this environment can actually exercise. No user-visible bug exists today because `api.image.ts`'s single-request flow discards the job object either way and already correctly returns a 503 with the right error code — but it's a genuine contract violation waiting to surface the moment the project's own documented "future work" (persistent image-job storage, job listing) gets built.
+
+Fix: `ImageGenerationUnavailableError` (`types.ts`) gained an optional `job?: ImageJob` field. `runImageJob()` now transitions the job to `'failed'` (preserving the error message) and attaches the terminal job to the same error instance before rethrowing — `api.image.ts`'s existing `instanceof ImageGenerationUnavailableError` catch and its 503 response are byte-identical to before; only the job's own internal state is now correct for any future caller that inspects it.
+
+**Also confirmed, deliberately not fixed**: `registry.ts`'s `UnconfiguredImageProvider`/`unavailableImageProvider` is dead code — never registered into `imageProviderRegistry`, never imported anywhere outside its own file, and missing a `registry.spec.ts` unlike every sibling module (`types`, `validation`, `request`, `jobs`, `assets` all have one). Real but low-severity, left as a candidate for a future loop rather than folded into this one. Confirmed (again) that no image-generation provider adapter exists anywhere in `app/lib/modules/llm/providers/` or elsewhere — unlike Ollama (uncredentialed but real infrastructure), this is genuinely zero provider code, so there was nothing to "connect," only the job-lifecycle contract to fix.
+
+Validation: 263/263 tests (+1 new, exercising exactly the unavailable-error path), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: Loop 13 (theme system) per the newest mandate's sequence, or device-validate the now twelve-loop-deep Android backlog if a physical device becomes available.
+
+## Earlier product slice — local model architecture audit + Android LAN-IP fix (2026-08-10, eleventh loop, "Loop 11")
 
 Per the newest mandate's Loop 11 ("Local Model Architecture"). Delegated a static-analysis audit (Explore subagent) to establish ground truth before deciding what to build — a full local-model system (real device profiling, GGUF loading, a llama.cpp bridge) is a large feature, and the mandate's own history this session shows the value of confirming a right-sized, real bug before committing to a big build.
 
