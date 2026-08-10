@@ -16,6 +16,18 @@ import { MemoryRouter } from 'react-router-dom';
 import AndroidShell from '~/components/mobile/AndroidShell';
 
 import 'virtual:uno.css';
+/*
+ * index.scss defines --header-height/--workbench-left/--workbench-inner-width/.z-workbench and
+ * the terminal/code/editor/resize-handle component styles that Workbench.client.tsx and its
+ * children (EditorPanel, DiffView, CodeMirrorEditor, TerminalTabs) depend on. It also carries
+ * mobile.scss's touch-target/drawer/safe-area rules -- written explicitly for "bolt.diy on
+ * Android WebView" (see mobile.scss's own header comment, which names the Galaxy A56) but never
+ * previously loaded here. Without this, mounting Workbench on Android relies on undefined CSS
+ * custom properties and unstyled drawer/terminal overlays. android.css (below) still owns
+ * everything Android-shell-specific and loads after, so its rules win where both touch the same
+ * selector (see the .android-shell-scoped override for the Workbench bottom-nav clearance).
+ */
+import '~/styles/index.scss';
 import '~/styles/android.css';
 
 const container = document.getElementById('root');

@@ -277,13 +277,34 @@ export const ChatImpl = memo(
         let errorType: LlmErrorAlertType['errorType'] = 'unknown';
         let title = 'Request Failed';
 
-        if (errorInfo.statusCode === 401 || errorInfo.message.toLowerCase().includes('api key')) {
+        /*
+         * fetch() itself rejects (no HTTP response at all -- unreachable host, DNS failure, TLS
+         * error, offline) with a generic browser-specific message like "Failed to fetch" /
+         * "NetworkError when attempting to fetch resource" / "Load failed". That generic message
+         * is exactly the kind of cryptic error the product wants to avoid surfacing verbatim, and
+         * it's a very likely real-world Android failure mode (typo'd backend URL, backend down,
+         * device offline) since androidBackend.url is user-typed in Settings.
+         */
+        const lowerMessage = errorInfo.message.toLowerCase();
+        const isNetworkUnreachable =
+          lowerMessage.includes('failed to fetch') ||
+          lowerMessage.includes('networkerror') ||
+          lowerMessage.includes('load failed') ||
+          lowerMessage.includes('network request failed');
+
+        if (isNetworkUnreachable) {
+          errorType = 'network';
+          title = 'Backend Unreachable';
+          errorInfo.message = androidBackend
+            ? `VELDRA konnte den Android API Backend nicht erreichen (${androidBackend.url}). Prüfe: Internetverbindung, Backend-URL in Einstellungen, ob das Backend läuft.`
+            : 'VELDRA konnte den Server nicht erreichen. Prüfe deine Internetverbindung.';
+        } else if (errorInfo.statusCode === 401 || lowerMessage.includes('api key')) {
           errorType = 'authentication';
           title = 'Authentication Error';
-        } else if (errorInfo.statusCode === 429 || errorInfo.message.toLowerCase().includes('rate limit')) {
+        } else if (errorInfo.statusCode === 429 || lowerMessage.includes('rate limit')) {
           errorType = 'rate_limit';
           title = 'Rate Limit Exceeded';
-        } else if (errorInfo.message.toLowerCase().includes('quota')) {
+        } else if (lowerMessage.includes('quota')) {
           errorType = 'quota';
           title = 'Quota Exceeded';
         } else if (errorInfo.statusCode >= 500) {
@@ -311,7 +332,7 @@ export const ChatImpl = memo(
         });
         setData([]);
       },
-      [provider.name, stop],
+      [provider.name, stop, androidBackend?.url],
     );
 
     const clearApiErrorAlert = useCallback(() => {

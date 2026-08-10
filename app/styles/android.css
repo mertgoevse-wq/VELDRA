@@ -85,6 +85,18 @@
   z-index: 0;
 }
 
+/*
+ * The Workbench panel (Files/Preview tabs) is position:fixed, so it ignores .android-main's
+ * padding-bottom -- without this it would extend to the true viewport bottom and its lowest
+ * ~64px+ (bottom nav height + safe area) would render underneath the opaque, higher-z-index
+ * .mobile-bottom-nav. mobile.scss's own `bottom: 0 !important` mobile override for this same
+ * element assumes a full-screen Workbench with no competing bottom nav, which doesn't hold in
+ * the Android tab shell, so it's overridden again here, scoped to .android-shell only.
+ */
+.android-shell .fixed.top-\[calc\(var\(--header-height\)\+1\.2rem\)\] {
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
 /* =========================================================
    Bottom navigation
    ========================================================= */

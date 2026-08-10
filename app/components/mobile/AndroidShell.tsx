@@ -22,6 +22,8 @@ import { TouchBackend } from 'react-dnd-touch-backend';
 import { cssTransition, ToastContainer } from 'react-toastify';
 import { themeStore } from '~/lib/stores/theme';
 import { runtimeModeStore } from '~/lib/stores/runtime-mode';
+import { workbenchStore } from '~/lib/stores/workbench';
+import { streamingState } from '~/lib/stores/streaming';
 import { classNames } from '~/utils/classNames';
 import AndroidFallbackBanner from '~/components/mobile/AndroidFallbackBanner';
 import { BottomNav } from '~/components/mobile/BottomNav';
@@ -30,8 +32,11 @@ import AndroidSettingsPanel from '~/components/mobile/AndroidSettingsPanel';
 
 import 'react-toastify/dist/ReactToastify.css';
 
-// Lazy-load the heavy chat component to keep initial load fast
+// Lazy-load the heavy chat/workbench components to keep initial load fast
 const ChatLazy = React.lazy(() => import('~/components/chat/Chat.client').then((m) => ({ default: m.Chat })));
+const WorkbenchLazy = React.lazy(() =>
+  import('~/components/workbench/Workbench.client').then((m) => ({ default: m.Workbench })),
+);
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -134,6 +139,27 @@ export default function AndroidShell() {
     });
   }, []);
 
+  /*
+   * The Files/Preview tabs don't own separate content -- they open the same Workbench
+   * component (file tree, editor, code/diff slider, preview) that desktop already uses,
+   * controlled by workbenchStore.showWorkbench/currentView. Without this, ActionRunner/
+   * FilesStore already correctly persist agent file changes, but there was no way to ever
+   * see them on Android -- Workbench was never mounted here.
+   */
+  useEffect(() => {
+    if (activeTab === 'files') {
+      workbenchStore.setShowWorkbench(true);
+      workbenchStore.currentView.set('code');
+    } else if (activeTab === 'preview') {
+      workbenchStore.setShowWorkbench(true);
+      workbenchStore.currentView.set('preview');
+    } else {
+      workbenchStore.setShowWorkbench(false);
+    }
+  }, [activeTab]);
+
+  const isStreaming = useStore(streamingState);
+
   return (
     <DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
       {/* Theme-aware root */}
@@ -159,12 +185,22 @@ export default function AndroidShell() {
             </ChatErrorBoundary>
           </div>
 
+          {/*
+           * Workbench (Files/Preview) stays mounted always, not just when active -- it manages
+           * its own visibility via workbenchStore.showWorkbench (collapses to width:0 when
+           * closed), and unmounting/remounting it on every tab switch would lose file-tree/
+           * editor state for no benefit.
+           */}
+          <Suspense fallback={null}>
+            <WorkbenchLazy chatStarted isStreaming={isStreaming} />
+          </Suspense>
+
           {/* Settings tab */}
           {activeTab === 'settings' && <SettingsTab />}
         </main>
 
         {/* Bottom navigation */}
-        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} workbenchAvailable={false} />
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} workbenchAvailable />
 
         {/* Toasts */}
         <ToastContainer
