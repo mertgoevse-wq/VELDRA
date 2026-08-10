@@ -1,6 +1,6 @@
 # VELDRA
 
-![VELDRA — AI development workbench](./public/veldra-social-preview.png)
+![VELDRA — AI Development Workbench](./public/assets/brand/veldra-github-banner.jpg)
 
 > **Android port & adaptation © 2026 Mert Gövse.**  
 > Based on **bolt.diy** by **StackBlitz Labs** and contributors.  
