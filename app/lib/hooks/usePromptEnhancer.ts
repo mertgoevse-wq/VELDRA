@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 import type { ProviderInfo } from '~/types/model';
 import { createScopedLogger } from '~/utils/logger';
+import { isCapacitor } from '~/lib/adapters/platform';
+import { getAndroidEnhanceRequest } from '~/lib/android-api/backend-config';
 
 const logger = createScopedLogger('usePromptEnhancement');
 
@@ -20,6 +23,18 @@ export function usePromptEnhancer() {
     provider: ProviderInfo,
     apiKeys?: Record<string, string>,
   ) => {
+    /*
+     * '/api/enhancer' is a Remix server route -- it does not exist inside the Android WebView
+     * (no server process to run it against). Route through the configured Android API Backend
+     * bridge instead (see docs/ANDROID_LLM_API_BRIDGE.md).
+     */
+    const androidRequest = isCapacitor() ? getAndroidEnhanceRequest() : undefined;
+
+    if (isCapacitor() && !androidRequest) {
+      toast.error('Set an Android API Backend URL in Settings before enhancing a prompt.');
+      return;
+    }
+
     setEnhancingPrompt(true);
     setPromptEnhanced(false);
 
@@ -33,10 +48,16 @@ export function usePromptEnhancer() {
       requestBody.apiKeys = apiKeys;
     }
 
-    const response = await fetch('/api/enhancer', {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-    });
+    const response = androidRequest
+      ? await fetch(androidRequest.url, {
+          method: 'POST',
+          headers: { ...androidRequest.headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        })
+      : await fetch('/api/enhancer', {
+          method: 'POST',
+          body: JSON.stringify(requestBody),
+        });
 
     const reader = response.body?.getReader();
 

@@ -25,3 +25,46 @@ export function getAndroidApiBackendConfig(): AndroidApiBackendConfig | null {
     return null;
   }
 }
+
+export interface AndroidApiRequest {
+  url: string;
+  headers: HeadersInit;
+}
+
+function buildAndroidApiRequest(routePath: string, query?: Record<string, string>): AndroidApiRequest | null {
+  const backend = getAndroidApiBackendConfig();
+
+  if (!backend) {
+    return null;
+  }
+
+  const url = new URL(`${backend.url}${routePath}`);
+
+  for (const [key, value] of Object.entries(query ?? {})) {
+    url.searchParams.set(key, value);
+  }
+
+  return {
+    url: url.toString(),
+    headers: backend.token ? { Authorization: `Bearer ${backend.token}` } : {},
+  };
+}
+
+/**
+ * Resolves the Android bridge's model-list endpoint (see app/routes/api.android.models.ts).
+ * Returns null when no backend is configured -- callers must not fall back to the relative
+ * '/api/models' route, which does not exist inside the Android WebView (no server process).
+ */
+export function getAndroidModelsRequest(provider?: string): AndroidApiRequest | null {
+  return buildAndroidApiRequest('/api/android/models', provider ? { provider } : undefined);
+}
+
+/**
+ * Resolves the Android bridge's prompt-enhancement endpoint (see
+ * app/routes/api.android.enhance.ts). Returns null when no backend is configured -- callers
+ * must not fall back to the relative '/api/enhancer' route, which does not exist inside the
+ * Android WebView.
+ */
+export function getAndroidEnhanceRequest(): AndroidApiRequest | null {
+  return buildAndroidApiRequest('/api/android/enhance');
+}

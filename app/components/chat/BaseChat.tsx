@@ -34,6 +34,8 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
 import { RuntimeModeBanner } from '~/components/mobile/RuntimeModeBanner';
+import { isCapacitor } from '~/lib/adapters/platform';
+import { getAndroidModelsRequest } from '~/lib/android-api/backend-config';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -215,7 +217,25 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         }
 
         setIsModelLoading('all');
-        fetch('/api/models')
+
+        /*
+         * '/api/models' is a Remix server route -- it does not exist inside the Android WebView
+         * (no server process to run it against). Route through the configured Android API
+         * Backend bridge instead (see docs/ANDROID_LLM_API_BRIDGE.md); if none is configured yet,
+         * leave modelList empty rather than firing a request that can't succeed.
+         */
+        const androidRequest = isCapacitor() ? getAndroidModelsRequest() : undefined;
+
+        if (isCapacitor() && !androidRequest) {
+          setIsModelLoading(undefined);
+          return;
+        }
+
+        const modelsFetch = androidRequest
+          ? fetch(androidRequest.url, { headers: androidRequest.headers })
+          : fetch('/api/models');
+
+        modelsFetch
           .then((response) => response.json())
           .then((data) => {
             const typedData = data as { modelList: ModelInfo[] };

@@ -55,6 +55,29 @@ The backend should expose a small Android-focused API surface that maps to the e
 - `POST /enhance`
 - `POST /provider-config/validate`
 
+**Implementation note (2026-08-10):** the paths above are the original design draft. What actually
+shipped deploys these as additional Remix routes on the *same* deployment that already serves
+`/api/chat`/`/api/models`/`/api/enhancer` -- not a physically separate service -- because that
+maximizes reuse (`chatAction()`/`enhancerAction()`/`getModelsData()` are now shared named exports
+under `app/lib/.server/`, imported by both the cookie-authenticated web routes and the
+Bearer-token Android routes). Remix's flat-file routing then names them under `/api/android/*`:
+
+| Draft path | Implemented path | Status |
+|---|---|---|
+| `GET /health` | `GET /api/android/health` | Implemented (`app/routes/api.android.health.ts`) |
+| `GET /models` | `GET /api/android/models?provider=` | Implemented (`app/routes/api.android.models.ts`) |
+| `POST /chat/stream` | `POST /api/android/chat` | Implemented (`app/routes/api.android.chat.ts`); this is what `Chat.client.tsx`'s `useChat()` calls directly on Android, not `AndroidApiClient` |
+| `POST /enhance` | `POST /api/android/enhance` | Implemented (`app/routes/api.android.enhance.ts`); used by `usePromptEnhancer.ts` on Android |
+| `POST /chat` (non-streaming) | -- | Not implemented -- `chatAction()` always streams; a non-streaming variant has no concrete use case yet |
+| `POST /provider-config/validate` | -- | Not implemented -- no UI currently needs it |
+
+`app/lib/android-api/AndroidApiClient.ts`'s method paths match this table; its `sendChatMessage`/
+`streamChatResponse`/`enhancePrompt`/`validateProviderConfig` methods are documented in-code as
+not backed by a real route where that's still true. `getAndroidApiBackendConfig()` in
+`app/lib/android-api/backend-config.ts` is the single source of truth for the stored backend
+URL/token (shared by `AndroidSettingsPanel.tsx`, `Chat.client.tsx`, `BaseChat.tsx`, and
+`usePromptEnhancer.ts`) -- add new bridge endpoints there, not as ad hoc `localStorage` reads.
+
 The Android app should store only:
 
 - Backend URL

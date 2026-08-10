@@ -151,27 +151,41 @@ export class AndroidApiClient {
     return `Android API Backend request failed (${status}).${suffix}`;
   }
 
+  /** Backed by the real app/routes/api.android.health.ts route. */
   async health(): Promise<AndroidApiHealthResponse> {
-    return this._request<AndroidApiHealthResponse>('/health', { method: 'GET' });
+    return this._request<AndroidApiHealthResponse>('/api/android/health', { method: 'GET' });
   }
 
+  /** Backed by the real app/routes/api.android.models.ts route. */
   async listModels(options: { provider?: string } = {}): Promise<AndroidApiModelsResponse> {
     const query = options.provider ? `?provider=${encodeURIComponent(options.provider)}` : '';
-    return this._request<AndroidApiModelsResponse>(`/models${query}`, { method: 'GET' });
+    return this._request<AndroidApiModelsResponse>(`/api/android/models${query}`, { method: 'GET' });
   }
 
+  /**
+   * NOT YET BACKED by a server route: app/routes/api.android.chat.ts (the real, live chat path,
+   * used directly by Chat.client.tsx's useChat()) always returns the AI SDK's data-stream
+   * protocol, never the flat JSON this method expects. Calling this today will fail to parse
+   * the response. Kept as a documented gap, not removed, so a future non-streaming JSON chat
+   * route has a client shape to implement against.
+   */
   async sendChatMessage(request: AndroidApiChatRequest): Promise<AndroidApiChatResponse> {
-    return this._request<AndroidApiChatResponse>('/chat', {
+    return this._request<AndroidApiChatResponse>('/api/android/chat', {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
+  /**
+   * NOT YET BACKED by a server route under this name -- the real streaming chat path is
+   * app/routes/api.android.chat.ts (see Chat.client.tsx, which calls it directly via useChat()
+   * instead of this method). Kept as a documented gap, not removed.
+   */
   async *streamChatResponse(request: AndroidApiChatRequest): AsyncGenerator<string, void, unknown> {
     let response: Response;
 
     try {
-      response = await fetch(`${this._baseUrl}/chat/stream`, {
+      response = await fetch(`${this._baseUrl}/api/android/chat/stream`, {
         method: 'POST',
         headers: this._getHeaders(),
         body: JSON.stringify(request),

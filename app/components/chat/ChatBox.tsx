@@ -20,6 +20,20 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import { WebSearch } from './WebSearch.client';
+import { isCapacitor } from '~/lib/adapters/platform';
+
+/*
+ * Provider API keys live server-side on Android (see docs/ANDROID_LLM_API_BRIDGE.md) --
+ * api.android.chat.ts strips the Cookie header, so a key typed into APIKeyManager here would be
+ * silently ignored instead of configuring anything. Point at the real configuration surface
+ * instead of showing a control that does nothing.
+ */
+const AndroidApiKeyNotice: React.FC = () => (
+  <div className="text-xs text-bolt-elements-textSecondary px-1 py-2">
+    Provider API keys are configured on the Android API Backend server, not in this app. Set the backend URL and token
+    in Settings → Android API Backend.
+  </div>
+);
 
 interface ChatBoxProps {
   isModelSettingsCollapsed: boolean;
@@ -121,7 +135,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               />
               {(props.providerList || []).length > 0 &&
                 props.provider &&
-                !LOCAL_PROVIDERS.includes(props.provider.name) && (
+                !LOCAL_PROVIDERS.includes(props.provider.name) &&
+                (isCapacitor() ? (
+                  <AndroidApiKeyNotice />
+                ) : (
                   <APIKeyManager
                     provider={props.provider}
                     apiKey={props.apiKeys[props.provider.name] || ''}
@@ -129,7 +146,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                       props.onApiKeysChange(props.provider.name, key);
                     }}
                   />
-                )}
+                ))}
             </div>
           )}
         </ClientOnly>
