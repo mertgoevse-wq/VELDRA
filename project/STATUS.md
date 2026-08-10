@@ -1,22 +1,22 @@
 # VELDRA Status
 
-**Updated:** 2026-08-09
+**Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** pending — Android/local workspace action integration
+**Current commit:** `9b65c07` — "fix: resolve GitHub-hosted node-gyp install blocker and ESLint backlog"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
-## Validation baseline
+## Validation baseline (2026-08-10, this session/environment)
 
 | Check | Result |
 |---|---|
 | Git status/fetch | Clean; `main` synchronized with `origin/main` |
-| `pnpm test` | Passed: 24 files / 196 tests |
+| `pnpm install` | Was blocked by a GitHub 403 fetching `@electron/node-gyp`'s tarball; fixed with the same `pnpm.overrides` entry already proven in the bolt-android source (`npm:@electron/node-gyp@10.2.0-electron.2`) |
+| `pnpm test` | Passed: 25 files / 205 tests |
 | `pnpm typecheck` | Passed |
-| Focused ESLint | Passed for the execution/runtime slice |
-| `pnpm lint` | Fails: 145 remaining errors after the prior focused slices; primarily unrelated formatting/rule findings |
-| `pnpm build` | Environment blocker: Miniflare/tcmalloc 1 GiB address-space allocation failure |
-| Android web build | Not validated in this environment; Java, Android SDK, adb, and Gradle are unavailable |
-| Secret scan | No private-key or obvious literal-token findings in the current slice; `.env.example` and `.env.production` remain tracked templates/configuration files and require review before release |
+| `pnpm lint` | Passed: 0 errors (142 auto-fixable formatting/style findings resolved via `lint:fix`, re-verified with tests/typecheck) |
+| `pnpm build` | **Passed** in this environment (15 GB RAM) — the previously documented Miniflare/tcmalloc 1 GiB OOM does not reproduce here; environment-dependent, not a code defect |
+| Android debug APK | **Built successfully** — `android/app/build/outputs/apk/debug/app-debug.apk` (8.4 MB, `com.veldra.app`, label "VELDRA"), delivered directly to the product owner for device install. Android SDK (platform 35, build-tools 35.0.0, platform-tools) installed ad hoc at `/opt/android-sdk` in this ephemeral container — **not persisted**; a future session/CI run needs the SDK available again (the repo's `.github/workflows/android-debug-apk.yml` already handles this for CI). Java 21 and Gradle were already present in this environment. |
+| Secret scan | No private-key or obvious literal-token findings; `.env.example` and `.env.production` remain tracked templates/configuration files and require review before release |
 
 ## State matrix
 
@@ -57,8 +57,8 @@
 
 ## Known blockers
 
-- Production build requires an environment with sufficient address space for Miniflare/tcmalloc.
-- Android APK/device checks require JDK, Android SDK/Gradle, and a physical or CI device.
+- Production build requires an environment with sufficient address space for Miniflare/tcmalloc — succeeded in this session's 15 GB environment; still worth tracking since a smaller environment can reproduce the OOM.
+- Physical-device/APK-install verification still requires the product owner's own device — a debug APK now builds successfully and was delivered; on-device functional testing itself remains **NEEDS DEVICE VALIDATION**.
 - No verified image-generation credentials or local image runtime are available; Image Studio remains unavailable by design.
 - Remote Runtime must be configured with `REMOTE_RUNTIME_TOKEN`; predictable defaults are not accepted.
 - Live Bedrock/NVIDIA connections were not executed because credentials are absent and tests must not incur provider costs.

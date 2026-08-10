@@ -1,13 +1,24 @@
 # VELDRA Session Handoff
 
-**Last updated:** 2026-08-09  
-**Branch:** `main`  
-**Current commit:** pending — Android/local workspace action integration
-**Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`  
-**Last successful push:** `254831932118532d216a5b2eacdca1fb709dbf42` pushed successfully to `origin/main`
-**Working tree:** local integration slice validated; push pending
+**Last updated:** 2026-08-10
+**Branch:** `main`
+**Current commit:** `9b65c07` — "fix: resolve GitHub-hosted node-gyp install blocker and ESLint backlog"
+**Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
+**Last successful push:** `9b65c07` pushed successfully to `origin/main`
+**Working tree:** clean
 
-> The next MVP slice connects the existing chat model selector to VELDRA's capability router while preserving the established provider/streaming path.
+## Latest infrastructure slice — dependencies unblocked, first working debug APK (2026-08-10)
+
+Attached the VELDRA repo fresh in a new session/environment (previous consolidation notes said "no node_modules in the current environment" — this is the first empirical validation pass in a dependency-complete environment).
+
+- `pnpm install` failed with a GitHub 403 fetching `@electron/node-gyp`'s tarball (no GitHub auth for tarball fetches in this sandbox). Fixed with the same `pnpm.overrides` entry already proven working in the bolt-android integration source (`@electron/node-gyp` → `npm:@electron/node-gyp@10.2.0-electron.2`), the npm-published equivalent.
+- Full validation with dependencies installed: **205/205 tests passed, typecheck clean, `pnpm build` succeeded** (this environment has 15 GB RAM; the previously documented Miniflare/tcmalloc OOM did not reproduce here — environment-dependent, not a code defect).
+- `pnpm lint` had 142 errors, all auto-fixable formatting/style findings (this was the roadmap's #1 current priority). Ran `lint:fix`; 0 errors remain. Re-verified 205/205 tests and typecheck after the formatting pass — no behavioral changes. Committed as `9b65c07`, pushed to `origin/main`.
+- **This environment already had Java 21 and Gradle installed but no Android SDK.** Installed the Android SDK command-line tools, `platform-tools`, `platforms;android-35`, and `build-tools;35.0.0` ad hoc under `/opt/android-sdk` (accepted the standard Android SDK license non-interactively via `sdkmanager`). This directory is **not part of the repo and not persisted** — it will not exist in the next session/container; a future session needs to redo this setup (or rely on the repo's own `.github/workflows/android-debug-apk.yml`, which already provisions this in CI).
+- Ran `npm run android:apk:debug` (Capacitor sync + `./gradlew assembleDebug`): **BUILD SUCCESSFUL in 2m 28s.** Produced `android/app/build/outputs/apk/debug/app-debug.apk` (8.4 MB). Verified with `aapt dump badging`: `package: name='com.veldra.app' versionCode='1' versionName='1.0'`, `application-label:'VELDRA'`, `targetSdkVersion:'35'`, `minSdk 23`. **Delivered the APK directly to the product owner** for installation on their Samsung Galaxy A56.
+- This is the first debug APK actually built and handed to the product owner in this project's history (per the repo's own docs, APK compilation had previously only been validated locally in an earlier, since-lost environment and via a not-yet-triggered CI workflow).
+
+**Known limitation of this build:** it is the Android app shell/workspace UI, not a fully wired chat backend — per `CURRENT_STATUS.md`'s own "Known Limitations" #1, LLM chat requires server-side API routes that don't exist in a WebView; a safe Android API Backend bridge is scaffolded but production chat is not connected. This was not silently overclaimed to the product owner.
 
 ## Latest product slice — Auto capability model routing
 
