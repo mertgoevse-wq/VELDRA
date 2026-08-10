@@ -208,7 +208,7 @@ export class ActionRunner {
        * shell/build/start failures use -- without it, the model has no way to learn the command
        * it just emitted never ran (it isn't told this session has no shell/build capability in
        * the first place), and will keep talking as if setup succeeded. The user still has to
-       * click "Ask Bolt" to feed it back, same as any other terminal error in this UI.
+       * click "Ask VELDRA" to feed it back, same as any other terminal error in this UI.
        */
       this.onAlert?.({
         type: 'error',
