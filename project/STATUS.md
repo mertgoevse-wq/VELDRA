@@ -2,8 +2,22 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `525248d` — "fix(runtime): stop claiming Remote Runtime supports command execution (Loop 10)"
+**Current commit:** `87ebbe7` — "fix(providers): warn Android users that 127.0.0.1 won't reach Ollama/LM Studio (Loop 11)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Local model architecture audit: Ollama/LM Studio reachable but silently unusable on Android as configured (2026-08-10, eleventh loop)
+
+Audited local-model architecture to find a right-sized fix rather than attempting a full local-model system (device compatibility scoring, GGUF/llama.cpp bridge) in one loop — confirmed that's genuinely too large for a single slice, matching `project/STATUS.md`'s own pre-existing "no compatibility profiler" note (still true, not addressed this loop).
+
+**Finding**: Ollama and LM Studio providers (`app/lib/modules/llm/providers/ollama.ts`/`lmstudio.ts`) are both real and dynamic — live `fetch` against a running server, no hardcoded model lists, no fake capability. They're also fully reachable from the real Android app: not just the simplified bottom-nav Settings tab, but the full desktop-identical `LocalProvidersTab` reached via the chat hamburger menu. Default base URLs are `http://127.0.0.1:11434`/`:1234` — inside the Android WebView, `127.0.0.1` resolves to the phone itself, not the desktop machine running Ollama/LM Studio, so these providers can never work out of the box on Android, and nothing anywhere explained why. The existing LM Studio CORS instructions even proved the developers knew Android was a target ("you MUST enable CORS") without ever mentioning the one substitution that actually matters.
+
+**Fixed**: added an `isCapacitor()`-gated warning banner in `LocalProvidersTab.tsx` and matching Android LAN-IP guidance in both the Ollama and LM Studio sections of `SetupGuide.tsx`.
+
+**Also confirmed, not fixed (out of scope, correctly so)**: `app/lib/dev/` and `studio/` (~2,200 lines) are real but completely unwired islands — zero consumers outside themselves — an entitlement/budget-policy adapter and a separate capability-router/gauntlet module respectively. Neither is actually a local-model gap; wiring either in is a distinct, larger architectural decision, not this loop's concern.
+
+**Validated**: 262/262 tests (unchanged — UI copy/warning only), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: Loop 12 (Image Studio) per the newest mandate's sequence, or device-validate the now eleven-loop-deep backlog if a physical device becomes available.
 
 ## Remote Runtime audit: real infra, but no agent integration — fixed a silent-failure bug (2026-08-10, tenth loop)
 

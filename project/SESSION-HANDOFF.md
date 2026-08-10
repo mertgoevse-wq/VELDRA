@@ -2,12 +2,30 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `525248d` — "fix(runtime): stop claiming Remote Runtime supports command execution (Loop 10)"
+**Current commit:** `87ebbe7` — "fix(providers): warn Android users that 127.0.0.1 won't reach Ollama/LM Studio (Loop 11)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `525248d` pushed successfully to `origin/main`
+**Last successful push:** `87ebbe7` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slice — Remote Runtime audit + silent-failure fix (2026-08-10, tenth loop, "Loop 10")
+## Latest product slice — local model architecture audit + Android LAN-IP fix (2026-08-10, eleventh loop, "Loop 11")
+
+Per the newest mandate's Loop 11 ("Local Model Architecture"). Delegated a static-analysis audit (Explore subagent) to establish ground truth before deciding what to build — a full local-model system (real device profiling, GGUF loading, a llama.cpp bridge) is a large feature, and the mandate's own history this session shows the value of confirming a right-sized, real bug before committing to a big build.
+
+**What's real**: `ollama.ts:70-111` does a live `fetch(${baseUrl}/api/tags)` against a running Ollama server (`staticModels` is empty — no hardcoded list). `lmstudio.ts:43-84` does the same against `/v1/models`. Both are genuine, dynamic, non-fake provider implementations.
+
+**What's a confirmed island, not a local-model gap**: `app/lib/dev/` (`developer-mode.ts`/`runtime-environment.ts`) implements an entitlement-tier/budget-policy diagnostics adapter — has zero relation to local models or "host-side runtime" in the LLM sense despite its name, and has zero consumers anywhere in `app/` (grep-confirmed — even `app/lib/orchestrator/entitlement.ts` only references its path in a comment). `studio/` (~2,200 lines, real logic + real spec suites, not stub-only) implements a capability-router/gauntlet/source-discovery system, also confirmed to have zero consumers outside itself anywhere in `app/`/`android/`. Both are real, tested, but completely unwired into the running VELDRA app — a distinct future integration decision, not something to force into this loop.
+
+**Device-compatibility scoring**: confirmed absent entirely (grep for `deviceScore`/`VRAM`/`quantiz`/`gguf`/`llama.cpp` across the repo finds only cosmetic UI strings — Ollama's own API response field, prose in `SetupGuide.tsx`). Matches `project/STATUS.md`'s pre-existing claim exactly. Still not addressed — genuinely a separate, large feature.
+
+**The real, right-sized bug found**: Ollama/LM Studio are fully reachable from the actual Android app — not just the simplified `AndroidSettingsPanel.tsx` (bottom-nav Settings tab), but the full desktop-identical `LocalProvidersTab` reached via the chat hamburger menu → Settings → Local Providers (`ModelSelector.tsx` even prints Ollama/LMStudio-specific hint text, confirming this path is live). Default base URLs are `http://127.0.0.1:11434`/`:1234`. Inside the Android WebView, `127.0.0.1`/`localhost` means the phone itself — never the desktop machine actually running the local model server. A user could enable either provider, get the pre-filled loopback URL, and the app would just report "not reachable" with zero explanation. `SetupGuide.tsx`'s existing LM Studio section even proved the developers knew Android was a target ("To work with VELDRA on Android, you MUST enable CORS in LM Studio") without ever mentioning the one substitution that actually matters for a WebView — replacing the loopback address with the desktop's LAN IP. The Ollama section had zero Android awareness at all.
+
+Fix shipped: `LocalProvidersTab.tsx` gained an `isCapacitor()`-gated amber warning banner above the provider cards explaining the LAN-IP requirement with a concrete example URL. `SetupGuide.tsx` gained matching guidance in both sections — a new red-bordered callout in Ollama's tips grid, and an added list item in LM Studio's existing CORS instructions.
+
+Validation: 262/262 tests (unchanged — UI copy/warning only, no new logic to unit-test), typecheck clean, lint clean (one `lint:fix` pass for formatting), Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: Loop 12 (Image Studio) per the newest mandate's sequence — `project/STATUS.md`'s existing Image Studio section already documents a real, non-fake foundation (provider-neutral contracts, capability-aware validation, no fake image results) with "no real image generator available in this execution environment" as the standing blocker, so this loop should audit for the same kind of right-sized, confirmable gap rather than assuming a generator can be wired up without credentials. Otherwise, device-validate the now eleven-loop-deep Android backlog if a physical device becomes available.
+
+## Earlier product slice — Remote Runtime audit + silent-failure fix (2026-08-10, tenth loop, "Loop 10")
 
 Per the newest mandate's Loop 10 ("Remote Runtime"). Delegated a static-analysis audit (Explore subagent) to answer: is Remote Runtime real, usable infrastructure, or scaffolding? And specifically: does an agent-issued `shell`/`build`/`start` action ever actually reach it?
 
