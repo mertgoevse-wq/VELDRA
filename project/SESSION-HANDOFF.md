@@ -2,12 +2,36 @@
 
 **Last updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `718838e` — "fix(image): stop leaving image jobs stuck in 'running' when unavailable (Loop 12)"
+**Current commit:** `515b0df` — "fix(workbench): clean up dead diff CSS, tighten fullscreen padding on Android (Loop 13)"
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `718838e` pushed successfully to `origin/main`
+**Last successful push:** `515b0df` pushed successfully to `origin/main`
 **Working tree:** clean
 
-## Latest product slice — Image Studio job-lifecycle fix, no fake generation added (2026-08-10, twelfth loop, "Loop 12")
+## Mandate update: "VELDRA PRODUCT COMPLETION MASTER LOOP" (2026-08-10)
+
+A new, much larger 50-phase mandate arrived mid-session, superseding the prior 20-loop mandate's specific numbering (this doc's "Loop N" numbering below continues counting sessions/slices, not the new mandate's phase numbers, to keep the handoff trail continuous). Key points that change how work should be selected going forward:
+
+- Explicit priority tiers: **P0** = Core Android usability, Chat, Model routing, Files, Workbench, Editor, Diff, Preview, Persistence, History, Import/export. **P1** = Agent runtime, Tool execution, Runtime, Terminal, Build, Project generation, Testing loops. **P2** = Providers, local models, remote models, image generation, MCP, skills, plugins. **P3** = themes, voice, multilingual, advanced UX, premium architecture. **P4** = cloud integrations, collaboration, additional services. Rule: never work on a lower tier while a higher-tier issue is known and unfixed.
+- Explicit anti-fake-feature rule (Phase 36), consistent with everything this session has already been doing: don't mark anything "implemented" if only UI/interface/contract exists with no real runtime path.
+- Explicit 70% floor on code/integration/testing/Android work vs. documentation/branding/theming (Phase 41) — reinforces the existing practice this session: audit → fix → test → build → commit, not essay-writing.
+- Re-confirmed per the mandate's explicit instruction not to trust prior claims blindly: `.claude/agents/`, `.claude/skills/`, and any `.mcp*` config are genuinely absent from this repository — checked directly this loop, not assumed.
+- The mandate names "Phase 13/theme work" as a specific thing to inspect first. Current theme system reality (checked): `app/lib/stores/theme.ts` + `ThemeSwitch.tsx` implement a plain dark/light binary toggle — nothing resembling the mandate's envisioned 8-theme system (Obsidian/Aurora/Glass/Terminal/etc.) exists. That's explicitly P3 work per the mandate's own tiers, so it was **not** started this loop; a P0 item (DiffView, below) was picked instead, consistent with "don't work on P3 while P0 items remain."
+
+## Latest product slice — DiffView audit + dead-CSS/fullscreen-padding fix (2026-08-10, thirteenth loop, "Loop 13")
+
+First slice under the new mandate. Picked from P0 ("Workbench... Diff... Preview") rather than the mandate's explicitly-named "Phase 13/theme work" (P3) — themes are lower priority per the mandate's own tier rules, and no P0 gaps were left unaudited in Workbench/Editor/Preview specifically, except `DiffView.tsx`, which the earlier narrow-viewport audit (loop 7/"Phase D") never covered.
+
+Delegated a static-analysis audit (Explore subagent) targeting the same class of problems found earlier this session (split layouts that can't fit 360-412px, clipped overflow, hover-only touch-unreachable controls, hardcoded small fonts). Result: DiffView is largely fine already — there's only one diff rendering mode (unified, single-column; no side-by-side layout exists to overflow), long lines scroll horizontally rather than clip, there are zero per-line action buttons/resize handles/drag interactions gated behind hover (grep-confirmed), and the component inherits ambient font size rather than hardcoding a small one (unlike the `cm-theme.ts` 12px bug fixed earlier this session).
+
+Two real, minor issues confirmed and fixed:
+- `app/styles/diff-view.css:25-73`: ~50 lines of entirely dead CSS. A scrollbar-hide-on-non-hover rule (`.diff-panel:not(:hover) .diff-panel-content`) targets a `.diff-panel` class that's never applied anywhere in `DiffView.tsx` (only the child `.diff-panel-content` class is used directly, with no `.diff-panel` parent — grep-confirmed across `app/`), so the rule has never fired. `.diff-line`/`.diff-line-number`/`.diff-line-content`/`.diff-added`/`.diff-removed`/`.diff-block-added`/`.diff-block-removed` are legacy classes fully superseded by the `lineNumberStyles`/`lineContentStyles` JS style constants the component actually uses — confirmed unreferenced anywhere via grep. Removed all of it; kept the live custom-scrollbar styling (lines 1-23), which does work and is genuinely applied to `.diff-panel-content`.
+- `DiffView.tsx`'s `FullscreenOverlay` (line 55) applied a fixed `p-6` (24px each side) outer padding plus `max-w-[90vw]` on the inner panel — on a 360px viewport that leaves only ~312px for the diff column even before the 90vw cap applies, tightening an already-cramped view further right when a user taps fullscreen to get *more* room. Changed to `p-2 sm:p-6` / `max-w-[96vw] sm:max-w-[90vw]` — desktop (`sm:` breakpoint) is byte-identical to before; narrow viewports get meaningfully more width.
+
+Validation: 263/263 tests (unchanged — CSS/layout-only slice, nothing here has unit-testable logic beyond what's already covered), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: continue P0/P1 per the new mandate's priority tiers. Two strong candidates: (a) Terminal (P1) — the *manual* Remote Runtime command panel and the interactive `Terminal`/`TerminalTabs` UI itself have not been specifically audited for Android touch/narrow-viewport correctness this session (only the *agent-issued shell action* capability gate was, in loops 9-10); (b) a Phase-26-style deterministic end-to-end acceptance test (multi-turn: generate a file → user requests a change → diff shown → files updated → preview reflects it → export) — the individual pieces (file creation via the parser/ActionRunner integration test, diff rendering, persistence, export) are each tested separately, but no single test proves the full iterative loop end-to-end the way the mandate's Phase 26 describes, using a fixture/mock model response since no live provider credentials exist in this environment.
+
+## Earlier product slice — Image Studio job-lifecycle fix, no fake generation added (2026-08-10, twelfth loop, "Loop 12")
 
 Per the newest mandate's Loop 12 ("Image Studio"). This project has an explicit, repeatedly-reaffirmed hard rule against fabricating image-generation capability — no image provider or credentials exist in this environment, and `project/STATUS.md`'s existing Image Studio section already documents an honest empty catalog and "not configured" UI state rather than a fake generator. So this loop's audit (Explore subagent) was framed around one question: is there real, credential-independent work available here, the way earlier loops found real UI/integration bugs without needing live provider access?
 

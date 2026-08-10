@@ -2,8 +2,22 @@
 
 **Updated:** 2026-08-10
 **Branch:** `main`
-**Current commit:** `718838e` — "fix(image): stop leaving image jobs stuck in 'running' when unavailable (Loop 12)"
+**Current commit:** `515b0df` — "fix(workbench): clean up dead diff CSS, tighten fullscreen padding on Android (Loop 13)"
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## New mandate received: "VELDRA PRODUCT COMPLETION MASTER LOOP" (2026-08-10)
+
+The product owner issued a much larger (50-phase) mandate covering the full product surface: Android-first UX polish, agent runtime, skills, MCP, model router maturity, local models, Image AI, workbench/diff/preview/terminal completeness, project generation, beginner mode, themes, branding, README, privacy/credential security, auth, voice, i18n, file management, remote runtime, build/device testing, end-to-end acceptance, and more. Its own priority ordering (P0-P4) explicitly ranks Core Android usability/Chat/Files/Workbench/Editor/Diff/Preview/Persistence/History/Import-export as P0, Agent runtime/Tool execution/Terminal/Build/Project generation as P1, Providers/local models/image gen/MCP/skills as P2, and themes/voice/i18n/premium as P3 — with an explicit rule not to work on P3/P4 while a P0 issue exists. This session is working through it the same way as the prior six loops: targeted audit → confirm a real, scoped gap → fix → test → build → commit → push → document, starting from P0/P1.
+
+Re-confirmed per the mandate's own instruction not to fabricate: `.claude/agents/`, `.claude/skills/`, and any `.mcp*` config remain genuinely absent from this repository (checked directly, not assumed from prior session notes).
+
+## Loop 13 — DiffView audit (P0 Workbench): dead CSS + fullscreen padding fixed
+
+Audited `DiffView.tsx` (the one major Workbench sub-view not covered by the earlier narrow-viewport audit this session) for real Android/touch problems. Found it's largely fine already: single unified diff mode (no side-by-side layout that could overflow 360-412px), long lines scroll rather than clip, no hover-only/touch-unreachable affordances, no hardcoded-small-font problem. Two real, minor issues fixed: `app/styles/diff-view.css` had ~50 lines of entirely dead CSS (a scrollbar-hide rule targeting a `.diff-panel` class never applied anywhere, plus legacy `.diff-line`/`.diff-added`/`.diff-removed` classes fully superseded by JS style constants) — removed. `FullscreenOverlay`'s fixed `p-6`/`max-w-[90vw]` further shrank an already-tight diff column on Android fullscreen — now `p-2 sm:p-6`/`max-w-[96vw] sm:max-w-[90vw]`, desktop unchanged.
+
+**Validated**: 263/263 tests (unchanged — CSS/layout only), typecheck clean, lint clean, Cloudflare build clean, Android web build clean, native Gradle build succeeds, debug APK builds (unchanged size/permissions).
+
+**Next highest-value step**: continue P0/P1 per the new mandate — Terminal (P1, the manual command panel and UI itself weren't specifically audited for Android touch/narrow-viewport correctness, only the agent-issued-shell-action gate was, in an earlier loop), or the Phase 26-style end-to-end acceptance scenario (multi-turn generate→diff→preview→export, deterministic via fixture provider) which doesn't yet exist as a single test even though its individual pieces (file creation, diff, persistence) are each tested separately.
 
 ## Image Studio audit: job lifecycle bug fixed, no fake generation added (2026-08-10, twelfth loop)
 
