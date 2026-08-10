@@ -18,7 +18,7 @@ The original MIT License is retained in full. See [LICENSE](./LICENSE).
 ## Trademarks and Logos
 
 - The original bolt.diy logos, icons, and trademarks remain the property of their respective owners.
-- This project uses original VELDRA product assets (`public/veldra-logo.svg`, `public/veldra-icon.svg`, and `public/veldra-social-preview.svg`) and does not claim ownership of the original bolt.diy brand assets.
+- This project uses original VELDRA product assets (`public/veldra-logo.svg`, `public/veldra-icon.svg`, and `public/veldra-social-preview.png`) and does not claim ownership of the original bolt.diy brand assets.
 - The name "bolt.diy" is retained only for attribution and descriptive purposes, accurately describing the relationship to the upstream project.
 
 ## Attribution Statement

@@ -1,6 +1,6 @@
 # VELDRA
 
-![VELDRA — AI development workbench](./public/veldra-social-preview.svg)
+![VELDRA — AI development workbench](./public/veldra-social-preview.png)
 
 > **Android port & adaptation © 2026 Mert Gövse.**  
 > Based on **bolt.diy** by **StackBlitz Labs** and contributors.  
@@ -23,7 +23,7 @@ VELDRA lets you chat with LLMs, generate code, browse files, and edit projects o
 
 - **Description**: Provider-agnostic AI development workbench with Capacitor, local IndexedDB fallback persistence, and Android WebView support.
 - **Topics**: `veldra`, `android`, `capacitor`, `webview`, `ai-development-workbench`, `typescript`, `react`, `vite`, `indexeddb`, `mobile`, `open-source`
-- **Social Preview**: [veldra-social-preview.svg](./public/veldra-social-preview.svg)
+- **Social Preview**: [veldra-social-preview.png](./public/veldra-social-preview.png)
 
 ---
 
@@ -143,4 +143,4 @@ VELDRA is an independent product derived from the original open-source project *
 
 - **Original Project**: [bolt.diy by StackBlitz Labs](https://github.com/stackblitz-labs/bolt.diy)
 - **License**: MIT (Retained in full in [LICENSE](./LICENSE))
-- **Trademarks & Copyright**: All original trademarks and logos belong to StackBlitz Labs and contributors. VELDRA uses original product assets (`public/veldra-logo.svg`, `public/veldra-icon.svg`, and `public/veldra-social-preview.svg`). The upstream name and attribution below describe the project's technical origin only.
+- **Trademarks & Copyright**: All original trademarks and logos belong to StackBlitz Labs and contributors. VELDRA uses original product assets (`public/veldra-logo.svg`, `public/veldra-icon.svg`, and `public/veldra-social-preview.png`). The upstream name and attribution below describe the project's technical origin only.

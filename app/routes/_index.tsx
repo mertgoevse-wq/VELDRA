@@ -6,9 +6,19 @@ import { Header } from '~/components/header/Header';
 import BackgroundRays from '~/components/ui/BackgroundRays';
 
 export const meta: MetaFunction = () => {
+  const description = 'VELDRA — a provider-agnostic AI development workbench.';
+
   return [
     { title: 'VELDRA' },
-    { name: 'description', content: 'VELDRA — a provider-agnostic AI development workbench.' },
+    { name: 'description', content: description },
+    { property: 'og:title', content: 'VELDRA' },
+    { property: 'og:description', content: description },
+    { property: 'og:image', content: '/veldra-social-preview.png' },
+    { property: 'og:type', content: 'website' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: 'VELDRA' },
+    { name: 'twitter:description', content: description },
+    { name: 'twitter:image', content: '/veldra-social-preview.png' },
   ];
 };
 

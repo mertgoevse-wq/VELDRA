@@ -325,7 +325,7 @@ The active web, desktop metadata, Android package identity, and primary VELDRA S
 | BRANDING.md | ✅ | `BRANDING.md` |
 | VELDRA logo SVG | ✅ | `public/veldra-logo.svg` |
 | VELDRA app icon SVG | ✅ | `public/veldra-icon.svg` |
-| VELDRA social preview | ✅ | `public/veldra-social-preview.svg` |
+| VELDRA social preview | ✅ | `public/veldra-social-preview.png` |
 | Android strings.xml | ✅ | App name → `VELDRA` |
 | Android build.gradle | ✅ | namespace + applicationId updated |
 | MainActivity.java | ✅ | Package/path `com/veldra/app/`, package `com.veldra.app` |

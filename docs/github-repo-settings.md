@@ -29,7 +29,5 @@ Add the following tags to help others discover the project:
 - `open-source`
 
 ### 4. Social Preview
-Upload the customized SVG social preview card located in this repository at:
-`public/veldra-social-preview.svg`
-
-*(Note: If GitHub does not support direct SVG uploads for social preview images, you can render/convert this SVG to a PNG file using a browser or vector editor and upload the PNG instead).*
+Upload the social preview card located in this repository at:
+`public/veldra-social-preview.png` (1200×630, already in GitHub's supported raster format — no conversion needed).

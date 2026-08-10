@@ -16,7 +16,7 @@ VELDRA product-facing assets are original and live under `public/`:
 - `veldra-logo.svg` — responsive wordmark
 - `veldra-icon.svg` — square app icon source
 - `veldra-favicon.svg` — browser favicon
-- `veldra-social-preview.svg` — repository/social preview source
+- `veldra-social-preview.png` — repository/social preview source
 
 Provider logos and upstream compatibility assets are not product branding and should not be altered without a separate migration decision.
 
