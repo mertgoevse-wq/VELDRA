@@ -37,6 +37,7 @@ import { RuntimeModeBanner } from '~/components/mobile/RuntimeModeBanner';
 import { isCapacitor } from '~/lib/adapters/platform';
 import { getAndroidModelsRequest } from '~/lib/android-api/backend-config';
 import { ProjectGuidedBuild } from '~/components/chat/ProjectGuidedBuild';
+import { WelcomeHero } from '~/components/chat/WelcomeHero.client';
 import {
   composeMessageWithProjectBrief,
   hasProjectBriefDetails,
@@ -398,34 +399,13 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
             <ClientOnly>{() => <RuntimeModeBanner />}</ClientOnly>
             {!chatStarted && (
-              <div id="intro" className="relative mt-[8vh] lg:mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
+              <div id="intro" className="relative mt-[10vh] lg:mt-[14vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
                 <div
                   aria-hidden="true"
                   className="hidden dark:lg:block absolute -inset-x-24 -top-16 -z-10 h-64 opacity-[0.08] bg-repeat bg-[length:220px_220px] [background-image:url('/veldra-brand-background.webp')] [mask-image:radial-gradient(ellipse_60%_100%_at_50%_0%,black,transparent)] pointer-events-none"
                 />
-                <div className="hidden lg:flex justify-center mb-6 animate-fade-in">
-                  <picture>
-                    <source srcSet="/veldra-hero-art.webp" type="image/webp" />
-                    <img
-                      src="/veldra-hero-art.jpg"
-                      alt="VELDRA connecting local and cloud AI models, Android, agents, and tools around a single build"
-                      loading="lazy"
-                      width={1200}
-                      height={670}
-                      className="w-full max-w-xl aspect-[1200/670] rounded-2xl border border-bolt-elements-borderColor object-cover shadow-lg"
-                    />
-                  </picture>
-                </div>
-                <h1
-                  className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in"
-                  style={{ fontFamily: 'var(--veldra-font-brand)' }}
-                >
-                  Where ideas begin
-                </h1>
-                <p className="text-md lg:text-xl mb-4 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
-                  Bring ideas to life in seconds or get help on existing projects.
-                </p>
-                <div className="mb-4">
+                <ClientOnly>{() => <WelcomeHero />}</ClientOnly>
+                <div className="mb-4 mt-4">
                   <ClientOnly>{() => <ProjectGuidedBuild />}</ClientOnly>
                 </div>
               </div>
