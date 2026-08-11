@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-11
 **Branch:** `main`
-**Current commit:** (Slice 7 in progress, not yet committed — will follow `bf3fa9d`)
+**Current commit:** (Slice 8 in progress, not yet committed — will follow `43ca552`)
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
 ## Loop 21+ (IN PROGRESS): productization mandate — Slices 1-6 of 15
@@ -25,7 +25,11 @@ The product owner issued a 51-section (A-AY) mandate covering de-Bolting/legal a
 
 **Real bug found and fixed while doing this slice's visual QA**: `pnpm dev` was completely broken — Remix's default route-file discovery in `app/routes/` picked up Slice 2's `webcontainer.connect.$id.spec.ts` as a phantom route and tried to SSR-evaluate it, which fails because it imports `vitest`. This wasn't caught by `pnpm build` (production route manifest generation apparently doesn't hit the same path) or by any test/lint/typecheck run this session — only surfaced when actually starting the dev server to screenshot the welcome screen, which is exactly why `pnpm build` succeeding was never treated as sufficient evidence of a working app this session. Fixed with `ignoredRouteFiles: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx']` in `vite.config.ts`'s `remixVitePlugin` config — the standard Remix convention for this, previously entirely unset. Verified via real screenshots (1440px desktop, 390px mobile) after the fix: dev server starts clean, welcome screen renders correctly at both widths, no visual regression from the token change.
 
-**Not started yet**: Slices 8-15 (header/hero/branding fixes including the flagged desktop-header sizing bug, theme/skin selector UI, typography, responsive audit, motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
+**Slice 8** (in progress) — Header/Hero/Branding. Investigated the flagged "Desktop Header/Banner zu groß und Bild am falschen Platz" complaint with real Playwright screenshots (1024/1440/1920px, light+dark) rather than guessing, and found the real cause: `app/routes/_index.tsx` rendered `<BackgroundRays />` (`app/components/ui/BackgroundRays/`), an inherited bolt.diy decoration -- 8 blurred, animated, `position: fixed; inset: 0` color blobs positioned with hardcoded pixel offsets clustered in the viewport's left ~1100px. On anything wider than that (any modern desktop monitor) it renders as a hard-edged, asymmetric purple glow dominating the top-left of the screen while the right half stays blank -- exactly "oversized and in the wrong place", confirmed in both themes. Fixed by removing `<BackgroundRays />` from the welcome/chat landing route: VELDRA already has a purpose-built, subtle, masked ambient background for this exact screen (`veldra-brand-background.webp`, added Loop 19), so this wasn't a "make it responsive" fix but a "stop stacking two conflicting ambient-background systems" one, consistent with the design system's own "calm, clear, no clutter" direction (§E/F). Verified via fresh screenshots at 1920px (both themes) and 390px mobile: clean, symmetric background, no regression. **Scoped deliberately**: `BackgroundRays` is still used on 2 other screens (`git.tsx`, the Settings `ControlPanel.tsx`) -- left untouched since the flagged complaint was specifically about the desktop header/landing view, not a mandate to remove the component everywhere; noted as a follow-up, not silently done.
+
+Validated through Slice 8: 307/307 tests, typecheck clean, lint clean, web build clean, real Android cycle run (`android:sync` clean, native Gradle debug APK `BUILD SUCCESSFUL`) since this changes the Android-rendered welcome screen.
+
+**Not started yet**: Slices 9-15 (theme/skin selector UI, typography, responsive audit, motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
 
 ## Loop 20 (RESEARCH ONLY, per its own mandate — no product code changed): architecture research, repository candidates, design system, product roadmap
 
