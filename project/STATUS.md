@@ -1,8 +1,8 @@
 # VELDRA Status
 
 **Updated:** 2026-08-11
-**Branch:** `claude/veldra-autonomous-build-gbctv8` (feature branch for the current autonomous session; tracks `origin/main` at its base — `d383bd7` on this branch, `db0cfcf` on `main`)
-**Current commit:** `d383bd7` — "feat(welcome): replace oversized hero art with an original VELDRA welcome (Loop 22 Slice 2)"
+**Branch:** `claude/veldra-autonomous-build-gbctv8` (feature branch for the current autonomous session; based on `main` at `db0cfcf`)
+**Current commit:** `0ada291` — "fix(ui): sweep bolt.diy purple-* remnants to the accent-* token (Loop 22 Slice 3)"
 **Remote:** `origin/claude/veldra-autonomous-build-gbctv8` (`https://github.com/mertgoevse-wq/VELDRA`), verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
@@ -21,6 +21,14 @@ The mandate's own P0: the welcome screen's oversized, over-detailed `veldra-hero
 **Validated**: 316/316 tests (+9), typecheck clean, lint clean, production build clean. Real Playwright screenshots at 320/390/430/1440px, light+dark (8 total, all reviewed): no horizontal overflow at any width, mark/greeting/rotating-line render correctly in both themes, `ProjectGuidedBuild`/`ExamplePrompts`/chat composer below are visually unaffected. The rotating line showing different phrases across screenshots taken at different real-world moments during the capture run confirms the rotation is actually live, not a rendering artifact.
 
 **Not in scope for this slice, tracked separately, visible in these same screenshots**: the ~42 files still using Tailwind's default `purple-*` classes instead of the `accent-*` token (e.g. "Get API Key", the provider-select focus border) — same gap Slice 1 already flagged, still open. The broader skin design-style system (§9-10 of the mandate) is also still not started.
+
+### Slice 3 (`0ada291`) — `purple-N` → `accent-N` sweep
+
+Mechanical follow-up flagged by Slice 1 and visible in Slice 2's own screenshots ("Get API Key", provider-select focus ring). Converted 35 of the 42 flagged files via `sed 's/purple-/accent-/g'` (the `accent` scale covers the same 50-950 shade range as Tailwind's `purple`, so this is an exact 1:1 mapping), plus a hand-edited line in `GradientCard.tsx` and a raw `rgba(168,85,247)` → `rgba(80,173,226)` fix in `CloudProvidersTab.tsx` (an inline `animate` `borderColor` value the class-name sweep couldn't reach).
+
+**6 files deliberately excluded** after individually checking each for a real collision or non-brand use (not blindly swept): `FileIcon.tsx` (purple = a specific language's file-icon color, PHP/Kotlin/YAML), `StatusIndicator.tsx` (purple `loading` status would become visually identical to the existing blue `info` status), `NetlifyTab.tsx`/`SupabaseTab.tsx` (purple is one entry in a multi-color stat-card array that already has a separate blue entry), `RepositoryCard.tsx` (purple "Fork" badge vs. existing blue "topics" badges in the same card), `ColorSchemeDialog.tsx` (purple is one hue in a decorative gradient swatch for the *user-facing generated-project* design-scheme picker, not VELDRA's own UI). `GlowingEffect.tsx`'s multi-hue animated glow (purple/violet/magenta) was also left alone — a genuine decorative effect, not a single brand-purple reference, better suited to the future skin-system pass.
+
+**Validated**: 316/316 tests (unchanged), typecheck clean, lint clean, web build clean. Verified via `getComputedStyle`, not just screenshots: `--bolt-elements-borderColorActive` resolves to `rgb(36, 152, 219)` (`accent-600`), composer borders resolve to the neutral gray `borderColor` token — zero purple in any computed style. Android Gradle cycle not run this slice (CSS-class-only, same reasoning as Slice 2) — now overdue across two consecutive slices, flagged for the next checkpoint.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 

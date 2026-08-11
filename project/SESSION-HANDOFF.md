@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `claude/veldra-autonomous-build-gbctv8` (this session's designated feature branch; branched from `main` at `db0cfcf`, did not exist on origin before this session — created and pushed)
-**Current commit:** `d383bd7` — "feat(welcome): replace oversized hero art with an original VELDRA welcome (Loop 22 Slice 2)"
+**Current commit:** `0ada291` — "fix(ui): sweep bolt.diy purple-* remnants to the accent-* token (Loop 22 Slice 3)"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last successful push:** `d383bd7` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`)
+**Last successful push:** `0ada291` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`)
 **Working tree:** clean
 
 **Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
@@ -23,10 +23,24 @@ Picked up exactly where Slice 1's own "immediate next steps" pointed: "mobile-fi
 - ~42 files still hardcode Tailwind's `purple-*` classes instead of `accent-*` — visible in this slice's own screenshots ("Get API Key", the provider-select focus border). Scoped, separate follow-up.
 - The other ~55 sections of the master directive (skins-as-design-styles, settings UX overhaul, project/user memory beyond the read-only "Continue" row just added, agents/connectors/MCP, local models, monetization, Build Cube) are NOT started.
 
+## Loop 22 Slice 3 (`0ada291`, this session) — `purple-N` → `accent-N` sweep
+
+Mechanical follow-up flagged by Slice 1 and directly visible in Slice 2's own screenshots. Converted 35 of the 42 flagged files (shade numbers map 1:1, `accent` scale covers the same 50-950 range as `purple`), plus one hand-edited line in `GradientCard.tsx` and a raw `rgba(168,85,247)` → `rgba(80,173,226)` fix in `CloudProvidersTab.tsx` (an inline `animate` `borderColor` the class-name sweep couldn't catch).
+
+**6 files deliberately left untouched, checked individually rather than swept blindly** — each is a real collision or non-brand use, not an oversight:
+- `FileIcon.tsx` — purple is a per-language file-icon color (PHP/Kotlin/YAML), unrelated to branding.
+- `StatusIndicator.tsx` — `loading` status is purple in a fixed enum that already has a distinct `info` status in blue; converting would make the two statuses look identical.
+- `NetlifyTab.tsx` / `SupabaseTab.tsx` — purple is one entry in a multi-color stat-card scheme that already uses blue for a different stat in the same array; same collision.
+- `RepositoryCard.tsx` — the "Fork" badge is purple while "topics" badges in the same card are already blue.
+- `ColorSchemeDialog.tsx` — purple is one hue in a decorative gradient swatch preview for the user-facing design-scheme picker (styling *generated projects*, not VELDRA's own UI).
+- `GlowingEffect.tsx` — a multi-hue (purple/violet/magenta) animated glow effect, not a single brand-purple reference; left for a future design pass rather than mechanically flattened.
+
+**Validated**: 316/316 tests (unchanged — CSS-class-only), typecheck clean, lint clean, web build clean. Verified via real screenshots plus `getComputedStyle` checks (not just eyeballing): `--bolt-elements-borderColorActive` resolves to `rgb(36, 152, 219)` (`accent-600`), and the composer's borders all resolve to the neutral gray `borderColor` token — no purple remains in any computed style. **Not run this slice**: the Android Gradle cycle (CSS-class-only web change, same reasoning as Slice 2 — flagged as a real gap, not silently skipped).
+
 **Immediate next steps, in order:**
-1. `purple-N` → `accent-N` sweep (~42 files, mechanical, already scoped).
-2. Skin design-style system (§9-10): extend the existing `skinStore`/token architecture with real distinct visual languages (glassmorphism/neomorphism/claymorphism/brutalism/liquid-glass/etc.), not palette swaps — default skin should stay soft/premium/calm per §10.
-3. Then continue in the master directive's own stated order (§40): settings/navigation mobile-first redesign, remaining branding replacement, vibecoding interaction improvements, goal/task persistence UI, agent/connector/MCP registry UI, provider architecture.
+1. Skin design-style system (§9-10): extend the existing `skinStore`/token architecture with real distinct visual languages (glassmorphism/neomorphism/claymorphism/brutalism/liquid-glass/etc.), not palette swaps — default skin should stay soft/premium/calm per §10.
+2. Then continue in the master directive's own stated order (§40): settings/navigation mobile-first redesign, remaining branding replacement, vibecoding interaction improvements, goal/task persistence UI, agent/connector/MCP registry UI, provider architecture.
+3. A real Android Gradle cycle is now overdue across Slices 2 and 3 (both web-only CSS/component changes) — worth running at the next Android-touching checkpoint or as its own validation pass.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 
