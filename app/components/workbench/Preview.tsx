@@ -1153,7 +1153,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
             </>
           ) : remotePreview?.status === 'running' && remotePreview.previewUrl ? (
             <div className="flex flex-col w-full h-full relative">
-              <div className="bg-purple-500/10 border-b border-purple-500/20 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-purple-400">
+              <div className="bg-accent-500/10 border-b border-accent-500/20 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-accent-400">
                 <span className="flex items-center gap-1.5 font-medium min-w-0">
                   <span className="i-ph:broadcast-fill text-sm shrink-0" />
                   <span className="truncate">Remote Preview: {remotePreview.previewUrl}</span>
@@ -1162,13 +1162,13 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                   <button
                     onClick={() => refreshRemotePreview()}
                     disabled={remotePreviewLoading}
-                    className="px-2 py-0.5 border border-purple-500/30 hover:bg-purple-500/10 rounded transition-colors disabled:opacity-50"
+                    className="px-2 py-0.5 border border-accent-500/30 hover:bg-accent-500/10 rounded transition-colors disabled:opacity-50"
                   >
                     Refresh Preview
                   </button>
                   <button
                     onClick={openRemotePreviewExternally}
-                    className="px-2 py-0.5 border border-purple-500/30 hover:bg-purple-500/10 rounded transition-colors"
+                    className="px-2 py-0.5 border border-accent-500/30 hover:bg-accent-500/10 rounded transition-colors"
                   >
                     Open External Preview
                   </button>
@@ -1221,7 +1221,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                       className={classNames('text-[10px] uppercase px-2 py-0.5 rounded-full border', {
                         'bg-gray-500/10 border-gray-500/30 text-gray-400':
                           !remotePreview || remotePreview.status === 'none',
-                        'bg-purple-500/10 border-purple-500/30 text-purple-400': remotePreview?.status === 'starting',
+                        'bg-accent-500/10 border-accent-500/30 text-accent-400': remotePreview?.status === 'starting',
                         'bg-green-500/10 border-green-500/30 text-green-400': remotePreview?.status === 'running',
                         'bg-red-500/10 border-red-500/30 text-red-400': remotePreview?.status === 'failed',
                       })}
@@ -1252,7 +1252,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                       <button
                         onClick={() => refreshRemotePreview()}
                         disabled={remotePreviewLoading}
-                        className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                        className="w-full px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
                       >
                         <span
                           className={remotePreviewLoading ? 'i-ph:spinner-gap animate-spin' : 'i-ph:arrow-clockwise'}
@@ -1271,7 +1271,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                   </p>
                   <button
                     onClick={handleStartStaticPreview}
-                    className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    className="w-full px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
                   >
                     <span className="i-ph:play-fill" />
                     Run Basic Static Preview
