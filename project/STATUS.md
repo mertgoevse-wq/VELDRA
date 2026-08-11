@@ -1,11 +1,28 @@
 # VELDRA Status
 
 **Updated:** 2026-08-11
-**Branch:** `main`
-**Current commit:** (Loop 22 Slice 1 in progress, not yet committed — will follow `ce3297c`)
-**Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+**Branch:** `claude/veldra-autonomous-build-gbctv8` (feature branch for the current autonomous session; tracks `origin/main` at its base — `d383bd7` on this branch, `db0cfcf` on `main`)
+**Current commit:** `d383bd7` — "feat(welcome): replace oversized hero art with an original VELDRA welcome (Loop 22 Slice 2)"
+**Remote:** `origin/claude/veldra-autonomous-build-gbctv8` (`https://github.com/mertgoevse-wq/VELDRA`), verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`
 
-## Loop 22 (IN PROGRESS): master design/product-architecture rework — brand mark correction (Slice 1)
+## Loop 22 (IN PROGRESS): master design/product-architecture rework
+
+**Correction to the previous entry below**: Slice 1 (brand mark correction) is not "not yet committed" — it landed as `db0cfcf` and is on `main`. This doc simply hadn't been updated to say so before Slice 2 started; recorded here rather than silently fixed.
+
+### Slice 2 (`d383bd7`) — P0 Hero/Welcome redesign
+
+The mandate's own P0: the welcome screen's oversized, over-detailed `veldra-hero-art.jpg` illustration (a labeled node diagram — Local AI Model / Android Development / Code-Files / Projects / Cloud AI Model / AI Agents / Tools / Automation — converging on the brand mark) and the static "Where ideas begin" headline were flagged as too large, too detailed, poorly positioned, and not mobile-first. Removed the illustration entirely (not resized) and replaced the headline with an original composition, `app/components/chat/WelcomeHero.client.tsx`:
+
+- **Time-aware greeting** — "Good morning / afternoon / evening[, name]", driven by a pure helper (`app/lib/utils/greeting.ts`, +9 unit tests covering every boundary hour and name-trimming/whitespace edge cases). Name comes from the existing `profileStore` (empty by default — no fabricated personalization).
+- **Rotating build-prompt line** — 4 short, original VELDRA-voiced lines ("What do you want to build today?", "Got a rough idea? That's enough to start.", ...), not copied from Claude/ChatGPT wording. Rotates every 7s via a plain interval; the effect checks `prefers-reduced-motion` and skips the interval entirely when set (shows the first line statically, no motion at all — not just a faster/instant transition).
+- **Restrained brand mark** — the existing extracted `veldra-mark-dark.png`/`veldra-mark-light.png` (from Slice 1) at ~36-40px with a soft `blur-xl` CSS glow behind it (`bg-accent-500/20`, no new image asset) — replaces the giant illustration as the visual anchor. The mark now supports the interface instead of dominating it, directly answering the mandate's own framing.
+- **Real "Continue" row** — up to 3 most recent projects, fetched from the existing IndexedDB chat history (`db`/`getAll` from `~/lib/persistence`, same primitives `Menu.client.tsx`'s sidebar history list already uses — no second persistence path), filtered to entries with a real `urlId`+`description`, sorted by timestamp, linking to `/chat/${urlId}`. Only rendered when history actually exists — an empty history shows nothing, not a fake/placeholder state.
+
+**Validated**: 316/316 tests (+9), typecheck clean, lint clean, production build clean. Real Playwright screenshots at 320/390/430/1440px, light+dark (8 total, all reviewed): no horizontal overflow at any width, mark/greeting/rotating-line render correctly in both themes, `ProjectGuidedBuild`/`ExamplePrompts`/chat composer below are visually unaffected. The rotating line showing different phrases across screenshots taken at different real-world moments during the capture run confirms the rotation is actually live, not a rendering artifact.
+
+**Not in scope for this slice, tracked separately, visible in these same screenshots**: the ~42 files still using Tailwind's default `purple-*` classes instead of the `accent-*` token (e.g. "Get API Key", the provider-select focus border) — same gap Slice 1 already flagged, still open. The broader skin design-style system (§9-10 of the mandate) is also still not started.
+
+## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 
 The product owner issued a new, larger mandate (57 sections) explicitly superseding Loop 21's slice order: stop the previous UI direction (rejected — didn't look like a finished product, still felt like "Bolt with a new name"), analyze the `claude-code-best-practice` repo as a *development-methodology* input (not something to copy into VELDRA), and rebuild VELDRA's visual identity from the **actual approved brand photos** (re-supplied as 7 attachments — verified byte-identical via md5sum to the existing `public/assets/brand/*.jpg`, so no new/duplicate assets) rather than inventing new ones. Then: mobile-first (390/430px primary QA, not desktop) redesign of header, hero, skins (13+ named design *styles* with real distinct design logic, not just palettes), settings UX, persistent memory (project + user), and the full agent/connector/MCP/local-model/monetization architecture.
 

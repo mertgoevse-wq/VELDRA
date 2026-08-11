@@ -1,13 +1,36 @@
 # VELDRA Session Handoff
 
 **Last updated:** 2026-08-11
-**Branch:** `main`
-**Current commit:** `ce3297c` — "fix(settings): fix Control Panel modal broken on mobile and at md breakpoint (Slice 11)" — Loop 22 Slice 1 (brand mark correction) built on top, not yet committed at time of writing
-**Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `ce3297c` (verified `HEAD == origin/main`)
-**Working tree:** dirty — Loop 22 Slice 1's brand mark correction (see below), validated (307/307 tests, typecheck/lint/build clean, full Android cycle incl. Gradle debug APK, real mobile-first screenshots at 320/390/430/1440px, light+dark) but not yet committed
+**Branch:** `claude/veldra-autonomous-build-gbctv8` (this session's designated feature branch; branched from `main` at `db0cfcf`, did not exist on origin before this session — created and pushed)
+**Current commit:** `d383bd7` — "feat(welcome): replace oversized hero art with an original VELDRA welcome (Loop 22 Slice 2)"
+**Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
+**Last successful push:** `d383bd7` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`)
+**Working tree:** clean
 
-## Loop 22 (CURRENT MANDATE — supersedes Loop 21's slice order): master design/product-architecture rework
+**Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
+
+## Loop 22 Slice 2 (`d383bd7`, this session) — P0 Hero/Welcome redesign
+
+Picked up exactly where Slice 1's own "immediate next steps" pointed: "mobile-first header/hero rework — the hero art is still the same large, detailed illustration flagged as 'too big, too detailed, wrong position'." Full detail in `project/STATUS.md`'s Loop 22 section; condensed:
+
+- Removed `veldra-hero-art.jpg`'s `<picture>` block entirely from `BaseChat.tsx`'s `#intro` (it was desktop-only, `lg:` and up, but still the dominant visual element there) and the static "Where ideas begin" headline.
+- New `app/components/chat/WelcomeHero.client.tsx`: time-aware greeting (`app/lib/utils/greeting.ts`, pure + 9 unit tests) using the existing `profileStore` username when set, a slowly-rotating original VELDRA-voiced line (4 lines, 7s interval, fully skipped under `prefers-reduced-motion`), the existing extracted brand mark at a small size with a soft CSS glow (no new image asset), and a real "Continue" row pulling up to 3 recent projects from the existing IndexedDB chat history (`db`/`getAll` from `~/lib/persistence` — the same primitives the sidebar history list already uses, no second persistence system) — only shown when history exists.
+- Verified via real Playwright screenshots at 320/390/430/1440px, light+dark (8 total, all reviewed directly): clean at every width, no overflow, mark/greeting/rotation render correctly in both themes, no regression to `ProjectGuidedBuild`/`ExamplePrompts`/the chat composer below.
+
+**Validated**: 316/316 tests (+9), typecheck clean, lint clean, web build clean. **Not run this slice**: the Android Gradle cycle — this change is web/CSS/component-only inside `BaseChat.tsx`'s shared intro block, which `AndroidShell.tsx` mounts identically (confirmed in earlier loops' provider-router audits), so it is Android-visible, but the Android build toolchain wasn't exercised this slice; flagged as a real gap for the next Android-touching checkpoint rather than silently skipped.
+
+**Honest gaps, not silently skipped** (same ones Slice 1 already flagged, still open):
+- ~42 files still hardcode Tailwind's `purple-*` classes instead of `accent-*` — visible in this slice's own screenshots ("Get API Key", the provider-select focus border). Scoped, separate follow-up.
+- The other ~55 sections of the master directive (skins-as-design-styles, settings UX overhaul, project/user memory beyond the read-only "Continue" row just added, agents/connectors/MCP, local models, monetization, Build Cube) are NOT started.
+
+**Immediate next steps, in order:**
+1. `purple-N` → `accent-N` sweep (~42 files, mechanical, already scoped).
+2. Skin design-style system (§9-10): extend the existing `skinStore`/token architecture with real distinct visual languages (glassmorphism/neomorphism/claymorphism/brutalism/liquid-glass/etc.), not palette swaps — default skin should stay soft/premium/calm per §10.
+3. Then continue in the master directive's own stated order (§40): settings/navigation mobile-first redesign, remaining branding replacement, vibecoding interaction improvements, goal/task persistence UI, agent/connector/MCP registry UI, provider architecture.
+
+## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
+
+## Loop 22 (mandate context, superseding Loop 21's slice order): master design/product-architecture rework
 
 The product owner issued a new, much larger 57-section mandate that explicitly stops the Loop 21 slice order ("Nicht einfach mit dem bisherigen Slice 12 blind fortfahren"). Context: they rejected the visual direction this session was about to ship (a hand-drawn amber "V" mark this session invented without checking the real reference images) and re-supplied the 7 approved VELDRA brand photos as the binding visual source, with explicit instructions: analyze `claude-code-best-practice` as a development-*methodology* input (not something to copy into VELDRA's own `.claude/` tree), rebuild the visual identity strictly from the real photos (no invented logos), then redo header/hero/skins/settings mobile-first (390/430px primary QA), and prepare persistent project+user memory, full agent/connector/MCP/local-model architecture, and monetization tiers. This is by far the largest mandate this session has received — sections 1-57, spanning visual identity, IA, mobile-first UX, skin *design styles* (not just palettes: glassmorphism/neomorphism/claymorphism/brutalism/liquid-glass/etc., each with real distinct design logic), settings UX, project/user memory, system prompts, provider/connector/MCP ecosystem, local models, alternative transports (Bluetooth/Wi-Fi Direct/mesh), monetization, and a "VELDRA Build Cube" progress visualization. Treat this as many sessions of work, not one slice.
 
