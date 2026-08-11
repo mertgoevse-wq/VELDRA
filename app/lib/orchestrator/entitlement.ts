@@ -12,8 +12,13 @@ import type { Budget } from './types';
  * the core, same separation as every other host port in ./adapters.
  */
 
-/** DEVELOPER changes what MAY be overridden (see resolveBudgetPolicy); by itself it is not a bypass. */
-export type EntitlementTier = 'FREE' | 'PREMIUM' | 'DEVELOPER';
+/**
+ * DEVELOPER changes what MAY be overridden (see resolveBudgetPolicy); by itself it is not a
+ * bypass. PRO is the customer-facing top commercial tier -- distinct from DEVELOPER, which stays
+ * an internal, non-production-only override tier (see ENVIRONMENTS_ALLOWING_OVERRIDE) and must
+ * never be repurposed as a paid tier.
+ */
+export type EntitlementTier = 'FREE' | 'PREMIUM' | 'PRO' | 'DEVELOPER';
 
 export type RuntimeEnvironment = 'development' | 'test' | 'production';
 
@@ -50,10 +55,10 @@ export interface BudgetPolicyViolation {
 const ENVIRONMENTS_ALLOWING_OVERRIDE: RuntimeEnvironment[] = ['development', 'test'];
 
 /**
- * Base limits per tier. DEVELOPER's own baseline equals PREMIUM's: being a
- * developer changes what you are allowed to override, not what you get by
- * default, so switching to DEVELOPER without an active override is never a
- * silent limit change.
+ * Base limits per tier. DEVELOPER's own baseline equals PRO's, the highest customer-facing tier:
+ * being a developer changes what you are allowed to override, not what you get by default, so
+ * switching to DEVELOPER without an active override is never a silent limit change -- and it
+ * matches what the top paying tier actually experiences, not an arbitrary developer-only number.
  */
 const TIER_BUDGETS: Record<EntitlementTier, Budget> = {
   FREE: { maxWallClockMs: 2 * 60_000, maxTokens: 50_000, maxCostMinor: 0, maxIterations: 5, maxConcurrency: 1 },
@@ -64,14 +69,70 @@ const TIER_BUDGETS: Record<EntitlementTier, Budget> = {
     maxIterations: 50,
     maxConcurrency: 4,
   },
+  PRO: {
+    maxWallClockMs: 45 * 60_000,
+    maxTokens: 8_000_000,
+    maxCostMinor: 20_000,
+    maxIterations: 150,
+    maxConcurrency: 8,
+  },
   DEVELOPER: {
-    maxWallClockMs: 30 * 60_000,
-    maxTokens: 2_000_000,
-    maxCostMinor: 5_000,
-    maxIterations: 50,
-    maxConcurrency: 4,
+    maxWallClockMs: 45 * 60_000,
+    maxTokens: 8_000_000,
+    maxCostMinor: 20_000,
+    maxIterations: 150,
+    maxConcurrency: 8,
   },
 };
+
+/**
+ * Binary, all-or-nothing product features gated by tier -- distinct from the numeric Budget
+ * ceilings above. Graduated differences ("more models," "more themes," "more local models") are
+ * deliberately NOT modelled as capabilities here: those are filtered by the model catalog, theme
+ * registry, and local-model count elsewhere, per tier, not by an on/off flag. A capability here is
+ * something a user either has or does not have, no partial state.
+ */
+export type EntitlementCapability =
+  | 'connectors'
+  | 'mcp-servers'
+  | 'custom-agents'
+  | 'custom-skills'
+  | 'custom-providers'
+  | 'advanced-agent-swarms'
+  | 'premium-transports';
+
+const TIER_CAPABILITIES: Record<EntitlementTier, ReadonlySet<EntitlementCapability>> = {
+  FREE: new Set(),
+  PREMIUM: new Set(['connectors', 'premium-transports']),
+  PRO: new Set([
+    'connectors',
+    'premium-transports',
+    'mcp-servers',
+    'custom-agents',
+    'custom-skills',
+    'custom-providers',
+    'advanced-agent-swarms',
+  ]),
+  DEVELOPER: new Set([
+    'connectors',
+    'premium-transports',
+    'mcp-servers',
+    'custom-agents',
+    'custom-skills',
+    'custom-providers',
+    'advanced-agent-swarms',
+  ]),
+};
+
+/** Pure, host-agnostic capability check -- no UI should hardcode a tier comparison itself. */
+export function hasCapability(tier: EntitlementTier, capability: EntitlementCapability): boolean {
+  return TIER_CAPABILITIES[tier].has(capability);
+}
+
+/** All capabilities a tier currently has, for a settings UI to render without repeated lookups. */
+export function listCapabilities(tier: EntitlementTier): EntitlementCapability[] {
+  return Array.from(TIER_CAPABILITIES[tier]);
+}
 
 /**
  * Absolute host/runtime ceiling. No tier, override, or "disabled" limit may

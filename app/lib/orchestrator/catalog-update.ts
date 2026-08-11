@@ -141,6 +141,7 @@ export function evaluateCatalogFreshness(
 export function catalogFreshnessPolicyForTier(tier: EntitlementTier): CatalogFreshnessPolicy {
   switch (tier) {
     case 'PREMIUM':
+    case 'PRO':
     case 'DEVELOPER':
       return { maxAgeMs: 6 * 60 * 60_000, staleWhileRevalidateMs: 24 * 60 * 60_000 }; // 6h, SWR up to 24h more
     case 'FREE':

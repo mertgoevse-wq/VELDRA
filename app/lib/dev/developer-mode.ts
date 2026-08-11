@@ -21,10 +21,11 @@ export const developerOverrideStore = atom<DeveloperOverride>(STANDARD_OVERRIDE)
 
 /**
  * Switching tiers away from DEVELOPER always drops any active override --
- * a leftover override must never keep affecting a FREE or PREMIUM session.
- * Switching *to* DEVELOPER in production is rejected outright: even though
- * DEVELOPER's own base budget equals PREMIUM's (see entitlement.ts), nothing
- * in this host should be able to even hold that tier value in production.
+ * a leftover override must never keep affecting a FREE, PREMIUM or PRO
+ * session. Switching *to* DEVELOPER in production is rejected outright: even
+ * though DEVELOPER's own base budget equals PRO's (see entitlement.ts),
+ * nothing in this host should be able to even hold that tier value in
+ * production.
  */
 export function setEntitlementTier(tier: EntitlementTier): void {
   if (tier === 'DEVELOPER' && getRuntimeEnvironment() === 'production') {

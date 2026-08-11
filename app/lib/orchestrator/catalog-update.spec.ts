@@ -87,13 +87,21 @@ describe('evaluateCatalogFreshness', () => {
 });
 
 describe('catalogFreshnessPolicyForTier', () => {
-  it('gives PREMIUM and DEVELOPER a shorter max age than FREE', () => {
+  it('gives PREMIUM, PRO and DEVELOPER a shorter max age than FREE', () => {
     const free = catalogFreshnessPolicyForTier('FREE');
     const premium = catalogFreshnessPolicyForTier('PREMIUM');
+    const pro = catalogFreshnessPolicyForTier('PRO');
     const developer = catalogFreshnessPolicyForTier('DEVELOPER');
 
     expect(premium.maxAgeMs).toBeLessThan(free.maxAgeMs);
+    expect(pro.maxAgeMs).toBeLessThan(free.maxAgeMs);
     expect(developer.maxAgeMs).toBeLessThan(free.maxAgeMs);
+  });
+
+  it('does not silently fall through PRO to the FREE-tier policy', () => {
+    const premium = catalogFreshnessPolicyForTier('PREMIUM');
+    const pro = catalogFreshnessPolicyForTier('PRO');
+    expect(pro).toEqual(premium);
   });
 });
 
