@@ -105,11 +105,26 @@ const COLOR_PRIMITIVES = {
 export default defineConfig({
   safelist: [...Object.keys(customIconCollection[collectionName] || {}).map((x) => `i-bolt:${x}`)],
   shortcuts: {
-    'bolt-ease-cubic-bezier': 'ease-[cubic-bezier(0.4,0,0.2,1)]',
+    'bolt-ease-cubic-bezier': 'ease-[var(--veldra-motion-ease)]',
     'transition-theme':
       'transition-[background-color,border-color,color] duration-[var(--veldra-motion-duration-theme)] bolt-ease-cubic-bezier',
     kdb: 'bg-bolt-elements-code-background text-bolt-elements-code-text py-1 px-1.5 rounded-md',
     'max-w-chat': 'max-w-[var(--chat-max-width)]',
+
+    /**
+     * Skin-driven structural shortcuts (Loop 22 Slice 4 -- design-style skin system). These are
+     * the one shared implementation every skin's tokens (variables.scss) flow through: a skin
+     * changes what these resolve to, not how many implementations exist. 'veldra-surface' is for
+     * card/dialog/panel-level containers; 'veldra-control' is for buttons/inputs/checkboxes.
+     */
+    'veldra-motion': 'transition-all duration-[var(--veldra-motion-duration-base)] bolt-ease-cubic-bezier',
+    'veldra-radius-control': 'rounded-[var(--veldra-radius-sm)]',
+    'veldra-radius-surface': 'rounded-[var(--veldra-radius-lg)]',
+    'veldra-border': 'border-[length:var(--veldra-border-width)] border-bolt-elements-borderColor',
+    'veldra-surface':
+      'veldra-radius-surface veldra-border veldra-motion shadow-[var(--veldra-shadow-md)] bg-[var(--veldra-surface-bg)] backdrop-blur-[var(--veldra-backdrop-blur)] backdrop-saturate-[var(--veldra-backdrop-saturate)]',
+    'veldra-control':
+      'veldra-radius-control veldra-border veldra-motion shadow-[var(--veldra-shadow-sm)]',
   },
   rules: [
     /**

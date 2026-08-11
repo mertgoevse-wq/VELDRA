@@ -28,6 +28,9 @@ dist-ssr
 functions/build/
 .env.local
 .env
+
+# Local dev-tool output (graphify code-graph analysis, regenerate with `graphify update .`)
+/graphify-out
 .dev.vars
 *.vars
 .wrangler

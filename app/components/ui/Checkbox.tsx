@@ -10,7 +10,7 @@ const Checkbox = React.forwardRef<
   <CheckboxPrimitive.Root
     ref={ref}
     className={classNames(
-      'peer h-4 w-4 shrink-0 rounded-sm border transition-colors',
+      'peer h-4 w-4 shrink-0 rounded-[var(--veldra-radius-xs)] border veldra-motion',
       'bg-transparent dark:bg-transparent',
       'border-gray-400 dark:border-gray-600',
       'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-accent-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-950',

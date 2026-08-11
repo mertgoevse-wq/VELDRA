@@ -221,7 +221,7 @@
  * (see BRANDING.md) — proof that the token architecture supports more than one skin; the rest
  * are a scoped follow-up, not fabricated here.
  */
-:root[data-theme='dark'][data-skin='obsidian'] {
+[data-theme='dark'][data-skin='obsidian'] {
   --bolt-elements-bg-depth-1: #08090d;
   --bolt-elements-bg-depth-2: #0d0f16;
   --bolt-elements-bg-depth-3: #161925;
@@ -234,6 +234,244 @@
   --bolt-elements-messages-background: #12141d;
   --bolt-elements-prompt-background: rgba(8, 9, 13, 0.85);
   --bolt-elements-terminals-background: #08090d;
+}
+
+/*
+ * VELDRA skin-structural layer (Loop 22 Slice 4 -- design-style skin system)
+ *
+ * These tokens drive the shared UI primitives' surface/control treatment via the
+ * `veldra-surface`/`veldra-control` shortcuts in uno.config.ts, applied to Button, Dialog,
+ * Checkbox, Card, the Settings TabTile, and the chat composer. The values declared here at
+ * :root ARE the VELDRA default skin: deliberately opaque and blur-free for mobile performance
+ * (no always-on backdrop-filter cost on the default), soft restrained shadows, comfortable
+ * radius -- "soft, premium, calm, slightly spatial" per the design mandate, not a loud glass
+ * overlay. Each [data-skin] block below overrides only what actually changes for that design
+ * language; every other token (radius scale, colors, spacing) falls through to these defaults
+ * or the light/dark color tokens above -- one shared token system, not nine independent ones.
+ */
+:root {
+  --veldra-backdrop-blur: 0px;
+  --veldra-backdrop-saturate: 100%;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+  --veldra-motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glassmorphism -- frosted translucent panels, visible blur, thin light border, soft diffuse elevation */
+[data-theme='light'][data-skin='glass'] {
+  --veldra-radius-sm: 10px;
+  --veldra-radius-md: 14px;
+  --veldra-radius-lg: 20px;
+  --veldra-radius-xl: 28px;
+  --veldra-shadow-sm: 0 2px 8px rgba(31, 38, 135, 0.08);
+  --veldra-shadow-md: 0 8px 24px rgba(31, 38, 135, 0.12);
+  --veldra-shadow-lg: 0 16px 40px rgba(31, 38, 135, 0.16);
+  --veldra-backdrop-blur: 16px;
+  --veldra-backdrop-saturate: 160%;
+  --veldra-surface-bg: rgba(255, 255, 255, 0.55);
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.4);
+}
+[data-theme='dark'][data-skin='glass'] {
+  --veldra-radius-sm: 10px;
+  --veldra-radius-md: 14px;
+  --veldra-radius-lg: 20px;
+  --veldra-radius-xl: 28px;
+  --veldra-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --veldra-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --veldra-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --veldra-backdrop-blur: 16px;
+  --veldra-backdrop-saturate: 160%;
+  --veldra-surface-bg: rgba(24, 26, 36, 0.55);
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.1);
+}
+
+/* Liquid Glass -- stronger blur+saturation, larger concentric radii, luminous rim border */
+[data-theme='light'][data-skin='liquidglass'] {
+  --veldra-radius-sm: 14px;
+  --veldra-radius-md: 20px;
+  --veldra-radius-lg: 28px;
+  --veldra-radius-xl: 36px;
+  --veldra-shadow-sm: 0 4px 16px rgba(20, 30, 60, 0.1);
+  --veldra-shadow-md: 0 12px 32px rgba(20, 30, 60, 0.14);
+  --veldra-shadow-lg: 0 24px 56px rgba(20, 30, 60, 0.18);
+  --veldra-backdrop-blur: 28px;
+  --veldra-backdrop-saturate: 200%;
+  --veldra-surface-bg: rgba(255, 255, 255, 0.45);
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.55);
+}
+[data-theme='dark'][data-skin='liquidglass'] {
+  --veldra-radius-sm: 14px;
+  --veldra-radius-md: 20px;
+  --veldra-radius-lg: 28px;
+  --veldra-radius-xl: 36px;
+  --veldra-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --veldra-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --veldra-shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.55);
+  --veldra-backdrop-blur: 28px;
+  --veldra-backdrop-saturate: 200%;
+  --veldra-surface-bg: rgba(18, 20, 30, 0.45);
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.16);
+}
+
+/* Spatial UI -- layered depth via larger soft shadows, semi-opaque (not sheer) surfaces, moderate blur */
+[data-theme='light'][data-skin='spatial'] {
+  --veldra-radius-sm: 12px;
+  --veldra-radius-md: 16px;
+  --veldra-radius-lg: 24px;
+  --veldra-radius-xl: 32px;
+  --veldra-shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.06);
+  --veldra-shadow-md: 0 10px 28px rgba(15, 23, 42, 0.1);
+  --veldra-shadow-lg: 0 22px 48px rgba(15, 23, 42, 0.14);
+  --veldra-backdrop-blur: 10px;
+  --veldra-backdrop-saturate: 130%;
+  --veldra-surface-bg: rgba(255, 255, 255, 0.82);
+}
+[data-theme='dark'][data-skin='spatial'] {
+  --veldra-radius-sm: 12px;
+  --veldra-radius-md: 16px;
+  --veldra-radius-lg: 24px;
+  --veldra-radius-xl: 32px;
+  --veldra-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.25);
+  --veldra-shadow-md: 0 10px 28px rgba(0, 0, 0, 0.35);
+  --veldra-shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.45);
+  --veldra-backdrop-blur: 10px;
+  --veldra-backdrop-saturate: 130%;
+  --veldra-surface-bg: rgba(22, 24, 33, 0.82);
+}
+
+/* Neomorphism -- borderless, flat matching-tone surfaces, soft dual light/dark extrusion shadow */
+[data-theme='light'][data-skin='neomorphism'] {
+  --veldra-radius-sm: 14px;
+  --veldra-radius-md: 20px;
+  --veldra-radius-lg: 28px;
+  --veldra-radius-xl: 36px;
+  --veldra-border-width: 0px;
+  --veldra-shadow-sm: 3px 3px 6px rgba(163, 177, 198, 0.5), -3px -3px 6px rgba(255, 255, 255, 0.85);
+  --veldra-shadow-md: 6px 6px 14px rgba(163, 177, 198, 0.55), -6px -6px 14px rgba(255, 255, 255, 0.9);
+  --veldra-shadow-lg: 10px 10px 24px rgba(163, 177, 198, 0.6), -10px -10px 24px rgba(255, 255, 255, 0.95);
+  --bolt-elements-bg-depth-1: #e8ecf3;
+  --bolt-elements-bg-depth-2: #e8ecf3;
+  --bolt-elements-bg-depth-3: #dee3ec;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+[data-theme='dark'][data-skin='neomorphism'] {
+  --veldra-radius-sm: 14px;
+  --veldra-radius-md: 20px;
+  --veldra-radius-lg: 28px;
+  --veldra-radius-xl: 36px;
+  --veldra-border-width: 0px;
+  --veldra-shadow-sm: 3px 3px 6px rgba(0, 0, 0, 0.45), -3px -3px 6px rgba(58, 62, 74, 0.4);
+  --veldra-shadow-md: 6px 6px 14px rgba(0, 0, 0, 0.5), -6px -6px 14px rgba(58, 62, 74, 0.45);
+  --veldra-shadow-lg: 10px 10px 24px rgba(0, 0, 0, 0.55), -10px -10px 24px rgba(58, 62, 74, 0.5);
+  --bolt-elements-bg-depth-1: #2a2d38;
+  --bolt-elements-bg-depth-2: #2a2d38;
+  --bolt-elements-bg-depth-3: #23252e;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+
+/* Claymorphism -- pillowy, oversized radii, tinted pastel surface, puffy outer+inner shadow pair */
+[data-theme='light'][data-skin='claymorphism'] {
+  --veldra-radius-sm: 18px;
+  --veldra-radius-md: 24px;
+  --veldra-radius-lg: 32px;
+  --veldra-radius-xl: 40px;
+  --veldra-border-width: 0px;
+  --veldra-shadow-sm: 0 4px 10px rgba(80, 90, 140, 0.14), inset 0 2px 3px rgba(255, 255, 255, 0.7);
+  --veldra-shadow-md: 0 10px 22px rgba(80, 90, 140, 0.18), inset 0 3px 4px rgba(255, 255, 255, 0.75);
+  --veldra-shadow-lg: 0 18px 36px rgba(80, 90, 140, 0.22), inset 0 4px 6px rgba(255, 255, 255, 0.8);
+  --bolt-elements-bg-depth-2: #eef0fc;
+  --bolt-elements-bg-depth-3: #e4e7fa;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+[data-theme='dark'][data-skin='claymorphism'] {
+  --veldra-radius-sm: 18px;
+  --veldra-radius-md: 24px;
+  --veldra-radius-lg: 32px;
+  --veldra-radius-xl: 40px;
+  --veldra-border-width: 0px;
+  --veldra-shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.35), inset 0 2px 3px rgba(255, 255, 255, 0.06);
+  --veldra-shadow-md: 0 10px 22px rgba(0, 0, 0, 0.4), inset 0 3px 4px rgba(255, 255, 255, 0.07);
+  --veldra-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.45), inset 0 4px 6px rgba(255, 255, 255, 0.08);
+  --bolt-elements-bg-depth-2: #2b2a3d;
+  --bolt-elements-bg-depth-3: #322f47;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+
+/* Skeuomorphism -- warm rich surface, distinct border, raised drop shadow + inner top highlight */
+[data-theme='light'][data-skin='skeuomorphism'] {
+  --veldra-radius-sm: 6px;
+  --veldra-radius-md: 8px;
+  --veldra-radius-lg: 12px;
+  --veldra-radius-xl: 16px;
+  --veldra-border-width: 1px;
+  --bolt-elements-borderColor: rgba(120, 100, 70, 0.25);
+  --veldra-shadow-sm: 0 1px 2px rgba(80, 60, 20, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --veldra-shadow-md: 0 4px 8px rgba(80, 60, 20, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --veldra-shadow-lg: 0 10px 20px rgba(80, 60, 20, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --bolt-elements-bg-depth-2: #f5efe2;
+  --bolt-elements-bg-depth-3: #ebe2cd;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+[data-theme='dark'][data-skin='skeuomorphism'] {
+  --veldra-radius-sm: 6px;
+  --veldra-radius-md: 8px;
+  --veldra-radius-lg: 12px;
+  --veldra-radius-xl: 16px;
+  --veldra-border-width: 1px;
+  --bolt-elements-borderColor: rgba(200, 175, 120, 0.2);
+  --veldra-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --veldra-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --veldra-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --bolt-elements-bg-depth-2: #2e2820;
+  --bolt-elements-bg-depth-3: #251f19;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+
+/* Minimalism -- flat, borderline shadowless, small consistent radius, near-instant motion */
+[data-skin='minimalism'] {
+  --veldra-radius-sm: 4px;
+  --veldra-radius-md: 6px;
+  --veldra-radius-lg: 8px;
+  --veldra-radius-xl: 10px;
+  --veldra-border-width: 1px;
+  --veldra-shadow-sm: none;
+  --veldra-shadow-md: none;
+  --veldra-shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --veldra-motion-duration-fast: 80ms;
+  --veldra-motion-duration-base: 120ms;
+  --veldra-motion-duration-slow: 160ms;
+}
+
+/* Maximalism -- bold thick accent border, saturated elevated shadow, big radius, expressive motion */
+[data-skin='maximalism'] {
+  --veldra-radius-sm: 14px;
+  --veldra-radius-md: 20px;
+  --veldra-radius-lg: 28px;
+  --veldra-radius-xl: 36px;
+  --veldra-border-width: 2px;
+  --bolt-elements-borderColor: var(--bolt-elements-borderColorActive);
+  --veldra-shadow-sm: 0 3px 10px rgba(80, 173, 226, 0.2);
+  --veldra-shadow-md: 0 10px 26px rgba(80, 173, 226, 0.3);
+  --veldra-shadow-lg: 0 20px 44px rgba(80, 173, 226, 0.4);
+  --veldra-motion-duration-fast: 150ms;
+  --veldra-motion-duration-base: 260ms;
+  --veldra-motion-duration-slow: 380ms;
+}
+
+/* Brutalism -- zero radius, thick solid border, hard offset shadow with no blur, instant motion */
+[data-skin='brutalism'] {
+  --veldra-radius-sm: 0px;
+  --veldra-radius-md: 0px;
+  --veldra-radius-lg: 0px;
+  --veldra-radius-xl: 0px;
+  --veldra-border-width: 2px;
+  --veldra-border-width-thick: 3px;
+  --bolt-elements-borderColor: var(--bolt-elements-textPrimary);
+  --veldra-shadow-sm: 3px 3px 0 var(--bolt-elements-borderColorActive);
+  --veldra-shadow-md: 5px 5px 0 var(--bolt-elements-borderColorActive);
+  --veldra-shadow-lg: 8px 8px 0 var(--bolt-elements-borderColorActive);
+  --veldra-motion-duration-fast: 60ms;
+  --veldra-motion-duration-base: 90ms;
+  --veldra-motion-duration-slow: 120ms;
 }
 
 /*

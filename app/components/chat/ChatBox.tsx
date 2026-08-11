@@ -83,7 +83,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   return (
     <div
       className={classNames(
-        'relative bg-bolt-elements-background-depth-2 backdrop-blur p-3 rounded-lg border border-bolt-elements-borderColor relative w-full max-w-chat mx-auto z-prompt',
+        'relative veldra-surface p-3 w-full max-w-chat mx-auto z-prompt',
 
         /*
          * {
@@ -185,9 +185,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           </button>
         </div>
       )}
-      <div
-        className={classNames('relative shadow-xs border border-bolt-elements-borderColor backdrop-blur rounded-lg')}
-      >
+      <div className={classNames('relative veldra-control')}>
         <textarea
           ref={props.textareaRef}
           className={classNames(
