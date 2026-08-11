@@ -2,8 +2,8 @@
 
 **Updated:** 2026-08-11
 **Branch:** `freebuff/veldra-mobile-development` (working from the existing mobile-development branch)
-**Current commit:** `1db9769` — "feat(settings): harden mobile navigation"
-**Remote:** `origin/freebuff/veldra-mobile-development` (`https://github.com/mertgoevse-wq/VELDRA`), verified after the Settings slice push; the working tree contains the in-progress composer slice below.
+**Current commit:** `f9c1a49` — "feat(composer): add skin-aware border and resilient drops"
+**Remote:** `origin/freebuff/veldra-mobile-development` (`https://github.com/mertgoevse-wq/VELDRA`), verified after the composer slice push; the working tree is clean.
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
 
@@ -86,7 +86,7 @@ A new, larger BIG BUILD mandate arrived asking (among much else) to fix composer
 
 **Not attempted this cycle, disclosed not hidden**: the BIG BUILD mandate's much larger asks (CLI, remote runtimes, mesh/Bluetooth model transport, authentication architecture, MCP/connector browser redesign, competitive feature matrix, additional external-repo research) were not started — this slice deliberately scoped to two well-specified, independently verifiable, already-flagged-as-real items rather than spreading thin across dozens of large, mostly-unscoped asks in one pass. `project/research/*.md` already covers the bulk of the mandate's repeated design/competitor-research requests from prior loops; no redundant re-research was run.
 
-### Loop 22 Slice 8 (working tree, 2026-08-11) — skin-aware composer border and resilient image drops
+### Loop 22 Slice 8 (`f9c1a49`, 2026-08-11) — skin-aware composer border and resilient image drops
 
 Continued the existing composer rather than adding a second toolbar or upload path. The prompt border now reads its glow colors and cycle duration from the shared `--veldra-composer-*` tokens, so active skins can tune the treatment without hardcoded component colors. Its existing SVG dash is animated on a deliberately slow 12-second cycle and the CSS-module rule disables it under `prefers-reduced-motion`; the previously existing ambient breathing animation remains unchanged.
 

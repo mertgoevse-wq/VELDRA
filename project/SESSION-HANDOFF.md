@@ -2,10 +2,10 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `freebuff/veldra-mobile-development` (existing development branch)
-**Current commit:** `1db9769` — "feat(settings): harden mobile navigation"
+**Current commit:** `f9c1a49` — "feat(composer): add skin-aware border and resilient drops"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last verified remote state:** `HEAD == origin/freebuff/veldra-mobile-development` after the Settings slice push
-**Working tree:** contains the in-progress composer slice below
+**Last verified remote state:** `HEAD == origin/freebuff/veldra-mobile-development` after the composer slice push
+**Working tree:** clean
 
 **Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
 
@@ -147,7 +147,7 @@ A new, much larger "BIG BUILD" mandate arrived covering dozens of areas (CLI, re
 
 **Deliberately not attempted this cycle** (disclosed, not silently dropped): CLI architecture, remote-runtime/Bluetooth/mesh transport design, authentication architecture, MCP/connector browser redesign, the bolt.diy/Replit/Base44/etc. competitive feature matrix, and further external-repo research — `project/research/*.md` already covers the bulk of the research asks from prior loops, and the remaining items are each large enough to deserve their own scoped slice rather than a shallow pass. Next most actionable, per the mandate's own repeated emphasis and this session's own priority ordering: mobile Settings navigation (bottom sheets for provider/model/skin pickers) — still the next well-specified, already-researched, not-yet-built item.
 
-## Loop 22 Slice 8 (working tree, 2026-08-11) — skin-aware composer border and resilient image drops
+## Loop 22 Slice 8 (`f9c1a49`, 2026-08-11) — skin-aware composer border and resilient image drops
 
 The next coherent mobile-first slice stayed inside the existing `ChatBox` composer. The SVG prompt border now uses shared `--veldra-composer-glow-*` and `--veldra-composer-border-duration` tokens rather than hardcoded accent colors. Its existing dash motion runs slowly and is disabled by the CSS-module reduced-motion rule; no new visual system or dependency was introduced.
 
