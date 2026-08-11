@@ -2,12 +2,39 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `main`
-**Current commit:** `2b09834` — "feat(typography): apply Inter/Space Grotesk/JetBrains Mono (Slice 10)" — Slice 11 built on top, not yet committed at time of writing
+**Current commit:** `ce3297c` — "fix(settings): fix Control Panel modal broken on mobile and at md breakpoint (Slice 11)" — Loop 22 Slice 1 (brand mark correction) built on top, not yet committed at time of writing
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `2b09834` (verified `HEAD == origin/main`)
-**Working tree:** dirty — Slice 11's Control Panel responsive fix (`app/components/@settings/core/ControlPanel.tsx`), validated (307/307 tests, typecheck/lint/build clean, full Android cycle incl. Gradle debug APK, real screenshots at 320/390/430/768/1024/1440px) but not yet committed
+**Last successful push:** `ce3297c` (verified `HEAD == origin/main`)
+**Working tree:** dirty — Loop 22 Slice 1's brand mark correction (see below), validated (307/307 tests, typecheck/lint/build clean, full Android cycle incl. Gradle debug APK, real mobile-first screenshots at 320/390/430/1440px, light+dark) but not yet committed
 
-## Loop 21+ mandate: 51-section (A-AY) productization directive, sequenced into 15 slices (§AW) — current progress: Slices 1-11
+## Loop 22 (CURRENT MANDATE — supersedes Loop 21's slice order): master design/product-architecture rework
+
+The product owner issued a new, much larger 57-section mandate that explicitly stops the Loop 21 slice order ("Nicht einfach mit dem bisherigen Slice 12 blind fortfahren"). Context: they rejected the visual direction this session was about to ship (a hand-drawn amber "V" mark this session invented without checking the real reference images) and re-supplied the 7 approved VELDRA brand photos as the binding visual source, with explicit instructions: analyze `claude-code-best-practice` as a development-*methodology* input (not something to copy into VELDRA's own `.claude/` tree), rebuild the visual identity strictly from the real photos (no invented logos), then redo header/hero/skins/settings mobile-first (390/430px primary QA), and prepare persistent project+user memory, full agent/connector/MCP/local-model architecture, and monetization tiers. This is by far the largest mandate this session has received — sections 1-57, spanning visual identity, IA, mobile-first UX, skin *design styles* (not just palettes: glassmorphism/neomorphism/claymorphism/brutalism/liquid-glass/etc., each with real distinct design logic), settings UX, project/user memory, system prompts, provider/connector/MCP ecosystem, local models, alternative transports (Bluetooth/Wi-Fi Direct/mesh), monetization, and a "VELDRA Build Cube" progress visualization. Treat this as many sessions of work, not one slice.
+
+**Loop 22 Slice 1 (in progress, uncommitted at time of writing)** — Brand mark correction. Full detail in `project/STATUS.md`'s Loop 22 section; condensed:
+- Reverted the session's own rejected amber-mark work (uncommitted, `git checkout --` was clean).
+- Verified the 7 re-attached reference photos are byte-identical (md5sum) to `public/assets/brand/*.jpg` already in the repo — no duplication.
+- Real visual analysis (not just "file exists"): the actual mark is a "V" merged with a cursor pointer, warm cream + sky-blue sparkle on dark navy, sampled directly from pixels (`~#EFEADA` / `~#83C8EF`) — neither bolt-purple nor the amber this session had just guessed.
+- No vector-tracing tool available in this environment; per the product owner's explicit "don't invent a logo, derive from originals" instruction, extracted the mark as a raster PNG via luminance-based alpha keying directly from `veldra-logo-master.jpg` (`public/veldra-mark-dark.png` for dark surfaces, `public/veldra-mark-light.png` — solid navy recolor of the same silhouette — for light surfaces).
+- `Header.tsx`: real mark image (theme-aware `dark:` swap) + real "VELDRA" text (Space Grotesk) instead of one baked-together SVG.
+- Regenerated every favicon/touch-icon/app-icon PNG directly from `veldra-favicon.jpg` (the approved photo already has the right design).
+- Social preview PNG is now a direct crop of `veldra-social-preview.jpg`.
+- `uno.config.ts`'s `accent` color scale (bolt.diy's exact purple before this) replaced with a scale built from the sampled sky-blue — this is the color the whole app's `theme('colors.accent.*')` token system already resolves through, so this one change recolors buttons/links/borders/focus-rings app-wide without touching each component.
+- Deleted 5 now-orphaned SVGs that still had the bolt.diy-style lightning-bolt silhouette and were confirmed unreferenced anywhere in `app/`: `favicon.svg`, `logo.svg` (raw bolt.diy), `veldra-logo.svg`, `veldra-favicon.svg`, `veldra-icon.svg`.
+- Best-practices-repo research (background agent, MIT license confirmed): conclusion is "apply its patterns to how VELDRA gets *built*, don't import its agent/skill collections into VELDRA" — reconfirms the existing D-2 decision (no `.claude/agents/` until a phase needs them); the one concrete near-term pick is tightening CLAUDE.md's context-management section, not new `.claude/` infrastructure.
+
+**Honest gaps, not silently skipped**:
+- Android launcher icon still shows the old lightning-bolt — `android/` is off-limits to Claude per this repo's own CLAUDE.md, left for the Android-build-host workflow.
+- ~42 files hardcode Tailwind's own default `purple-*` classes (not the `accent-*` token) — confirmed still-purple in the screenshots (e.g. `APIKeyManager.tsx`'s "Get API Key" link). Scoped as its own follow-up (mechanical `purple-N`→`accent-N` sweep across Settings tabs + shared components), not attempted here to keep this diff reviewable.
+- The other 56 sections of the mandate (skins-as-design-styles, mobile-first header/hero rework, settings UX, memory, agents/connectors/MCP, local models, monetization) are NOT started.
+
+**Immediate next steps, in order:**
+1. Commit Loop 22 Slice 1 (`Header.tsx`, `ExpoQrModal.tsx`, `root.tsx`, `uno.config.ts`, `BRANDING.md`, the deleted/new `public/*` assets), `git fetch origin main`, push, verify `HEAD == origin/main`.
+2. Next highest-value slice per the mandate's own priority order (§29-30): mobile-first header/hero rework — the hero art is still the same large, detailed illustration flagged as "too big, too detailed, wrong position" in the mandate itself; needs its own redesign pass (crop/opacity/positioning/mobile fallback), not just the mark fix done here.
+3. The `purple-N` → `accent-N` sweep (42 files) — real, scoped, mechanical follow-up.
+4. Then work through the mandate's remaining sections in priority order: skins-as-design-styles (§10-27), settings UX (§31), memory/persistence (§32-35), provider/connector/MCP/local-model architecture (§36-43), monetization (§44), Build Cube (§45).
+
+## Loop 21+ mandate (COMPLETE for its own scope, 11 of 15 slices shipped, reprioritized by Loop 22): 51-section (A-AY) productization directive
 
 This loop's mandate ("VELDRA PRODUCTIZATION, DE-BOLTING, DESIGN SYSTEM, PERSISTENCE, CAPABILITIES & COMMERCIAL FOUNDATION") is the largest and most structured yet: de-Bolting/legal audit, VELDRA design system, 13 named skins, Goal/Task persistence + resumable sessions, capability/connector/MCP-server architecture, FREE/PREMIUM/PRO entitlements + ads/monetization prep, responsive/motion/settings UX, provider/local-model architecture, and the vibecoding IDEA→...→RESULT interaction loop. Explicit instruction: work through the 15 slices in order, test→typecheck→lint→build→(Android cycle where relevant)→commit→push after each, don't stop at a half-finished state.
 

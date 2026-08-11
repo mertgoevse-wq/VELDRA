@@ -30,7 +30,7 @@ export const ExpoQrModal: React.FC<ExpoQrModalProps> = ({ open, onClose }) => {
           <div className="my-6 flex flex-col items-center">
             {expoUrl ? (
               <QRCode
-                logoImage="/veldra-favicon.svg"
+                logoImage="/veldra-icon-192.png"
                 removeQrCodeBehindLogo={true}
                 logoPadding={3}
                 logoHeight={50}
@@ -39,7 +39,7 @@ export const ExpoQrModal: React.FC<ExpoQrModalProps> = ({ open, onClose }) => {
                 style={{
                   borderRadius: 16,
                   padding: 2,
-                  backgroundColor: '#8a5fff',
+                  backgroundColor: '#0B1220',
                 }}
                 value={expoUrl}
                 size={200}

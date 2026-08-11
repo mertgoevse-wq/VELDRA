@@ -34,18 +34,23 @@ const BASE_COLORS = {
     900: '#171717',
     950: '#0A0A0A',
   },
+  /*
+   * Sampled directly from the approved VELDRA brand mark (public/assets/brand/veldra-logo-master.jpg's
+   * sparkle accent, ~rgb(131,200,239) / hsl(202,72%,~70%)) -- not an invented color, not bolt.diy's
+   * purple. See project/DECISIONS.md for the swap rationale.
+   */
   accent: {
-    50: '#F8F5FF',
-    100: '#F0EBFF',
-    200: '#E1D6FF',
-    300: '#CEBEFF',
-    400: '#B69EFF',
-    500: '#9C7DFF',
-    600: '#8A5FFF',
-    700: '#7645E8',
-    800: '#6234BB',
-    900: '#502D93',
-    950: '#2D1959',
+    50: '#F2F9FD',
+    100: '#E0F1FA',
+    200: '#C2E2F5',
+    300: '#9FD2EF',
+    400: '#7BC1EA',
+    500: '#50ADE2',
+    600: '#2498DB',
+    700: '#1D7DB4',
+    800: '#17618C',
+    900: '#114969',
+    950: '#0B3146',
   },
   green: {
     50: '#F0FDF4',

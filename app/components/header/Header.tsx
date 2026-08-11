@@ -17,8 +17,15 @@ export function Header() {
     >
       <div className="flex items-center gap-2 z-logo text-bolt-elements-textPrimary cursor-pointer">
         <div className="i-ph:sidebar-simple-duotone text-xl" />
-        <a href="/" className="text-2xl font-semibold text-accent flex items-center">
-          <img src="/veldra-logo.svg" alt="VELDRA" className="w-[110px] inline-block text-bolt-elements-textPrimary" />
+        <a href="/" className="flex items-center gap-2">
+          <img src="/veldra-mark-dark.png" alt="" className="hidden dark:block h-6 w-auto" />
+          <img src="/veldra-mark-light.png" alt="" className="block dark:hidden h-6 w-auto" />
+          <span
+            className="text-lg font-bold tracking-wide text-bolt-elements-textPrimary"
+            style={{ fontFamily: 'var(--veldra-font-brand)' }}
+          >
+            VELDRA
+          </span>
         </a>
       </div>
       {chat.started && ( // Display ChatDescription and HeaderActionButtons only when the chat has started.

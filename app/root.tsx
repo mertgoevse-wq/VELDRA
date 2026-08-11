@@ -27,8 +27,14 @@ const toastAnimation = cssTransition({
 export const links: LinksFunction = () => [
   {
     rel: 'icon',
-    href: '/veldra-favicon.svg',
-    type: 'image/svg+xml',
+    href: '/favicon.ico',
+    sizes: '48x48',
+  },
+  {
+    rel: 'icon',
+    href: '/favicon-16x16.png',
+    sizes: '16x16',
+    type: 'image/png',
   },
   {
     rel: 'icon',
