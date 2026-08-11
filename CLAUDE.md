@@ -457,10 +457,13 @@ finished but does nothing real.
   angle: current commit, last successful push, immediate next steps.
 - `ROADMAP.md` — current priorities and a capability matrix (implemented /
   contract-only / unavailable-by-design).
-- `DECISIONS.md` — durable architectural decisions (D-001..D-008).
+- `DECISIONS.md` — durable architectural decisions (D-001..D-009).
 - `RISKS.md` — known risks and their mitigations.
 - `LEGAL-AND-PROVENANCE.md` — bolt.diy/StackBlitz provenance and licensing
   audit; keep MIT attribution intact.
+- `ARCHITECTURE-ORCHESTRATOR.md` — the `app/lib/orchestrator/` core's
+  rationale and what it deliberately does not model yet; referenced from
+  that code's own doc comments.
 - `research/` — architecture/design-system/repository/roadmap research
   produced by past loops (`VELDRA-ARCHITECTURE-RESEARCH.md`,
   `VELDRA-DESIGN-SYSTEM.md`, `VELDRA-PRODUCT-ROADMAP.md`,
@@ -480,11 +483,19 @@ Known discrepancies, documented rather than silently resolved one way:
   direct-to-`main` pushes; this specific session's harness instead requires
   a designated feature branch + PR. Both are recorded as true, scoped to
   when each applies.
-- **The two phantom citations**: "off-limits per this repo's own
-  CLAUDE.md" (no such file existed before this one — §23) and Loop 22
-  Slice 1's "decision D-2" about `.claude/agents/` (no such entry existed
-  in `DECISIONS.md` — now recorded for real as D-008). Both are corrected
-  here rather than repeated as verified fact.
+- **Phantom citations, found and fixed at the source**: "off-limits per
+  this repo's own CLAUDE.md" (no such file existed before this one —
+  §23); Loop 22 Slice 1's "decision D-2" about `.claude/agents/` (no such
+  entry existed in `DECISIONS.md` — now recorded for real as D-008); and
+  two citations baked directly into `app/lib/orchestrator/`'s own code
+  comments — `registries.ts` cited "`project/DECISIONS.md` D-5" for its
+  prompt-pattern licensing rule (D-005 is actually Remote Runtime
+  authentication, unrelated — now recorded for real as D-009 and the
+  code comment corrected), and two comments in `registries.ts`/`types.ts`
+  cited a `project/PRODUCT-VISION.md` that was never created (redirected
+  to D-007 and the new `ARCHITECTURE-ORCHESTRATOR.md` respectively, both
+  of which actually cover what those comments were gesturing at). None of
+  these are repeated as verified fact anymore.
 - **CI infrastructure** (§25): a real, verified, previously-undocumented
   repo-level GitHub Actions failure (no runner ever picks up a job) was
   found this session and has been added to `project/RISKS.md`.
