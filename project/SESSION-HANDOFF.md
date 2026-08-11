@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `claude/veldra-autonomous-build-gbctv8` (this session's designated feature branch; branched from `main` at `db0cfcf`, did not exist on origin before this session — created and pushed)
-**Current commit:** `bd01034` — "feat(providers): move API keys off the homescreen into Settings, kill the last purple line (Loop 22 Slice 5)"
+**Current commit:** `6006cb3` — "chore(android): sync web bundle for Slices 2-5 (cap sync)"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last successful push:** `bd01034` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`)
+**Last successful push:** pending — see push note at the end of the Android Gradle cycle section below
 **Working tree:** clean
 
 **Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
@@ -86,11 +86,25 @@ Per the new directive's §F/§G: API key entry does not belong on the welcome sc
 
 **Validated**: 316/316 tests, typecheck clean, lint clean, production build clean. Verified via real screenshots (390px light/dark, 1440px desktop) — the red error text is gone from the homescreen, the composer's calm connection-status line renders correctly in both themes, no overflow — plus a direct `getComputedStyle` check confirming `--bolt-elements-focus` now resolves to `rgb(36, 152, 219)` (accent-600) instead of nothing. **Android Gradle cycle not run** — now overdue across 4 consecutive web-only slices (2-5), flagged clearly rather than silently accumulating.
 
+## Android Gradle cycle (`6006cb3`, this session) — real native APK build, closes the 4-slice-overdue gap
+
+Slices 2-5 were all web/CSS/component-only but Android-visible, and none had triggered a real native build check — flagged as overdue in every intervening doc update. Ran the full cycle for real this time, not just the web-safe half of it:
+
+- `pnpm android:webbuild` — clean.
+- `pnpm android:sync` — clean; `cap sync` reports 3 Capacitor plugins (`@capacitor/app@7.1.2`, `@capacitor/filesystem@7.1.8`, `@capacitor/share@7.0.4`).
+- **The Android SDK is not persisted in this ephemeral environment** (documented in `CLAUDE.md`'s own Android section as an expected gap, with "reinstall the SDK ad hoc if a real local APK build is genuinely needed" as the sanctioned path). Installed it ad hoc: `commandlinetools-linux-11076708` → `platform-tools`, `platforms;android-35`, `build-tools;35.0.0` via `sdkmanager`, licenses accepted, `android/local.properties` written (`sdk.dir=/home/user/android-sdk`, itself outside the repo, not committed).
+- `node scripts/build-apk.mjs` then ran the actual Gradle wrapper (8.11.1, per `gradle-wrapper.properties`) end-to-end: **`BUILD SUCCESSFUL in 2m 33s`**, 168 actionable tasks executed, all Capacitor plugin modules (`capacitor-android`, `capacitor-app`, `capacitor-filesystem`, `capacitor-share`, `capacitor-cordova-android-plugins`) compiled and packaged clean. Real artifact produced: `android/app/build/outputs/apk/debug/app-debug.apk` (20.1 MB, confirmed present on disk with `ls -la`, not just inferred from Gradle's own success message).
+- The only source change from this cycle is the checked-in synced-bundle reference `android/app/src/main/assets/public/index.html` — `cap sync` rewrote its `<script>`/`<link>` tags to the current build's hashed asset filenames (`android-index-CtoxWMaP.js`/`.css`, was `B9fwfF8n`/`UgRwQ390` as of the Slice-1 commit `db0cfcf`). No native `android/` project files (Gradle config, manifests, Java/Kotlin, resources) were touched — consistent with this repo's own "native `android/` edits are the higher-risk, less-traveled path" convention.
+
+**Confirms**: the hero redesign, `purple`→`accent` sweep, 11-skin design-style system, and provider/API-key UX changes from Slices 2-5 all compile and build cleanly through the full native toolchain — no regressions surfaced at the TypeScript/bundler/Gradle level.
+
+**Honest limit, per D-007**: this is a compiler-level check only. No Android emulator or physical device was available in this environment, so the APK was never launched or interacted with — visual/functional parity on a real Android WebView (does the new hero layout actually render correctly, do the 11 skins actually apply, does the relocated API-key UI actually work on-device) remains unverified by direct observation. Same limitation every prior slice's Android status has carried; not a new gap introduced here, just not yet closed.
+
 **Immediate next steps, in order** (per the new directive's own suggested slice order, adjusted where this session's own architecture inspection points elsewhere):
-1. A real Android Gradle cycle — genuinely overdue now, should happen before another 4 slices of web-only work accumulate further untested Android risk.
-2. Redesign the Guided Build button/flow (§Q) and the remaining Bolt-like layout structure per §E.
-3. Mobile Settings navigation redesign (bottom sheets for model/provider/skin pickers, per the design-system research's own §2.3 finding that this is the 2026-standard pattern) — directly actionable, already researched, not yet built.
-4. Independently verify the SkinPicker's click-through path (still open from Slice 4).
+1. Redesign the Guided Build button/flow (§Q) and the remaining Bolt-like layout structure per §E.
+2. Mobile Settings navigation redesign (bottom sheets for model/provider/skin pickers, per the design-system research's own §2.3 finding that this is the 2026-standard pattern) — directly actionable, already researched, not yet built.
+3. Independently verify the SkinPicker's click-through path (still open from Slice 4).
+4. If Android UI regressions are ever suspected, an emulator would need to be provisioned separately — not attempted this session, out of scope for a compiler-level confirmation pass.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 
