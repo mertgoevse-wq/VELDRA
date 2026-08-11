@@ -287,7 +287,7 @@ export function GitHubSyncPanel() {
         transition={{ delay: 0.1 }}
       >
         <div className="flex items-center gap-2">
-          <div className="i-ph:gear-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:gear-fill w-4 h-4 text-accent-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Repository Configuration</span>
         </div>
 
@@ -304,7 +304,7 @@ export function GitHubSyncPanel() {
               'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
               'border border-[#E5E5E5] dark:border-[#1A1A1A]',
               'text-bolt-elements-textPrimary',
-              'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+              'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
               'transition-all duration-200',
               'placeholder:text-bolt-elements-textTertiary',
             )}
@@ -324,7 +324,7 @@ export function GitHubSyncPanel() {
               'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
               'border border-[#E5E5E5] dark:border-[#1A1A1A]',
               'text-bolt-elements-textPrimary',
-              'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+              'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
               'transition-all duration-200',
               'placeholder:text-bolt-elements-textTertiary',
             )}
@@ -335,8 +335,8 @@ export function GitHubSyncPanel() {
           onClick={handleSaveConfig}
           className={classNames(
             'w-full px-4 py-2 rounded-lg text-sm font-medium',
-            'bg-purple-500 text-white',
-            'hover:bg-purple-600',
+            'bg-accent-500 text-white',
+            'hover:bg-accent-600',
             'transition-all duration-200',
             'transform active:scale-95',
           )}
@@ -353,7 +353,7 @@ export function GitHubSyncPanel() {
         transition={{ delay: 0.15 }}
       >
         <div className="flex items-center gap-2">
-          <div className="i-ph:clock-countdown-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:clock-countdown-fill w-4 h-4 text-accent-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Sync Status</span>
         </div>
 
@@ -411,7 +411,7 @@ export function GitHubSyncPanel() {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="i-ph:git-branch-fill w-4 h-4 text-purple-500" />
+            <div className="i-ph:git-branch-fill w-4 h-4 text-accent-500" />
             <span className="text-sm font-medium text-bolt-elements-textPrimary">Git Operations</span>
           </div>
           {isRemoteMode && isRemoteUrlConfigured && isWorkspaceConfigured && (
@@ -470,7 +470,7 @@ export function GitHubSyncPanel() {
               'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
               'border border-[#E5E5E5] dark:border-[#1A1A1A]',
               'text-bolt-elements-textPrimary',
-              'focus:outline-none focus:ring-1 focus:ring-purple-500',
+              'focus:outline-none focus:ring-1 focus:ring-accent-500',
               'transition-all duration-200',
               'placeholder:text-bolt-elements-textTertiary',
               (isGitActionDisabled || isLoading) && 'opacity-50 cursor-not-allowed',
@@ -486,7 +486,7 @@ export function GitHubSyncPanel() {
             'w-full px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200',
             isGitActionDisabled || isLoading || !commitMessage.trim()
               ? 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-400 dark:text-gray-600 cursor-not-allowed'
-              : 'bg-purple-600 hover:bg-purple-700 text-white transform active:scale-95',
+              : 'bg-accent-600 hover:bg-accent-700 text-white transform active:scale-95',
           )}
         >
           <div className={isLoading ? 'i-ph:spinner-gap animate-spin w-4 h-4' : 'i-ph:git-commit-fill w-4 h-4'} />
