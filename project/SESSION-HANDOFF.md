@@ -103,8 +103,20 @@ Slices 2-5 were all web/CSS/component-only but Android-visible, and none had tri
 **Immediate next steps, in order** (per the new directive's own suggested slice order, adjusted where this session's own architecture inspection points elsewhere):
 1. Redesign the Guided Build button/flow (§Q) and the remaining Bolt-like layout structure per §E.
 2. Mobile Settings navigation redesign (bottom sheets for model/provider/skin pickers, per the design-system research's own §2.3 finding that this is the 2026-standard pattern) — directly actionable, already researched, not yet built.
-3. Independently verify the SkinPicker's click-through path (still open from Slice 4).
-4. If Android UI regressions are ever suspected, an emulator would need to be provisioned separately — not attempted this session, out of scope for a compiler-level confirmation pass.
+3. If Android UI regressions are ever suspected, an emulator would need to be provisioned separately — not attempted this session, out of scope for a compiler-level confirmation pass.
+
+## SkinPicker click-through, independently verified (this session) — the Slice 4 gap is closed
+
+Slice 4 left this open after several honest but failed automation attempts against the sidebar's hover-proximity open mechanism. Re-attempted against the running dev server (already reflecting Slices 2-5) with the same `page.mouse.move` edge-hover technique, this time carrying it through the full real path instead of stopping at the sidebar:
+
+1. `page.mouse.move(5, 400, { steps: 10 })` — sidebar opens, `button[title="Settings"]` becomes present (count: 1).
+2. Click it — opens the `ControlPanel` modal (`[role="dialog"]` count: 1).
+3. Click the avatar trigger inside the modal (`button:has(.i-ph:user)`) — opens the Radix `AvatarDropdown` (this is where earlier attempts stalled; worked cleanly this time with a direct `.click()` instead of coordinate-based clicking).
+4. Click the `menuitem` named "Settings" — switches `ControlPanel`'s `activeTab` to `settings`, rendering `SettingsTab.tsx`'s `SkinPicker`.
+5. `skin before` (via `document.documentElement.getAttribute('data-skin')`): `veldra`. Clicked the Brutalism card (`getByRole('button', { name: /Brutalism/i })`) → `skin after`: `brutalism`, `aria-pressed`: `true`, toast "Skin set to Brutalism" fired.
+6. Clicked Glassmorphism next (not a one-shot fluke check) → `skin after second switch`: `glass`, toast "Skin set to Glassmorphism" fired, stacking correctly with the first toast.
+
+Screenshots at every step (`skinpicker-step1` through `step6`) confirm this visually: the selected card gets the accent-blue ring + checkmark badge, and the Brutalism swatch itself renders its own thick black border/square corners (the swatch scopes `data-skin="brutalism"` internally per its own live-preview design — not a stray focus ring, verified by reading `SkinPicker.tsx` before concluding this). **Task closed**: the full sidebar → avatar dropdown → Settings tab → skin card path works end-to-end via real Playwright interaction, not just code inspection.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 
