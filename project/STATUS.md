@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-11
 **Branch:** `claude/veldra-autonomous-build-gbctv8` (feature branch for the current autonomous session; based on `main` at `db0cfcf`)
-**Current commit:** `0ada291` — "fix(ui): sweep bolt.diy purple-* remnants to the accent-* token (Loop 22 Slice 3)"
+**Current commit:** `a94a6d5` — "fix(design-system): move skin-block tokens after base defaults (CSS specificity bug)"
 **Remote:** `origin/claude/veldra-autonomous-build-gbctv8` (`https://github.com/mertgoevse-wq/VELDRA`), verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
@@ -29,6 +29,16 @@ Mechanical follow-up flagged by Slice 1 and visible in Slice 2's own screenshots
 **6 files deliberately excluded** after individually checking each for a real collision or non-brand use (not blindly swept): `FileIcon.tsx` (purple = a specific language's file-icon color, PHP/Kotlin/YAML), `StatusIndicator.tsx` (purple `loading` status would become visually identical to the existing blue `info` status), `NetlifyTab.tsx`/`SupabaseTab.tsx` (purple is one entry in a multi-color stat-card array that already has a separate blue entry), `RepositoryCard.tsx` (purple "Fork" badge vs. existing blue "topics" badges in the same card), `ColorSchemeDialog.tsx` (purple is one hue in a decorative gradient swatch for the *user-facing generated-project* design-scheme picker, not VELDRA's own UI). `GlowingEffect.tsx`'s multi-hue animated glow (purple/violet/magenta) was also left alone — a genuine decorative effect, not a single brand-purple reference, better suited to the future skin-system pass.
 
 **Validated**: 316/316 tests (unchanged), typecheck clean, lint clean, web build clean. Verified via `getComputedStyle`, not just screenshots: `--bolt-elements-borderColorActive` resolves to `rgb(36, 152, 219)` (`accent-600`), composer borders resolve to the neutral gray `borderColor` token — zero purple in any computed style. Android Gradle cycle not run this slice (CSS-class-only, same reasoning as Slice 2) — now overdue across two consecutive slices, flagged for the next checkpoint.
+
+### Slice 4 (`e87d2cd`, fixed by `a94a6d5`) — real 9-skin design-style architecture
+
+Extended the existing `skinStore`/`[data-skin]` mechanism (2 skins: veldra, obsidian) to 11: veldra (refined default) + Glassmorphism, Liquid Glass, Spatial UI, Neomorphism, Claymorphism, Skeuomorphism, Minimalism, Maximalism, Brutalism + obsidian. Each is a real, distinct visual language built on one shared token layer in `variables.scss` (radius, shadow/elevation, backdrop-blur, border treatment, surface opacity, motion easing/duration), not a palette swap and not nine independent CSS systems. Wired into the actual shared primitives (`Button`, `Dialog`, `Checkbox`, `Card`, Settings `TabTile`, chat `ChatBox` composer) — switching skins changes real controls. New `SkinPicker.tsx` replaces the old plain `<select>` with a grid of cards, each showing a genuinely live preview swatch (resolves the same CSS variables via its own scoped `data-theme`/`data-skin` attributes, not a fabricated image).
+
+**Real bug found and fixed via `getComputedStyle` verification** (`a94a6d5`): the 3 theme-agnostic skin blocks (Minimalism/Maximalism/Brutalism) had a CSS specificity tie with the base token defaults, resolved by source order — and lost, since they were declared before the base block. All three silently rendered as the default look instead of their intended structure (Brutalism had rounded corners instead of square, no hard-offset shadow). The 6 theme-scoped skins were unaffected (higher specificity wins regardless of order) — masking the bug in initial screenshot review, only caught by checking actual computed styles. Fixed by reordering the file so the skin blocks come after the base defaults.
+
+**Full detail, including the honest verification-method limits (what was and wasn't independently confirmed via automated UI interaction) in `project/SESSION-HANDOFF.md`'s Loop 22 Slice 4 entry.**
+
+Validated: 316/316 tests, typecheck clean, lint clean, production build clean. Android Gradle cycle not run (web/CSS-only) — overdue across Slices 2-4, flagged for next checkpoint.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 

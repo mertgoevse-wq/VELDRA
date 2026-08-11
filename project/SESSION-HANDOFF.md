@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `claude/veldra-autonomous-build-gbctv8` (this session's designated feature branch; branched from `main` at `db0cfcf`, did not exist on origin before this session — created and pushed)
-**Current commit:** `0ada291` — "fix(ui): sweep bolt.diy purple-* remnants to the accent-* token (Loop 22 Slice 3)"
+**Current commit:** `a94a6d5` — "fix(design-system): move skin-block tokens after base defaults (CSS specificity bug)"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last successful push:** `0ada291` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`)
+**Last successful push:** `a94a6d5` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`)
 **Working tree:** clean
 
 **Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
@@ -41,6 +41,30 @@ Mechanical follow-up flagged by Slice 1 and directly visible in Slice 2's own sc
 1. Skin design-style system (§9-10): extend the existing `skinStore`/token architecture with real distinct visual languages (glassmorphism/neomorphism/claymorphism/brutalism/liquid-glass/etc.), not palette swaps — default skin should stay soft/premium/calm per §10.
 2. Then continue in the master directive's own stated order (§40): settings/navigation mobile-first redesign, remaining branding replacement, vibecoding interaction improvements, goal/task persistence UI, agent/connector/MCP registry UI, provider architecture.
 3. A real Android Gradle cycle is now overdue across Slices 2 and 3 (both web-only CSS/component changes) — worth running at the next Android-touching checkpoint or as its own validation pass.
+
+## Loop 22 Slice 4 (`e87d2cd` + fix `a94a6d5`, this session) — real 9-skin design-style architecture
+
+Per the newest mandate's own priority order ("Slice B/C": design-system foundation, then the 9 named design styles). Extended the existing `skinStore`/`[data-skin]` mechanism from Loop 19/21 (2 skins: veldra, obsidian) to 11: veldra (refined default) + Glassmorphism, Liquid Glass, Spatial UI, Neomorphism, Claymorphism, Skeuomorphism, Minimalism, Maximalism, Brutalism + the existing obsidian palette. Each is a real, distinct visual language (radius, shadow/elevation, backdrop-blur, border treatment, surface opacity, motion easing/duration) — not a palette swap — built on **one shared token layer**, not nine independent CSS systems:
+
+- `variables.scss`: a new "skin-structural layer" (`--veldra-backdrop-blur/-saturate`, `--veldra-surface-bg`, `--veldra-motion-ease`) alongside the existing Slice 7 radius/shadow/border-width/motion-duration tokens. The `:root` defaults ARE the refined VELDRA default (opaque, blur-free for mobile performance — deliberately not a glass overlay by default). 9 skin blocks override only what actually differs per language, with light+dark variants for the 3 skins whose look is inherently transparency-dependent (Glass/Liquid Glass/Spatial) and for the 3 whose shadow pairs are tuned per-theme (Neomorphism/Claymorphism/Skeuomorphism).
+- `uno.config.ts`: `veldra-surface`/`veldra-control`/`veldra-radius-*` shortcuts are the one real implementation every skin's tokens flow through.
+- **Actually wired into the shared primitives**, not just declared: `Button`, `Dialog` (+ Confirmation/Selection variants), `Checkbox`, `Card`, the Settings `TabTile`, and the chat composer (`ChatBox`) all now resolve their radius/shadow/border/blur from these tokens. Switching skins changes real, functioning controls.
+- `skin.ts`: `Skin` type extended 2→11, with `SKIN_LABELS`/`SKIN_DESCRIPTIONS` for the picker.
+- New `SkinPicker.tsx` replaces the old plain `<select>` in Settings → Preferences: a grid of cards, each with a genuinely live preview swatch (the swatch element carries its own `data-theme`/`data-skin` attributes and resolves the exact same CSS variables the app-wide switch does — not a fabricated image). This required writing every skin selector as `[data-theme][data-skin]` rather than `:root[data-theme][data-skin]`, so the same rules also match the small scoped preview wrapper, not just `<html>`.
+
+**Real bug found and fixed during verification, not just claimed working** (`a94a6d5`): the 3 theme-agnostic skin blocks (Minimalism/Maximalism/Brutalism — the ones with no `[data-theme=...]` companion selector) were declared *before* the base `:root { --veldra-radius-sm: 8px; ... }` token block. Both have equal CSS specificity (a single attribute selector vs. `:root` alone), so the tie was broken by source order — and the base defaults, appearing later in the file, silently won, overriding all three skins back to the default look. Brutalism rendered with rounded corners and no hard-offset shadow instead of its intended square/thick-border/offset-shadow look. This was caught by actually checking `getComputedStyle` on the real composer element (not by eyeballing screenshots, where the 6 theme-scoped skins — unaffected by this bug since their 2-attribute selectors already won on specificity alone — looked correct and masked the problem). Fixed by moving the whole skin-block section after the base tokens; re-verified via `getComputedStyle`: brutalism's composer now correctly resolves `borderRadius:0px`, `borderWidth:2px`, `boxShadow: rgb(36,152,219) 5px 5px 0px` (the accent-colored hard offset).
+
+**Verification performed, and its real limits, stated plainly**:
+- Visual survey: 16 real Playwright screenshots across all 10 skins × light/dark × 320/390/1440px — all confirmed visually distinct (Neomorphism's flat blue-gray extruded surface and Claymorphism's pastel puffy card are dramatically obvious even in a static screenshot; Glass/Liquid Glass's blur is real per `getComputedStyle` but hard to *see* in a screenshot against this page's mostly-white background — a genuine limit of screenshot evidence, not a claim the effect doesn't exist). Zero horizontal overflow at any width.
+- `getComputedStyle` verification on 6 skins (veldra/glass/neomorphism/brutalism/minimalism/maximalism) directly confirmed the actual resolved `border-radius`/`box-shadow`/`border-width`/`background-color` values, not just that a class name was present.
+- **NOT independently verified**: the full production click-path (sidebar → avatar dropdown → Settings tab → SkinPicker card) via automated browser interaction. Multiple attempts hit flakiness in the pre-existing hover-proximity-based sidebar (`Menu.client.tsx`'s `onMouseMove` open/close logic, unrelated to this slice's own code) that this session's Playwright automation couldn't reliably drive. The `setSkin()`/`data-skin` mechanism itself was already verified working via real UI interaction in Loop 21 Slice 9's documented testing, and `SkinPicker.tsx` uses that exact same call — but the *new* picker UI's own click-through was not re-confirmed end-to-end this slice. Real, disclosed gap, not silently claimed as tested.
+
+Validated: 316/316 tests (unchanged — CSS/token/shortcut-only, no new logic), typecheck clean, lint clean, production build clean. **Android Gradle cycle not run** across Slices 2-4 (all web/CSS/component-only) — now genuinely overdue, flagged for the next checkpoint.
+
+**Immediate next steps, in order:**
+1. Independently verify the SkinPicker's click-through path (ideally via a more robust test approach — e.g. driving the sidebar open via its underlying store/state directly rather than fighting the hover-proximity UX in automation).
+2. A real Android Gradle cycle (overdue across 3 consecutive web-only slices).
+3. Continue the master directive's own stated order (§40): Home/Hero further refinement (§E), mobile-first Settings/navigation redesign (§F), Chat UI (§G), Build Progress/VELDRA Build Cube (§H).
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 
