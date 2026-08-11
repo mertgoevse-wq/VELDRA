@@ -114,6 +114,10 @@ export default defineConfig({
     ['b', {}],
   ],
   theme: {
+    fontFamily: {
+      sans: 'var(--veldra-font-ui)',
+      mono: 'var(--veldra-font-mono)',
+    },
     colors: {
       ...COLOR_PRIMITIVES,
       bolt: {

@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-11
 **Branch:** `main`
-**Current commit:** (Slice 9 in progress, not yet committed — will follow `4c25cf2`)
+**Current commit:** (Slice 10 in progress, not yet committed — will follow `c8dfa87`)
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
 ## Loop 21+ (IN PROGRESS): productization mandate — Slices 1-6 of 15
@@ -33,7 +33,13 @@ Validated through Slice 8: 307/307 tests, typecheck clean, lint clean, web build
 
 Validated through Slice 9: 307/307 tests, typecheck clean, lint clean, web build clean, full Android cycle (`android:sync` clean, native Gradle debug APK `BUILD SUCCESSFUL`) since this adds a real control to the Android-rendered Settings screen.
 
-**Not started yet**: Slices 10-15 (typography, responsive audit, motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
+**Slice 10** (in progress) — Typography/fonts, applying `project/research/VELDRA-DESIGN-SYSTEM.md` section 3's Inter/Space Grotesk/JetBrains Mono decision (all SIL OFL / Apache 2.0, already noted license-clean in Loop 20's research). **Real gap found before implementing anything**: Inter was already `<link>`-loaded in `root.tsx` since an earlier loop, but nothing in the app ever actually applied it -- no `font-family` on `html`/`body`, no `fontFamily` in `uno.config.ts`'s theme -- so the app had been rendering in the browser's default sans stack the entire time despite "using" Inter. Fixed: added `--veldra-font-ui`/`--veldra-font-brand`/`--veldra-font-mono` tokens to `variables.scss`, applied `--veldra-font-ui` to `html`/`body` (`index.scss`), wired `--veldra-font-ui`/`--veldra-font-mono` into `uno.config.ts`'s `theme.fontFamily` so the `font-sans`/`font-mono` utility classes resolve consistently app-wide, applied `--veldra-font-brand` (Space Grotesk) to the one real "distinctive display" use today -- the welcome screen's "Where ideas begin" headline -- not globally, matching the research's own "distinct display, humanist sans body" reasoning. Also found and unified 3 different, inconsistent hardcoded monospace stacks (`Terminal.tsx`'s xterm.js config, `cm-theme.ts`'s CodeMirror gutter/editor theme, `Markdown.module.scss`'s local `$font-mono`) into `--veldra-font-mono` (JetBrains Mono) -- xterm.js needed the literal stack (canvas text rendering can't resolve CSS custom properties), the other two now reference the token directly. Loaded Space Grotesk + JetBrains Mono via the existing Google Fonts `<link>` in `root.tsx` (combined into the one existing request alongside Inter).
+
+Verified functionally: real Playwright check confirmed `getComputedStyle(document.body).fontFamily` resolves to `Inter, ui-sans-serif, ...` and the h1's resolves to `"Space Grotesk", Inter, ...` -- not just visual inspection. Screenshots at 1440px desktop and 390px mobile confirm the visible font change (the headline now has Space Grotesk's distinct geometric character), no layout regression at either width.
+
+Validated through Slice 10: 307/307 tests, typecheck clean, lint clean, web build clean, full Android cycle (`android:sync` clean, native Gradle debug APK `BUILD SUCCESSFUL`) since this changes fonts across the whole Android-rendered app including the code editor and terminal.
+
+**Not started yet**: Slices 11-15 (responsive audit, motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
 
 ## Loop 20 (RESEARCH ONLY, per its own mandate — no product code changed): architecture research, repository candidates, design system, product roadmap
 

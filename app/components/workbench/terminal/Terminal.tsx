@@ -43,7 +43,12 @@ export const Terminal = memo(
           disableStdin: readonly,
           theme: getTerminalTheme(readonly ? { cursor: '#00000000' } : {}),
           fontSize: 12,
-          fontFamily: 'Menlo, courier-new, courier, monospace',
+
+          /*
+           * xterm.js measures glyphs on a canvas context, which can't resolve CSS custom
+           * properties -- kept as a literal stack, matching --veldra-font-mono in variables.scss.
+           */
+          fontFamily: "'JetBrains Mono', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace",
           allowProposedApi: true,
           scrollback: 1000,
 

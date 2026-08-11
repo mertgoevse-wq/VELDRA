@@ -335,6 +335,24 @@
 }
 
 /*
+ * VELDRA typography tokens (Loop 21+ Slice 10, per project/research/VELDRA-DESIGN-SYSTEM.md
+ * section 3 -- Inter/Space Grotesk/JetBrains Mono, all SIL OFL / Apache 2.0, no licensing
+ * ambiguity). --veldra-font-ui is the app's actual body font: Inter was already <link>-loaded in
+ * root.tsx but nothing ever set it as the font anywhere (no `font-family` on html/body, no
+ * `fontFamily` in uno.config.ts's theme) -- the app has been rendering in the browser's default
+ * sans stack this whole time. --veldra-font-brand is for the one real "distinctive display" use
+ * today, the welcome screen's "Where ideas begin" headline -- not applied globally, matching
+ * Claude's own "serif/distinct for display, humanist sans for body" reasoning from the research.
+ * --veldra-font-mono replaces two different, inconsistent hardcoded monospace stacks that existed
+ * (Terminal.tsx's 'Menlo, courier-new...' and Markdown.module.scss's own local $font-mono).
+ */
+:root {
+  --veldra-font-ui: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --veldra-font-brand: 'Space Grotesk', var(--veldra-font-ui);
+  --veldra-font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+/*
  * Mobile / Android WebView overrides
  *
  * Bolt.diy defaults to a desktop layout with --chat-min-width: 533px.

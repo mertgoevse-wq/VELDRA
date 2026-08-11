@@ -22,6 +22,7 @@ function getEditorTheme(settings: EditorSettings) {
   return EditorView.theme({
     '&': {
       fontSize: settings.fontSize ?? '12px',
+      fontFamily: 'var(--veldra-font-mono)',
     },
     '&.cm-editor': {
       height: '100%',
@@ -61,7 +62,7 @@ function getEditorTheme(settings: EditorSettings) {
     },
     '.cm-gutter': {
       '&.cm-lineNumbers': {
-        fontFamily: 'Roboto Mono, monospace',
+        fontFamily: 'var(--veldra-font-mono)',
         fontSize: settings.gutterFontSize ?? settings.fontSize ?? '12px',
         minWidth: '40px',
       },
