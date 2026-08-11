@@ -181,7 +181,8 @@ export interface WorkflowRun {
  *
  * Billing must never be imported by the core -- it implements this port
  * instead. That keeps the free/premium split a policy concern rather than a
- * fork of the architecture (project/PRODUCT-VISION.md).
+ * fork of the architecture (project/DECISIONS.md D-007; see also
+ * project/ARCHITECTURE-ORCHESTRATOR.md).
  */
 export interface PolicyGate {
   /**
