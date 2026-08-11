@@ -11,7 +11,7 @@ import type { VerificationRequirement } from './types';
 /**
  * How a pattern may be used, decided by its licence. Anything without a clear,
  * permissive licence stays research-only: its shape may inform our own writing,
- * its text may never enter the product (project/DECISIONS.md D-5).
+ * its text may never enter the product (project/DECISIONS.md D-009).
  */
 export type PatternUsage = 'product' | 'research-only';
 
@@ -151,7 +151,7 @@ export interface ModelDescription {
  * app/lib/modules/llm/types.ts: that type is implemented by 22 providers, and
  * widening it would force every one of them to supply data they do not have --
  * which in practice means inventing it. Absence here means "unknown", and the
- * UI must show unknown as unknown (project/PRODUCT-VISION.md).
+ * UI must show unknown as unknown (project/DECISIONS.md D-007).
  */
 export interface ModelCapabilities {
   provider: string;

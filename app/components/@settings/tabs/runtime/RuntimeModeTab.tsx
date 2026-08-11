@@ -383,7 +383,7 @@ export default function RuntimeModeTab() {
         transition={{ delay: 0.1 }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <div className="i-ph:cpu-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:cpu-fill w-4 h-4 text-accent-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Runtime Mode</span>
         </div>
 
@@ -397,8 +397,8 @@ export default function RuntimeModeTab() {
                 className={classNames(
                   'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all',
                   isSelected
-                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20'
-                    : 'border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-300 dark:hover:border-purple-700',
+                    ? 'border-accent-500 bg-accent-50 dark:bg-accent-950/20'
+                    : 'border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-accent-300 dark:hover:border-accent-700',
                   !option.available && 'opacity-50 cursor-not-allowed',
                 )}
                 onClick={(e) => {
@@ -414,10 +414,10 @@ export default function RuntimeModeTab() {
                 <div
                   className={classNames(
                     'flex-shrink-0 mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center',
-                    isSelected ? 'border-purple-500' : 'border-gray-300 dark:border-gray-600',
+                    isSelected ? 'border-accent-500' : 'border-gray-300 dark:border-gray-600',
                   )}
                 >
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-purple-500" />}
+                  {isSelected && <div className="w-2 h-2 rounded-full bg-accent-500" />}
                 </div>
 
                 {/* Icon */}
@@ -425,7 +425,7 @@ export default function RuntimeModeTab() {
                   className={classNames(
                     'flex-shrink-0 w-5 h-5 mt-0.5',
                     option.icon,
-                    isSelected ? 'text-purple-500' : 'text-bolt-elements-textSecondary',
+                    isSelected ? 'text-accent-500' : 'text-bolt-elements-textSecondary',
                   )}
                 />
 
@@ -457,7 +457,7 @@ export default function RuntimeModeTab() {
         transition={{ delay: 0.15 }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <div className="i-ph:link-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:link-fill w-4 h-4 text-accent-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Remote Runtime</span>
         </div>
 
@@ -479,7 +479,7 @@ export default function RuntimeModeTab() {
               'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
               'border border-[#E5E5E5] dark:border-[#1A1A1A]',
               'text-bolt-elements-textPrimary',
-              'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+              'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
               'transition-all duration-200',
               'placeholder:text-bolt-elements-textTertiary',
               'disabled:cursor-not-allowed',
@@ -490,8 +490,8 @@ export default function RuntimeModeTab() {
             disabled={runtime.mode !== 'remote'}
             className={classNames(
               'px-4 py-2 rounded-lg text-sm font-medium',
-              'bg-purple-500 text-white',
-              'hover:bg-purple-600',
+              'bg-accent-500 text-white',
+              'hover:bg-accent-600',
               'transition-all duration-200',
               'disabled:cursor-not-allowed disabled:opacity-50',
             )}
@@ -520,7 +520,7 @@ export default function RuntimeModeTab() {
                 'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
                 'border border-[#E5E5E5] dark:border-[#1A1A1A]',
                 'text-bolt-elements-textPrimary',
-                'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+                'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
                 'transition-all duration-200',
                 'placeholder:text-bolt-elements-textTertiary',
                 'disabled:cursor-not-allowed',
@@ -529,7 +529,7 @@ export default function RuntimeModeTab() {
             <button
               onClick={handleTokenSave}
               disabled={runtime.mode !== 'remote'}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-purple-500 text-white hover:bg-purple-600 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Save
             </button>
@@ -546,7 +546,7 @@ export default function RuntimeModeTab() {
                 'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
                 'border border-[#E5E5E5] dark:border-[#1A1A1A]',
                 'text-bolt-elements-textPrimary',
-                'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+                'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
                 'transition-all duration-200',
                 'placeholder:text-bolt-elements-textTertiary',
                 'disabled:cursor-not-allowed',
@@ -555,7 +555,7 @@ export default function RuntimeModeTab() {
             <button
               onClick={handleWorkspaceSave}
               disabled={runtime.mode !== 'remote'}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-purple-500 text-white hover:bg-purple-600 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Save
             </button>
@@ -633,7 +633,7 @@ export default function RuntimeModeTab() {
         transition={{ delay: 0.2 }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <div className="i-ph:list-checks-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:list-checks-fill w-4 h-4 text-accent-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Capabilities</span>
         </div>
 

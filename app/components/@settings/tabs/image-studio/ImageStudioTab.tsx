@@ -154,10 +154,10 @@ export default function ImageStudioTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 via-bolt-elements-background-depth-1 to-blue-500/10 p-6">
+      <div className="flex flex-col gap-4 rounded-2xl border border-accent-500/20 bg-gradient-to-br from-accent-500/10 via-bolt-elements-background-depth-1 to-blue-500/10 p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-purple-500/15 text-purple-500 ring-1 ring-purple-500/30">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent-500/15 text-accent-500 ring-1 ring-accent-500/30">
               <WandSparkles className="h-6 w-6" />
             </div>
             <div>
@@ -180,7 +180,7 @@ export default function ImageStudioTab() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-500" />
+            <Sparkles className="h-5 w-5 text-accent-500" />
             <CardTitle>Generation workspace</CardTitle>
           </div>
           <CardDescription>Configure a supported model and generation parameters.</CardDescription>

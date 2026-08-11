@@ -2,10 +2,14 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `main`
-**Current commit:** `ce3297c` — "fix(settings): fix Control Panel modal broken on mobile and at md breakpoint (Slice 11)" — Loop 22 Slice 1 (brand mark correction) built on top, not yet committed at time of writing
+**Current commit:** `db0cfcf` — "fix(brand): use the real approved brand photos, not an invented mark (Loop 22 Slice 1)" — Loop 22 Slice 2 (purple→accent sweep) built on top, not yet committed at time of writing
 **Canonical remote:** `git@github.com:mertgoevse-wq/VELDRA.git`
-**Last successful push:** `ce3297c` (verified `HEAD == origin/main`)
-**Working tree:** dirty — Loop 22 Slice 1's brand mark correction (see below), validated (307/307 tests, typecheck/lint/build clean, full Android cycle incl. Gradle debug APK, real mobile-first screenshots at 320/390/430/1440px, light+dark) but not yet committed
+**Last successful push:** `db0cfcf` (verified `HEAD == origin/main`)
+**Working tree:** dirty — Loop 22 Slice 2's purple→accent sweep (see below), validated (307/307 tests, typecheck/lint/build clean, live `getComputedStyle` check of the one regression it introduced-and-fixed) but not yet committed
+
+**Loop 22 Slice 2 (in progress, uncommitted at time of writing)** — the `purple-N`→`accent-N` sweep Slice 1 itself scoped out. Straight token substitution across all 42 files using Tailwind's default `purple-*` classes (repo-wide grep confirmed every "purple" occurrence in `app/` was part of a `-purple-N` class, nothing else — safe to substitute mechanically). **Found a real regression the rename itself caused, not just cosmetic**: `APIKeyManager.tsx`'s "Get API Key" button combines `text-accent-500`/`bg-accent-500/*` with `IconButton`'s own always-on base classes (`text-bolt-elements-item-contentDefault`, `enabled:hover:bg-bolt-elements-item-backgroundActive`). UnoCSS breaks same-specificity utility-class ties by source order in the generated stylesheet — diffing the actual production CSS build before/after showed `purple-*` rules used to land after those base rules (purple correctly won) while `accent-*` rules land before them (accent silently lost — flat gray text, no hover tint). Confirmed live via a real dev server + Playwright `getComputedStyle`, not just a screenshot; confirmed it's the *only* such collision app-wide by grepping every `IconButton`+`accent-` combination. Fixed by pinning the three classes with UnoCSS's `!important` prefix (`!text-accent-500`, `!bg-accent-500/10`, `hover:!bg-accent-500/20`) so intent wins deterministically instead of depending on an ordering accident.
+
+**Validated**: 307/307 tests, typecheck clean, lint clean, web build clean; `getComputedStyle` on the live dev server confirms both the text color and hover background now resolve to the accent sky-blue, plus a visual screenshot. Android cycle skipped for this slice — pure CSS class-name substitution, the `accent-*` token itself already ships correctly on Android since Slice 1.
 
 ## Loop 22 (CURRENT MANDATE — supersedes Loop 21's slice order): master design/product-architecture rework
 

@@ -57,6 +57,7 @@ android/local.properties
 android/app/src/main/assets/public/
 
 # Allow our documentation files through the *.md ignore
+!CLAUDE.md
 !README_ANDROID.md
 !PORTING_REPORT.md
 !TODO_NEXT.md
@@ -72,6 +73,7 @@ android/app/src/main/assets/public/
 !docs/VELDRA_MIGRATION_PLAN.md
 !project/SESSION-HANDOFF.md
 !project/SOURCE-CONSOLIDATION-2026-08-09.md
+!project/ARCHITECTURE-ORCHESTRATOR.md
 
 # Package lock & generated gradle configs
 package-lock.json

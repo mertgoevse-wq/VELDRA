@@ -27,3 +27,11 @@ Remote Runtime allows requests without a browser Origin for native/CLI clients, 
 ## D-007 No fake external capability
 
 No image output, provider availability, model capability, device support, or release is presented as real without verification. Contracts and unavailable states are documented as such.
+
+## D-008 No `.claude/` agent/skill infrastructure until a phase needs it
+
+VELDRA does not maintain a `.claude/agents/` or `.claude/skills/` tree, and none should be added speculatively. A background-agent review of the `claude-code-best-practice` repository (MIT-licensed) during Loop 22 concluded VELDRA should apply its development *patterns* while building the product, not import its agent/skill collections into VELDRA's own repository. This decision had been informally cited by two prior loops (Loop 20's research summary, Loop 22 Slice 1) as "D-2" before it was actually written down here — recorded now so future sessions have a real entry to point to instead of an unverifiable citation.
+
+## D-009 Prompt-pattern licensing gate
+
+A prompt pattern discovered from an external source (`PromptPattern.usage` in `app/lib/orchestrator/registries.ts`) may only be marked `'product'` (eligible to actually appear in a shipped system prompt or agent output) when it carries a clear, verified permissive license. Anything with an unclear or missing license (`license: 'unknown'`) stays `'research-only'` forever: its *shape* may inform prompts VELDRA writes originally, but its text may never enter the product. This mirrors D-007's "no fake external capability" principle applied specifically to prompt content, and closes a real citation gap: `registries.ts`'s own comment on `PatternUsage` has cited this policy as "`project/DECISIONS.md` D-5" since it was written, but `D-005` is Remote Runtime authentication — an unrelated decision. Recorded here for real, and the code comment corrected to cite D-009 instead of the mismatched D-5.
