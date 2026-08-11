@@ -1,11 +1,29 @@
 # VELDRA Status
 
-**Updated:** 2026-08-10
+**Updated:** 2026-08-11
 **Branch:** `main`
-**Current commit:** `8bef7f7` — "chore: sync Android web build output for Loop 19 changes"
+**Current commit:** pending this loop's commit (parent `0d2f680`)
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
-## Loop 19 (IMPLEMENTED): identity sweep, real asset integration, 3 responsive bugs fixed, theming architecture
+## Loop 20 (RESEARCH ONLY, per its own mandate — no product code changed): architecture research, repository candidates, design system, product roadmap
+
+VELDRA's new product framing this loop: "Versatile Engineering, Language-driven Development & Research Assistant" — a full AI Development & Creation Environment (IDEA→QUESTIONS→REQUIREMENTS→PLAN→AGENTS→SKILLS→TOOLS→CODE→ASSETS→TEST→REPAIR→PREVIEW→DEPLOY), not just a chatbot/codegen wrapper. The mandate was explicit: research/architecture/prioritization/product-design only, "noch keine riesigen Feature-Implementierungen" — no app code was touched.
+
+**Method**: 4 parallel research agents (AI coding agent architectures; context engines + local model runtimes; providers/design/audio; external repository discovery — all web research with real, cited sources, explicit uncertainty-flagging where a claim couldn't be verified) plus direct inspection of this repository's existing code, since the mandate's own instruction was "Prüfe zuerst die vorhandene Architektur. Keine parallele zweite Architektur."
+
+**Key finding, worth stating plainly**: VELDRA already has most of the architecture the mandate asked to be designed. `app/lib/orchestrator/` has a real `Goal`/`Task`/`Budget` core with bounded execution, an `EntitlementTier` system, and a capability registry (`DiscoveryState = discovered→verified→cataloged→optional→enabled`, `CapabilityKind = agent|skill|prompt-pattern|method`) — this already is the "installable agents/skills" architecture the mandate's section 2 wanted researched, just not wired to a UI. `studio/` separately has a `gauntlet` state machine (`PLANNED→RESEARCHING→IMPLEMENTING→TESTING→REVIEWING→VERIFYING→...`) that's a near-exact match for the mandate's own IDEA→...→DEPLOY flow, with license/provenance tracking already baked into agent role manifests. None of this was known to this loop's author before reading the code directly — it would have been easy to "design" a duplicate system from the research alone, which is exactly why the mandate's own "read the existing architecture first" instruction mattered.
+
+**Legal/code-origin analysis (mandate §22), done for real, not from memory**: shallow-cloned `stackblitz-labs/bolt.diy` at its current HEAD (`2e254ac1`) and diffed file paths + content against this repo's `app/` tree. Result: 306 files byte-identical to upstream, 84 modified, 93 VELDRA-only new files, 0 removed — exactly what 19 loops of disclosed Bolt→VELDRA adaptation work would produce, no evidence of undisclosed foreign code. Full production dependency-license audit (`pnpm licenses list --prod`, ~1,500 packages): zero GPL/AGPL/SSPL/copyleft risk found (one dual MIT/GPL package used under MIT, two packages with a missing `license` field in package.json but a real on-disk MIT license file, verified by reading it). Conclusion: nothing to clean up; recommendation is to record the verified fork-point ref as citable evidence, not to rewrite anything.
+
+**4 documents produced** (`project/research/`): `VELDRA-ARCHITECTURE-RESEARCH.md` (AI coding agent patterns across Claude Code/Codex/Cline/Roo Code/Aider/OpenHands/Continue/OpenCode/Replit/Base44/Emergent/Freebuff + MCP; context-engine + local-model-runtime research; connection methods; premium/entitlement extension design; session persistence; the legal analysis above), `VELDRA-REPOSITORY-CANDIDATES.md` (~50 real repos across 18 categories, license-verified, with clear AGPL/archived/pivoted red flags called out — e.g. Skyvern and Essentia are AGPL-3.0, Demucs and fluent-ffmpeg are archived), `VELDRA-DESIGN-SYSTEM.md` (real 2025-2026 UX research — Claude's actual typography pairing, bottom-sheet conventions, Material 3 Expressive, iOS 26 Liquid Glass's concentric-radius technique — plus a status table for the mandate's 13 named skins: only VELDRA + the already-shipped Obsidian exist, the other 11 are explicitly *not* fabricated), `VELDRA-PRODUCT-ROADMAP.md` (P0-P3 synthesis of all three).
+
+**Deliberately not done**: no code changes, no new skins beyond Obsidian (already shipped in Loop 19), no settings UI, no new dependencies added. Where a research agent couldn't verify a claim from a real source (Base44/Emergent.sh's actual architecture, MLX's iOS support, a Roo Code shutdown rumor), the raw reports and this summary say so explicitly rather than presenting it as fact.
+
+**Validated**: 273/273 tests (unchanged — no app code touched), typecheck clean, lint clean, `git diff --check` clean, Cloudflare/web build clean, Android web build + sync clean, native Gradle debug APK build succeeds.
+
+**Next highest-value step**: per the roadmap's own P0 list — extend `CapabilityKind` with `connector`/`mcp-server` values, add a customer-facing `PRO` entitlement tier distinct from the internal `DEVELOPER` tier, and persist `Goal`/`Task` state in the existing IndexedDB layer. All three are additive extensions of code that already exists, not new subsystems.
+
+## Earlier: Loop 19 (IMPLEMENTED): identity sweep, real asset integration, 3 responsive bugs fixed, theming architecture
 
 Six commits, `13f87c0..8bef7f7`, all pushed with no reconciliation needed (origin/main hadn't moved).
 
