@@ -233,7 +233,7 @@ export interface ModelCapabilities {
  */
 export type DiscoveryState = 'discovered' | 'verified' | 'cataloged' | 'optional' | 'enabled';
 
-export type CapabilityKind = 'agent' | 'skill' | 'prompt-pattern' | 'method';
+export type CapabilityKind = 'agent' | 'skill' | 'prompt-pattern' | 'method' | 'connector' | 'mcp-server';
 
 /**
  * An external repository of engineering capabilities, catalogued by reference.
@@ -283,4 +283,88 @@ export interface CapabilityResolver {
    * Null is a legitimate answer and callers must handle it without failing.
    */
   load(entryId: string): Promise<string | null>;
+}
+
+/* == Connectors (live external services: GitHub, Supabase, Vercel, an MCP server, ...) == */
+
+/**
+ * Whether a connector is currently reachable and authenticated. Distinct from DiscoveryState:
+ * DiscoveryState is a one-directional trust/vetting pipeline (a connector, once 'enabled', stays
+ * vetted), while ConnectionStatus is the connector's live, freely-changing runtime state -- a
+ * connector can be DiscoveryState='enabled' (trusted, catalogued, the user opted in) while its
+ * ConnectionStatus is 'disconnected' because credentials expired or were never supplied.
+ */
+export type ConnectionStatus = 'not-configured' | 'connecting' | 'connected' | 'error' | 'disconnected';
+
+export type CredentialKind = 'api-key' | 'oauth' | 'personal-access-token' | 'none';
+
+export interface RequiredCredential {
+  kind: CredentialKind;
+  label: string;
+
+  /** Where the user gets this credential from, e.g. a docs URL. Never a prefilled/default value. */
+  obtainUrl?: string;
+}
+
+/**
+ * A declared, non-enforced permission scope a connector asks for, e.g. 'repo:read'. Enforcement
+ * (sandboxing, network/filesystem restriction) is a separate, later concern -- this is only the
+ * declaration surface an enforcement layer will eventually check against.
+ */
+export interface ConnectorPermission {
+  scope: string;
+  description: string;
+  required: boolean;
+}
+
+/** Free-form because providers structure limits differently; absent means unknown, never fabricated. */
+export interface ConnectorPricingNote {
+  summary: string;
+  sourceUrl?: string;
+}
+
+/**
+ * Metadata for one connector: a live external service integration (GitHub, Supabase, Vercel,
+ * Figma, a Google service, Cloudflare, AWS, a local OpenAI-compatible server, an MCP server, ...).
+ * A connector is catalogued through the same CapabilitySource/DiscoveryState pipeline as any other
+ * capability (kind='connector' or kind='mcp-server') -- this type holds the extra detail a live
+ * service integration needs that a content source (a skill/agent/prompt-pattern repository) does
+ * not: credentials, a permission scope, and live connection state.
+ *
+ * "Install" = a CapabilitySource for this connector exists and is 'cataloged'/'optional'.
+ * "Configure" = requiredCredentials are supplied (host-specific, not modelled here).
+ * "Enable"/"Disable" = the isEnabled toggle below -- deliberately independent of DiscoveryState,
+ * so switching a connector off is a reversible user action, not a re-run of the trust pipeline.
+ * "Remove" = deleting this entry and its CapabilitySource; not a distinct state.
+ */
+export interface ConnectorDefinition {
+  id: string;
+  sourceId: string;
+
+  name: string;
+  description: string;
+
+  /** What this connector actually lets VELDRA do, in the user's terms, e.g. 'read repositories'. */
+  capabilities: string[];
+
+  requiredCredentials: RequiredCredential[];
+  permissions: ConnectorPermission[];
+
+  /** User's current on/off choice. See the type doc comment above for why this isn't DiscoveryState. */
+  isEnabled: boolean;
+
+  connectionStatus: ConnectionStatus;
+
+  /** Short, user-facing setup steps; link to setupDocsUrl for the full guide rather than duplicating it. */
+  setupInstructions: string[];
+  setupDocsUrl?: string;
+
+  pricing?: ConnectorPricingNote;
+
+  /** Free-form security notes shown before connecting, e.g. 'credentials stored locally only'. */
+  securityNotes: string[];
+
+  /** Populated only after a real connection attempt; undefined means never tested, not "working". */
+  lastConnectionCheckedAt?: number;
+  lastConnectionError?: string;
 }
