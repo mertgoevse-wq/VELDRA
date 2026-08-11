@@ -27,3 +27,7 @@ Remote Runtime allows requests without a browser Origin for native/CLI clients, 
 ## D-007 No fake external capability
 
 No image output, provider availability, model capability, device support, or release is presented as real without verification. Contracts and unavailable states are documented as such.
+
+## D-008 No `.claude/` agent/skill infrastructure until a phase needs it
+
+VELDRA does not maintain a `.claude/agents/` or `.claude/skills/` tree, and none should be added speculatively. A background-agent review of the `claude-code-best-practice` repository (MIT-licensed) during Loop 22 concluded VELDRA should apply its development *patterns* while building the product, not import its agent/skill collections into VELDRA's own repository. This decision had been informally cited by two prior loops (Loop 20's research summary, Loop 22 Slice 1) as "D-2" before it was actually written down here — recorded now so future sessions have a real entry to point to instead of an unverifiable citation.

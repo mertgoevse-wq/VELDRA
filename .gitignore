@@ -57,6 +57,7 @@ android/local.properties
 android/app/src/main/assets/public/
 
 # Allow our documentation files through the *.md ignore
+!CLAUDE.md
 !README_ANDROID.md
 !PORTING_REPORT.md
 !TODO_NEXT.md
