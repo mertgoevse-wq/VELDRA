@@ -2,12 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Switch } from '~/components/ui/Switch';
 import { useSettings } from '~/lib/hooks/useSettings';
 import { URL_CONFIGURABLE_PROVIDERS } from '~/lib/stores/settings';
-import type { IProviderConfig } from '~/types/model';
+import type { IProviderConfig, ProviderInfo } from '~/types/model';
 import { logStore } from '~/lib/stores/logs';
 import { motion } from 'framer-motion';
 import { classNames } from '~/utils/classNames';
 import { toast } from 'react-toastify';
 import { providerBaseUrlEnvKeys } from '~/utils/constants';
+import { APIKeyManager, getApiKeysFromCookies } from '~/components/chat/APIKeyManager';
 import { SiGoogle, SiGithub, SiHuggingface, SiPerplexity } from 'react-icons/si';
 import { FaAmazon } from 'react-icons/fa';
 import { TbBrandOpenai } from 'react-icons/tb';
@@ -66,6 +67,11 @@ const CloudProvidersTab = () => {
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
   const [filteredProviders, setFilteredProviders] = useState<IProviderConfig[]>([]);
   const [categoryEnabled, setCategoryEnabled] = useState<boolean>(false);
+  const [apiKeys, setApiKeysState] = useState<Record<string, string>>(() => getApiKeysFromCookies());
+
+  const setApiKey = useCallback((providerName: string, key: string) => {
+    setApiKeysState((prev) => ({ ...prev, [providerName]: key }));
+  }, []);
 
   // Load and filter providers
   useEffect(() => {
@@ -287,6 +293,16 @@ const CloudProvidersTab = () => {
                         </div>
                       )}
                     </motion.div>
+                  )}
+
+                  {provider.settings.enabled && (
+                    <div className="mt-2 rounded-lg bg-bolt-elements-background-depth-3 px-2">
+                      <APIKeyManager
+                        provider={provider as unknown as ProviderInfo}
+                        apiKey={apiKeys[provider.name] || ''}
+                        setApiKey={(key) => setApiKey(provider.name, key)}
+                      />
+                    </div>
                   )}
                 </div>
               </div>

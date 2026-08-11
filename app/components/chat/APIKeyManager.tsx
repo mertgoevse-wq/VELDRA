@@ -80,7 +80,18 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
     // Save to cookies
     const currentKeys = getApiKeysFromCookies();
     const newKeys = { ...currentKeys, [provider.name]: tempKey };
-    Cookies.set('apiKeys', JSON.stringify(newKeys));
+    const serialized = JSON.stringify(newKeys);
+    Cookies.set('apiKeys', serialized);
+
+    /*
+     * This component can now be mounted in more than one place at once (Settings ->
+     * Providers, and historically the chat composer) that don't share React state -- a
+     * plain cookie write is invisible to an already-mounted sibling. Dispatch the same
+     * synthetic StorageEvent pattern SettingsTab.tsx already uses for profile changes, so
+     * any other mounted consumer can re-sync from cookies instead of going stale until a
+     * full reload.
+     */
+    window.dispatchEvent(new StorageEvent('storage', { key: 'apiKeys', newValue: serialized }));
 
     setIsEditing(false);
   };

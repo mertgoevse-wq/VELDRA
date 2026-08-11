@@ -3,7 +3,6 @@ import { ClientOnly } from 'remix-utils/client-only';
 import { classNames } from '~/utils/classNames';
 import { PROVIDER_LIST } from '~/utils/constants';
 import { ModelSelector } from '~/components/chat/ModelSelector';
-import { APIKeyManager } from './APIKeyManager';
 import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
 import FilePreview from './FilePreview';
 import { ScreenshotStateManager } from './ScreenshotStateManager';
@@ -32,6 +31,29 @@ const AndroidApiKeyNotice: React.FC = () => (
   <div className="text-xs text-bolt-elements-textSecondary px-1 py-2">
     Provider API keys are configured on the Android API Backend server, not in this app. Set the backend URL and token
     in Settings → Android API Backend.
+  </div>
+);
+
+/*
+ * Key entry itself now lives in Settings -> Providers (CloudProvidersTab), not on the
+ * chat composer -- this is just a connection-status readout. Only checks the client-side
+ * cookie key, not a server-side env var (that check is async and lives in APIKeyManager),
+ * so this can under-report ("not connected" when an env key actually works) but never
+ * over-claims a connection that doesn't exist -- the safer direction for a status readout.
+ */
+const ProviderConnectionStatus: React.FC<{ provider: ProviderInfo; hasKey: boolean }> = ({ provider, hasKey }) => (
+  <div className="flex items-center gap-1.5 px-1 py-2 text-xs">
+    {hasKey ? (
+      <>
+        <div className="i-ph:check-circle-fill h-3.5 w-3.5 text-green-500" />
+        <span className="text-bolt-elements-textSecondary">{provider.name} connected</span>
+      </>
+    ) : (
+      <>
+        <div className="i-ph:circle-dashed h-3.5 w-3.5 text-bolt-elements-textTertiary" />
+        <span className="text-bolt-elements-textSecondary">Configure {provider.name} in Settings → Providers</span>
+      </>
+    )}
   </div>
 );
 
@@ -103,10 +125,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             gradientUnits="userSpaceOnUse"
             gradientTransform="rotate(-45)"
           >
-            <stop offset="0%" stopColor="#b44aff" stopOpacity="0%"></stop>
-            <stop offset="40%" stopColor="#b44aff" stopOpacity="80%"></stop>
-            <stop offset="50%" stopColor="#b44aff" stopOpacity="80%"></stop>
-            <stop offset="100%" stopColor="#b44aff" stopOpacity="0%"></stop>
+            <stop offset="0%" stopColor="#50ADE2" stopOpacity="0%"></stop>
+            <stop offset="40%" stopColor="#50ADE2" stopOpacity="80%"></stop>
+            <stop offset="50%" stopColor="#50ADE2" stopOpacity="80%"></stop>
+            <stop offset="100%" stopColor="#50ADE2" stopOpacity="0%"></stop>
           </linearGradient>
           <linearGradient id="shine-gradient">
             <stop offset="0%" stopColor="white" stopOpacity="0%"></stop>
@@ -139,13 +161,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                 (isCapacitor() ? (
                   <AndroidApiKeyNotice />
                 ) : (
-                  <APIKeyManager
-                    provider={props.provider}
-                    apiKey={props.apiKeys[props.provider.name] || ''}
-                    setApiKey={(key) => {
-                      props.onApiKeysChange(props.provider.name, key);
-                    }}
-                  />
+                  <ProviderConnectionStatus provider={props.provider} hasKey={!!props.apiKeys[props.provider.name]} />
                 ))}
             </div>
           )}
