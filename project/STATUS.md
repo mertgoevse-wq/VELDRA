@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-11
 **Branch:** `main`
-**Current commit:** (Slice 8 in progress, not yet committed — will follow `43ca552`)
+**Current commit:** (Slice 9 in progress, not yet committed — will follow `4c25cf2`)
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
 ## Loop 21+ (IN PROGRESS): productization mandate — Slices 1-6 of 15
@@ -29,7 +29,11 @@ The product owner issued a 51-section (A-AY) mandate covering de-Bolting/legal a
 
 Validated through Slice 8: 307/307 tests, typecheck clean, lint clean, web build clean, real Android cycle run (`android:sync` clean, native Gradle debug APK `BUILD SUCCESSFUL`) since this changes the Android-rendered welcome screen.
 
-**Not started yet**: Slices 9-15 (theme/skin selector UI, typography, responsive audit, motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
+**Slice 9** (in progress) — Theme/skin selector UI. Added a real "Skin" dropdown to the existing Settings tab (`app/components/@settings/tabs/settings/SettingsTab.tsx`, reachable via sidebar → avatar → Settings), right next to the existing Language selector, wired to the existing `skinStore`/`setSkin` from `app/lib/stores/skin.ts` (Loop 19) -- no new store, no new theming mechanism. Only lists `veldra` and `obsidian`, the two skins with real designed palettes; the other 11 named skins from the mandate are intentionally not offered as options since they don't exist yet, consistent with "don't fabricate 11 unverified color sets" from Loop 19/20. Verified functionally, not just visually: real Playwright interaction selecting Obsidian confirmed `document.documentElement` got `data-skin="obsidian"` and `getComputedStyle(...).getPropertyValue('--bolt-elements-bg-depth-1')` resolved to `#08090d` (the real Obsidian token), plus a screenshot showing the whole app visibly re-skinned with a toast confirmation.
+
+Validated through Slice 9: 307/307 tests, typecheck clean, lint clean, web build clean, full Android cycle (`android:sync` clean, native Gradle debug APK `BUILD SUCCESSFUL`) since this adds a real control to the Android-rendered Settings screen.
+
+**Not started yet**: Slices 10-15 (typography, responsive audit, motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
 
 ## Loop 20 (RESEARCH ONLY, per its own mandate — no product code changed): architecture research, repository candidates, design system, product roadmap
 

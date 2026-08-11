@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
+import { useStore } from '@nanostores/react';
 import { classNames } from '~/utils/classNames';
 import { Switch } from '~/components/ui/Switch';
 import type { UserProfile } from '~/components/@settings/core/types';
 import { isMac } from '~/utils/os';
+import { setSkin, skinStore, type Skin } from '~/lib/stores/skin';
+
+const SKIN_LABELS: Record<Skin, string> = {
+  veldra: 'VELDRA (default)',
+  obsidian: 'Obsidian',
+};
 
 // Helper to get modifier key symbols/text
 const getModifierSymbol = (modifier: string): string => {
@@ -21,6 +28,7 @@ const getModifierSymbol = (modifier: string): string => {
 };
 
 export default function SettingsTab() {
+  const skin = useStore(skinStore);
   const [currentTimezone, setCurrentTimezone] = useState('');
   const [settings, setSettings] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('bolt_user_profile');
@@ -100,6 +108,35 @@ export default function SettingsTab() {
             <option value="zh">中文</option>
             <option value="ja">日本語</option>
             <option value="ko">한국어</option>
+          </select>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="i-ph:palette-fill w-4 h-4 text-bolt-elements-textSecondary" />
+            <label className="block text-sm text-bolt-elements-textSecondary">Skin</label>
+          </div>
+          <select
+            value={skin}
+            onChange={(e) => {
+              const next = e.target.value as Skin;
+              setSkin(next);
+              toast.success(`Skin set to ${SKIN_LABELS[next]}`);
+            }}
+            className={classNames(
+              'w-full px-3 py-2 rounded-lg text-sm',
+              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
+              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'text-bolt-elements-textPrimary',
+              'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+              'transition-all duration-200',
+            )}
+          >
+            {(Object.keys(SKIN_LABELS) as Skin[]).map((value) => (
+              <option key={value} value={value}>
+                {SKIN_LABELS[value]}
+              </option>
+            ))}
           </select>
         </div>
 
