@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `claude/veldra-autonomous-build-gbctv8` (this session's designated feature branch; branched from `main` at `db0cfcf`, did not exist on origin before this session — created and pushed)
-**Current commit:** `a94a6d5` — "fix(design-system): move skin-block tokens after base defaults (CSS specificity bug)"
+**Current commit:** `bd01034` — "feat(providers): move API keys off the homescreen into Settings, kill the last purple line (Loop 22 Slice 5)"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last successful push:** `a94a6d5` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`)
+**Last successful push:** `bd01034` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`)
 **Working tree:** clean
 
 **Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
@@ -65,6 +65,32 @@ Validated: 316/316 tests (unchanged — CSS/token/shortcut-only, no new logic), 
 1. Independently verify the SkinPicker's click-through path (ideally via a more robust test approach — e.g. driving the sidebar open via its underlying store/state directly rather than fighting the hover-proximity UX in automation).
 2. A real Android Gradle cycle (overdue across 3 consecutive web-only slices).
 3. Continue the master directive's own stated order (§40): Home/Hero further refinement (§E), mobile-first Settings/navigation redesign (§F), Chat UI (§G), Build Progress/VELDRA Build Cube (§H).
+
+## Mandate update: PRODUCT CONSOLIDATION PASS (this session, after Slice 4)
+
+A new, much larger directive arrived: move VELDRA from "technically-working bolt.diy port" to an independently usable AI development workbench, via a structured capability audit + light external benchmarking + visible product work, explicitly prioritizing *visible product progress* over further research ("Nicht nur Research... Baue jetzt weiter").
+
+**Documentation consolidation** (`cef1d20`) — discovered `origin/claude/veldra-project-takeover-pitd9o`, an independent parallel session's branch that diverged from this branch's exact same base commit (`db0cfcf`) and had written a genuinely well-sourced `CLAUDE.md` + `project/ARCHITECTURE-ORCHESTRATOR.md` this new directive expects to exist. Adopted their content read-only (`git show`, not a git merge) rather than duplicate the work, updating `CLAUDE.md`'s skin section to this branch's actual current state. Fixed two real phantom-citation bugs that branch's own audit found and this branch's copy of the same code still had: `registries.ts` cited a nonexistent `project/DECISIONS.md` "D-5" (real D-005 is Remote Runtime auth, unrelated) — corrected to the now-real D-009; `types.ts` cited a `project/PRODUCT-VISION.md` that was never created — redirected to D-007 + the new `ARCHITECTURE-ORCHESTRATOR.md`. Added D-008/D-009 to `DECISIONS.md` and a verified GitHub Actions infrastructure risk (no runner ever picks up a job, confirmed ~317 historical runs, only one ever succeeded) to `RISKS.md`.
+
+**Research**: read all 4 existing `project/research/*.md` docs in full before doing anything new — they already cover almost everything the new directive's benchmark-research section asked for (Base44/Emergent/Replit/Claude Code/Aider/OpenHands architecture patterns, MCP, provider/context-engine research, 30+ repository candidates with license verdicts, typography/motion/layout design research). One light background agent pass covered the specific *new* repos the directive named that weren't already covered (`awesome-claude-code`, `agent-skills`, `awesome-claude-skills`, `khoj` — AGPL, avoided — `OmniRoute`, `claude-mem`, `Headroom`, community `.claude/` setup templates, "Task Observer") — appended to `VELDRA-REPOSITORY-CANDIDATES.md` §19, net effect: no new VELDRA dependencies, all either already-covered ground or Claude-Code-development-pattern references consistent with D-008.
+
+## Loop 22 Slice 5 (`bd01034`, this session) — API keys off the homescreen, the actual purple line fixed
+
+Per the new directive's §F/§G: API key entry does not belong on the welcome screen.
+
+- **`CloudProvidersTab.tsx`** (Settings → Providers): each provider card already had name/icon/description/enable-toggle/base-URL config, but genuinely had **no API key input at all** — confirmed by grep before touching anything. Added a real, working `APIKeyManager` per card. This was a real functional gap to fix *before* removing key entry from the composer, not after — removing it first would have left no way to configure a key at all.
+- **`ChatBox.tsx`**: the inline `APIKeyManager` (which rendered the loud red "Not Set (Please set via UI or ENV_VAR)" error directly on the homescreen) is replaced with a compact `ProviderConnectionStatus` readout — "✓ connected" or "Configure {provider} in Settings → Providers" — mirroring the existing `AndroidApiKeyNotice` pattern already used in the same composer slot on Android.
+- **Real regression caught before shipping**: moving `APIKeyManager` into Settings (a modal mounted alongside `Chat.client.tsx`, not inside it) broke the sync — `Chat.client.tsx`'s `apiKeys` state was only ever read from cookies once on mount, so a key saved in Settings would go unnoticed until a full reload. Fixed with the same synthetic `StorageEvent` pattern `SettingsTab.tsx` already uses for profile-change sync: `APIKeyManager.handleSave` now dispatches one after every cookie write; `Chat.client.tsx` listens and re-syncs.
+- **The actual, literal "purple line around the chat window"** the directive named explicitly: `ChatBox.tsx`'s decorative `PromptEffectLine` SVG had bolt.diy's exact violet `#b44aff` hardcoded into all four gradient stops — invisible to every prior `purple-*`-Tailwind-class sweep because it's a raw SVG attribute, not a class. Replaced with VELDRA's accent blue `#50ADE2`. A follow-up hex-code grep (not just class-name grep) found and fixed the same pattern in `Preview.tsx` (`#6D28D9` device-frame/window-size toggle+hover states, `#F5EEFF` hover background) — confirmed via grep afterward that the only remaining purple/violet hex in the codebase is `GlowingEffect.tsx`'s already-excluded multi-hue glow and two categorical color arrays (`NotificationsTab.tsx`/`EventLogsTab.tsx`) that already have a distinct blue entry in the same array — the same collision class documented as an exclusion in Slice 3.
+- **Separately found and fixed**: `--bolt-elements-focus` was referenced by 12 focus-ring utility classes across 5 files (`ModelSelector.tsx` — the provider/model selector this slice touches — `APIKeyManager.tsx`, `WebSearch.client.tsx`, `McpTab.tsx`, `ChatBox.tsx`) but was never actually defined anywhere in `variables.scss`, so none of those focus rings ever rendered. Defined it (aliased to the existing theme-aware accent color) and registered it in `uno.config.ts`.
+
+**Validated**: 316/316 tests, typecheck clean, lint clean, production build clean. Verified via real screenshots (390px light/dark, 1440px desktop) — the red error text is gone from the homescreen, the composer's calm connection-status line renders correctly in both themes, no overflow — plus a direct `getComputedStyle` check confirming `--bolt-elements-focus` now resolves to `rgb(36, 152, 219)` (accent-600) instead of nothing. **Android Gradle cycle not run** — now overdue across 4 consecutive web-only slices (2-5), flagged clearly rather than silently accumulating.
+
+**Immediate next steps, in order** (per the new directive's own suggested slice order, adjusted where this session's own architecture inspection points elsewhere):
+1. A real Android Gradle cycle — genuinely overdue now, should happen before another 4 slices of web-only work accumulate further untested Android risk.
+2. Redesign the Guided Build button/flow (§Q) and the remaining Bolt-like layout structure per §E.
+3. Mobile Settings navigation redesign (bottom sheets for model/provider/skin pickers, per the design-system research's own §2.3 finding that this is the 2026-standard pattern) — directly actionable, already researched, not yet built.
+4. Independently verify the SkinPicker's click-through path (still open from Slice 4).
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 

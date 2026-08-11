@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-11
 **Branch:** `claude/veldra-autonomous-build-gbctv8` (feature branch for the current autonomous session; based on `main` at `db0cfcf`)
-**Current commit:** `a94a6d5` — "fix(design-system): move skin-block tokens after base defaults (CSS specificity bug)"
+**Current commit:** `bd01034` — "feat(providers): move API keys to Settings, fix hardcoded purple line and dead focus token"
 **Remote:** `origin/claude/veldra-autonomous-build-gbctv8` (`https://github.com/mertgoevse-wq/VELDRA`), verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
@@ -39,6 +39,23 @@ Extended the existing `skinStore`/`[data-skin]` mechanism (2 skins: veldra, obsi
 **Full detail, including the honest verification-method limits (what was and wasn't independently confirmed via automated UI interaction) in `project/SESSION-HANDOFF.md`'s Loop 22 Slice 4 entry.**
 
 Validated: 316/316 tests, typecheck clean, lint clean, production build clean. Android Gradle cycle not run (web/CSS-only) — overdue across Slices 2-4, flagged for next checkpoint.
+
+### Mandate update (`cef1d20`) — PRODUCT CONSOLIDATION PASS
+
+A new, larger directive superseded the remaining Loop 22 slice order (permission granted to reorder based on actual architecture findings). Before starting new product work: read all project docs, discovered a parallel session's branch (`origin/claude/veldra-project-takeover-pitd9o`) diverged from the same `db0cfcf` base with independent, non-overlapping doc work — read-only via `git show <branch>:<path>` (never merged as git history) to adopt genuinely useful artifacts without risk: `CLAUDE.md` (updated for this branch's actual 11-skin state), `project/ARCHITECTURE-ORCHESTRATOR.md` (adopted verbatim, still accurate), two new decisions in `project/DECISIONS.md` (D-008 no `.claude/` agent/skill infra until needed, D-009 prompt-pattern licensing gate), one new risk row in `project/RISKS.md` (GitHub Actions never assigns a runner in this repo, confirmed across ~317 historical runs). Also fixed two phantom doc citations (`registries.ts`, `types.ts`) found while cross-checking, and appended a new repository-candidates section to `project/research/VELDRA-REPOSITORY-CANDIDATES.md` covering the mandate's newly-named repos (awesome-claude-code, agent-skills, awesome-claude-skills, khoj, OmniRoute, claude-mem, Headroom, Claude Code Setup, Task Observer) classified Claude-Code-Tool / Claude-Code-Skill / Entwicklungs-Pattern / not-relevant — none adopted as a VELDRA dependency, all license-checked first (CC0/MIT/Apache-2.0 where used; AGPL-3.0 khoj flagged not relevant).
+
+### Slice 5 (`bd01034`) — provider/API-key UX redesign + literal purple-line fix
+
+The mandate's explicit UX ask: API keys must live in Settings → Providers → Provider → Credentials, not on the homescreen/composer, plus "no purple line around the chat window." Both addressed together since the second was found while working the first.
+
+- **Settings → Providers now has real key input.** `CloudProvidersTab.tsx` previously only had enable/disable toggles and base-URL config — no way to enter a key at all. Added a real `APIKeyManager` per provider card (only shown when the provider is enabled), backed by the existing cookie-based key store (`getApiKeysFromCookies`/`js-cookie`), not a second storage path.
+- **Removed from the chat composer.** `ChatBox.tsx` no longer renders `APIKeyManager` inline; replaced with a new lightweight `ProviderConnectionStatus` component (green check + "Provider connected" or a dashed circle + "Configure Provider in Settings → Providers" pointer) — the composer now only shows connection state, never collects a credential.
+- **Cross-component sync regression caught before shipping**: since the key editor no longer lives inside `Chat.client.tsx`'s own subtree, its mount-time-only `apiKeys` read would go stale after a save in Settings. Fixed via a synthetic `StorageEvent` dispatch (`APIKeyManager.handleSave`) + listener (`Chat.client.tsx`), reusing an existing convention already present in `SettingsTab.tsx` for profile-change sync — no new pattern invented.
+- **The actual purple line, found by inspecting raw hex/SVG instead of just class names**: `ChatBox.tsx`'s decorative `PromptEffectLine` SVG had bolt.diy's exact violet `#b44aff` hardcoded in all 4 gradient `<stop>` elements as a raw `stopColor` attribute — invisible to Slice 3's Tailwind-class sweep since it isn't a `purple-N` utility class. Fixed to the VELDRA accent blue (`#50ADE2`). A follow-up hex grep (not just class-name grep) also caught `Preview.tsx`'s hardcoded `#6D28D9`/`#F5EEFF` (device-frame toggle/dropdown hover), converted to `accent-500` token classes.
+- **Dead focus-ring token fixed as a side effect**: `--bolt-elements-focus` was referenced by 12 `ring-`/`border-` utility usages across `ModelSelector.tsx`, `APIKeyManager.tsx`, `WebSearch.client.tsx`, `McpTab.tsx`, `ChatBox.tsx` but never defined in `variables.scss` — meaning none of those focus rings ever rendered. Defined it (aliased to `accent-600`/`accent-500` per theme) in `variables.scss` and registered it in `uno.config.ts`'s color theme.
+- **3 files deliberately left unchanged** after individual review: `GlowingEffect.tsx` (multi-hue decorative glow, not brand-purple), `NotificationsTab.tsx`/`EventLogsTab.tsx` (each has `#9333ea` as one entry in a categorical color array with an existing distinct blue entry — converting would create a visual collision).
+
+**Validated**: 316/316 tests (unchanged), typecheck clean, lint clean, production build clean. Playwright screenshots at 390px light/dark and 1440px light (composer + focused model-selector): no horizontal overflow at any width. `getComputedStyle` check confirms `--bolt-elements-focus` now resolves to `rgb(36, 152, 219)` (real accent blue, not unset). Final repo-wide hex grep confirms only the 3 intentionally-excluded instances remain. **Not independently verified by automation**: the SkinPicker's full interactive click-through path (sidebar → avatar dropdown → Settings tab → skin card) — the sidebar's hover-proximity-based open mechanism proved flaky under Playwright's synthetic mouse events across several honest attempts; documented rather than forced or claimed. Android Gradle cycle not run — now overdue across Slices 2-5 (all web/CSS/component-only but Android-visible), flagged for the next checkpoint.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 
