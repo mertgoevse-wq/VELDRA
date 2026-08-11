@@ -45,6 +45,7 @@ export default defineConfig((config) => {
       },
       config.mode !== 'test' && remixCloudflareDevProxy(),
       remixVitePlugin({
+        ignoredRouteFiles: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx'],
         future: {
           v3_fetcherPersist: true,
           v3_relativeSplatPath: true,

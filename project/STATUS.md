@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-11
 **Branch:** `main`
-**Current commit:** (Slice 6 in progress, not yet committed — will follow `a1c24d3`)
+**Current commit:** (Slice 7 in progress, not yet committed — will follow `bf3fa9d`)
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
 ## Loop 21+ (IN PROGRESS): productization mandate — Slices 1-6 of 15
@@ -21,7 +21,11 @@ The product owner issued a 51-section (A-AY) mandate covering de-Bolting/legal a
 
 **Validated through Slice 6**: 307/307 tests, typecheck clean, lint clean, web build clean. Slice 5 additionally got the full Android cycle (web build + sync + native Gradle debug APK, `BUILD SUCCESSFUL`) since it touched the IndexedDB schema; Slice 6 is a pure logic addition with no Android-visible surface, so that cycle was skipped for it specifically (documented trade-off, not silently dropped — see `project/SESSION-HANDOFF.md`).
 
-**Not started yet**: Slices 7-15 (VELDRA design system foundation, header/hero/branding fixes including the flagged desktop-header sizing bug, theme/skin selector UI, typography, responsive audit, motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
+**Slice 7** (in progress) — Design-system token foundation. Added `--veldra-*` structural tokens to `app/styles/variables.scss` (radius scale, border-width, shadow scale, a density multiplier, motion-duration scale) per `project/research/VELDRA-DESIGN-SYSTEM.md` section 4's own recommendation, plus a real `prefers-reduced-motion` override at the token level (the app had no reduced-motion handling for its shared `transition-theme` UnoCSS shortcut before this). Wired one real consumer (`uno.config.ts`'s `transition-theme` shortcut now reads `var(--veldra-motion-duration-theme)` instead of a hardcoded `duration-150`, same 150ms default, now respects the OS setting) to prove the tokens aren't dead declarations — the rest (radius/shadow/border-width/density) are declared for incremental adoption by Slices 8-11, consistent with the research doc's own explicit "plan, not full implementation" framing for this vocabulary. Typography tokens are intentionally not part of this slice — that's Slice 10 per the mandate's own slice split.
+
+**Real bug found and fixed while doing this slice's visual QA**: `pnpm dev` was completely broken — Remix's default route-file discovery in `app/routes/` picked up Slice 2's `webcontainer.connect.$id.spec.ts` as a phantom route and tried to SSR-evaluate it, which fails because it imports `vitest`. This wasn't caught by `pnpm build` (production route manifest generation apparently doesn't hit the same path) or by any test/lint/typecheck run this session — only surfaced when actually starting the dev server to screenshot the welcome screen, which is exactly why `pnpm build` succeeding was never treated as sufficient evidence of a working app this session. Fixed with `ignoredRouteFiles: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx']` in `vite.config.ts`'s `remixVitePlugin` config — the standard Remix convention for this, previously entirely unset. Verified via real screenshots (1440px desktop, 390px mobile) after the fix: dev server starts clean, welcome screen renders correctly at both widths, no visual regression from the token change.
+
+**Not started yet**: Slices 8-15 (header/hero/branding fixes including the flagged desktop-header sizing bug, theme/skin selector UI, typography, responsive audit, motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
 
 ## Loop 20 (RESEARCH ONLY, per its own mandate — no product code changed): architecture research, repository candidates, design system, product roadmap
 

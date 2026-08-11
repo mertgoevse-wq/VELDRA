@@ -277,6 +277,64 @@
 }
 
 /*
+ * VELDRA structural design tokens (Loop 21+ Slice 7 -- design-system foundation)
+ *
+ * Non-color foundation: radius, border-width, shadow, a density multiplier, and motion duration.
+ * Typography tokens are a separate, later slice (Slice 10) per the mandate's own slice split --
+ * see project/research/VELDRA-DESIGN-SYSTEM.md section 4 for the full planned vocabulary this is a
+ * first increment of. Same layering convention as the color tokens above ([data-skin] may override
+ * these later); every skin gets the same values today, so declaring them changes no existing UI by
+ * itself. --veldra-motion-duration-theme is the one token actually wired to a consumer this slice
+ * (uno.config.ts's `transition-theme` shortcut) -- proof the mechanism works end-to-end, same
+ * "one real example over N fabricated ones" approach as the obsidian skin above. The rest are
+ * declared now for incremental adoption by the slices that follow (8-11), not left as dead code:
+ * a design-token scale that has no consumer yet is normal for a "foundation" slice, unlike a
+ * speculative code abstraction.
+ */
+:root {
+  --veldra-radius-xs: 4px;
+  --veldra-radius-sm: 8px;
+  --veldra-radius-md: 12px;
+  --veldra-radius-lg: 16px;
+  --veldra-radius-xl: 24px;
+  --veldra-radius-full: 9999px;
+
+  --veldra-border-width: 1px;
+  --veldra-border-width-thick: 2px;
+
+  --veldra-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --veldra-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --veldra-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --veldra-shadow-none: none;
+
+  /* Multiplies existing spacing utilities under a future density setting (mandate section J);
+     1 = today's spacing, unchanged. Not consumed yet -- declared for that setting to land on. */
+  --veldra-density: 1;
+
+  --veldra-motion-duration-fast: 120ms;
+  --veldra-motion-duration-base: 200ms;
+  --veldra-motion-duration-slow: 320ms;
+
+  /* Matches the duration transition-theme already used before this token existed -- this slice
+     makes that duration respect prefers-reduced-motion, it does not change its default value. */
+  --veldra-motion-duration-theme: 150ms;
+}
+
+/*
+ * The reduced-motion override lives at the token level, not scattered through components, so no
+ * component ever needs its own prefers-reduced-motion check for a duration that already flows
+ * through one of these variables (mandate section AP/L: calm, non-distracting motion by default).
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --veldra-motion-duration-fast: 0ms;
+    --veldra-motion-duration-base: 0ms;
+    --veldra-motion-duration-slow: 0ms;
+    --veldra-motion-duration-theme: 0ms;
+  }
+}
+
+/*
  * Mobile / Android WebView overrides
  *
  * Bolt.diy defaults to a desktop layout with --chat-min-width: 533px.
