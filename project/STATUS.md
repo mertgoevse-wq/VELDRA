@@ -2,8 +2,8 @@
 
 **Updated:** 2026-08-11
 **Branch:** `freebuff/veldra-mobile-development` (working from the existing mobile-development branch)
-**Current commit:** `80c9895` — "docs: record composer slice validation" (next mobile picker slice is in the working tree)
-**Remote:** `origin/freebuff/veldra-mobile-development` (`https://github.com/mertgoevse-wq/VELDRA`), verified after the composer slice push; the working tree contains the next mobile picker slice.
+**Current commit:** `ef423f1` — "feat(mobile): add model picker bottom sheets"
+**Remote:** `origin/freebuff/veldra-mobile-development` (`https://github.com/mertgoevse-wq/VELDRA`), verified after the mobile picker slice push; the working tree is clean.
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
 
@@ -511,7 +511,7 @@ Investigated what it would take to make "user types `create hello.txt with conte
 - No fake image, provider, model capability, Android hardware result, or live provider result is represented as verified.
 - Historical repositories remain read-only references and are not active VELDRA workspaces.
 
-## Loop 22 Slice 9 (working tree) — mobile model/provider picker surface
+## Loop 22 Slice 9 (`ef423f1`) — mobile model/provider picker surface
 
 The existing provider/model state and `ModelSelector` filtering logic were retained. On viewports up to 768px, the two existing pickers now present as VELDRA mobile bottom sheets instead of narrow in-flow dropdowns:
 

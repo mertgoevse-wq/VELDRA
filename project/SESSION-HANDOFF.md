@@ -2,12 +2,12 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `freebuff/veldra-mobile-development` (existing development branch)
-**Current commit:** `80c9895` — "docs: record composer slice validation" (next mobile picker slice is in the working tree)
+**Current commit:** `ef423f1` — "feat(mobile): add model picker bottom sheets"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last verified remote state:** `HEAD == origin/freebuff/veldra-mobile-development` after the composer slice push
-**Working tree:** contains the next mobile picker slice and its status documentation update
+**Last verified remote state:** `HEAD == origin/freebuff/veldra-mobile-development` after the mobile picker slice push
+**Working tree:** clean
 
-## Loop 22 Slice 9 (working tree, 2026-08-11) — mobile model/provider picker surface
+## Loop 22 Slice 9 (`ef423f1`, 2026-08-11) — mobile model/provider picker surface
 
 The shared `ModelSelector` retains the existing provider/model data, filtering, callbacks, Auto routing, local-provider status, and loading behavior. At widths up to 768px, both existing pickers are presented as VELDRA bottom sheets with a safe-area-aware `100vh` fallback plus `100dvh`, skin-driven surface/radius/shadow/blur tokens, a dimmed backdrop, a drag handle, and a layer above Android bottom navigation. Desktop keeps the normal dropdown geometry via the desktop media override.
 
@@ -15,7 +15,7 @@ Accessibility behavior added: sheet headings and dialog labeling, nested real `l
 
 **Validation:** 321/321 tests, full typecheck, full ESLint, Prettier, and `git diff --check` passed. Production `pnpm build` remains blocked before application build completion by the known Miniflare/TCMalloc sandbox address-space OOM. `pnpm android:webbuild` remains blocked during Vite chunk generation by Node heap OOM. Chrome/Chromium is unavailable, so browser screenshots, accessibility-tree inspection, and physical Android/WebView validation remain open and are not claimed.
 
-**Next:** commit and push this bounded slice, then use a browser-capable environment to verify 320/360/390/412px plus desktop picker interaction before calling it visually verified.
+**Next:** use a browser-capable environment to verify 320/360/390/412px plus desktop picker interaction before calling the slice visually verified; then continue with loading/progress language or the designed workbench fallback.
 
 **Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
 
