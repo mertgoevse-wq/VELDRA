@@ -1,11 +1,11 @@
 # VELDRA Session Handoff
 
 **Last updated:** 2026-08-11
-**Branch:** `claude/veldra-autonomous-build-gbctv8` (this session's designated feature branch; branched from `main` at `db0cfcf`, did not exist on origin before this session — created and pushed)
-**Current commit:** `dcf8c3f` — "feat(design): add a slow ambient breathing background to the homescreen"
+**Branch:** `freebuff/veldra-mobile-development` (existing development branch)
+**Current commit:** `074f91c` — "docs: record Loop 22 Slice 7 (composer overflow fix + breathing background)"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last successful push:** `dcf8c3f` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8` after push)
-**Working tree:** clean
+**Last verified remote state:** `HEAD == origin/claude/veldra-autonomous-build-gbctv8` at session start
+**Working tree:** contains the in-progress Mobile Settings continuation below
 
 **Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
 
@@ -140,6 +140,14 @@ A new, much larger "BIG BUILD" mandate arrived covering dozens of areas (CLI, re
 **Validated**: 316/316 tests, typecheck clean, lint clean, production build clean. Playwright across 8 configurations (320/360/390/1440px, light/dark, veldra/brutalism/glass, plus `emulateMedia({ reducedMotion: 'reduce' })`): `document.documentElement.scrollWidth > clientWidth` is `false` at every width now (the page-level symptom is gone); `getComputedStyle` on `.veldra-breathing-bg` shows the animation genuinely running (`animationName: veldra-breathe`, opacity sampled at ~0.43-0.44 across repeated reads, proving the keyframe cycle is live, not a static value) in the normal case, and correctly disabled (`animationName: none`, `animationDuration: 0s`, static `opacity: 0.32`) under reduced motion. Screenshots confirm the fix and feature both look correct in veldra/brutalism skins and light/dark themes, with no regression to the Slice 2/6 hero or Guided Build card rendered alongside them.
 
 **Deliberately not attempted this cycle** (disclosed, not silently dropped): CLI architecture, remote-runtime/Bluetooth/mesh transport design, authentication architecture, MCP/connector browser redesign, the bolt.diy/Replit/Base44/etc. competitive feature matrix, and further external-repo research — `project/research/*.md` already covers the bulk of the research asks from prior loops, and the remaining items are each large enough to deserve their own scoped slice rather than a shallow pass. Next most actionable, per the mandate's own repeated emphasis and this session's own priority ordering: mobile Settings navigation (bottom sheets for provider/model/skin pickers) — still the next well-specified, already-researched, not-yet-built item.
+
+## Mobile Settings continuation (working tree, 2026-08-11) — compact navigation hardening
+
+Continued the three existing uncommitted Settings files without resetting them. Extracted the mobile grouping data and `buildMobileTabGroups()` helper into `app/components/@settings/utils/mobile-tab-groups.ts`, using the same filtered `visibleTabs` source as desktop. The Account group keeps Profile and Settings reachable, empty groups are omitted, persisted tab order is respected, and unknown future tabs remain available through an `Other` group.
+
+Converted `TabTile` from a simulated `role="button"` with manual keyboard handling to a native button used directly by the existing Radix Tooltip trigger. Added explicit focus styling on the actual focused control, native disabled behavior, and no false toggle ARIA state. Existing 52px mobile rows and safe-area/full-screen dialog styles remain in place. Added `mobile-tab-groups.spec.ts` with three focused tests.
+
+**Validation**: focused tests 3/3, full Vitest 319/319, typecheck clean, ESLint clean, `git diff --check` clean. Production `pnpm build` was attempted but the sandbox Miniflare runtime crashed in TCMalloc while allocating a 1 GiB virtual-address region (`MmapAligned`/`ERR_RUNTIME_FAILURE`), not with an application diagnostic. Chrome is unavailable in this environment, so screenshot/browser QA and direct 360/390/412px/1440px interaction are explicitly still open. Android web/Gradle validation was not rerun for this web-only navigation hardening slice.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 

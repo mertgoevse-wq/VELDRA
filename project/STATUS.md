@@ -1,9 +1,9 @@
 # VELDRA Status
 
 **Updated:** 2026-08-11
-**Branch:** `claude/veldra-autonomous-build-gbctv8` (feature branch for the current autonomous session; based on `main` at `db0cfcf`)
-**Current commit:** `dcf8c3f` — "feat(design): add a slow ambient breathing background to the homescreen"
-**Remote:** `origin/claude/veldra-autonomous-build-gbctv8` (`https://github.com/mertgoevse-wq/VELDRA`), verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`
+**Branch:** `freebuff/veldra-mobile-development` (working from the existing mobile-development branch)
+**Current commit:** `074f91c` — "docs: record Loop 22 Slice 7 (composer overflow fix + breathing background)"
+**Remote:** `origin/claude/veldra-autonomous-build-gbctv8` (`https://github.com/mertgoevse-wq/VELDRA`), verified at session start; the working tree contains the in-progress Mobile Settings slice below.
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
 
@@ -86,7 +86,17 @@ A new, larger BIG BUILD mandate arrived asking (among much else) to fix composer
 
 **Not attempted this cycle, disclosed not hidden**: the BIG BUILD mandate's much larger asks (CLI, remote runtimes, mesh/Bluetooth model transport, authentication architecture, MCP/connector browser redesign, competitive feature matrix, additional external-repo research) were not started — this slice deliberately scoped to two well-specified, independently verifiable, already-flagged-as-real items rather than spreading thin across dozens of large, mostly-unscoped asks in one pass. `project/research/*.md` already covers the bulk of the mandate's repeated design/competitor-research requests from prior loops; no redundant re-research was run.
 
-## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
+### Mobile Settings continuation (working tree, 2026-08-11) — compact navigation hardening
+
+Continued the existing uncommitted mobile Settings redesign rather than replacing it or creating a parallel Android settings architecture. The Remix `ControlPanel` now reuses a small pure helper (`app/components/@settings/utils/mobile-tab-groups.ts`) to build grouped mobile sections from the same filtered `visibleTabs` source used by desktop. Profile and Settings remain reachable in the Account group; missing groups are omitted; tabs are ordered by their persisted `order` value. Unknown future tabs are retained through an `Other` group instead of disappearing silently.
+
+`TabTile` now exposes a native `<button type="button">` to the existing Radix tooltip trigger, replacing the simulated `role="button"`/keyboard handler. This preserves the existing click path while providing native keyboard and disabled behavior. The final focus ring is attached to the actual focused button, and the navigation tile no longer advertises a false toggle state. Mobile rows retain the existing 52px minimum target and safe-area/full-screen dialog treatment.
+
+Added three focused helper tests covering account reachability/grouping, empty-group omission, and persisted-order sorting. No provider/model/skin picker implementation was duplicated; those remain the existing Settings tabs and are reached through the same navigation.
+
+**Validated**: focused helper tests 3/3, full Vitest suite 319/319, typecheck clean, ESLint clean, `git diff --check` clean. `pnpm build` reached the build stage but failed in the sandbox's Miniflare/TCMalloc runtime with a 1 GiB virtual-address allocation failure (`MmapAligned`/`ERR_RUNTIME_FAILURE`), matching the repository's documented environment OOM class rather than a TypeScript or application diagnostic. Chrome is not installed in this environment, so no new screenshot/browser QA is claimed; real mobile visual verification remains the next validation gap. Android web/Gradle was not rerun for this web-only navigation hardening slice.
+
+### Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 
 The product owner issued a new, larger mandate (57 sections) explicitly superseding Loop 21's slice order: stop the previous UI direction (rejected — didn't look like a finished product, still felt like "Bolt with a new name"), analyze the `claude-code-best-practice` repo as a *development-methodology* input (not something to copy into VELDRA), and rebuild VELDRA's visual identity from the **actual approved brand photos** (re-supplied as 7 attachments — verified byte-identical via md5sum to the existing `public/assets/brand/*.jpg`, so no new/duplicate assets) rather than inventing new ones. Then: mobile-first (390/430px primary QA, not desktop) redesign of header, hero, skins (13+ named design *styles* with real distinct design logic, not just palettes), settings UX, persistent memory (project + user), and the full agent/connector/MCP/local-model/monetization architecture.
 
