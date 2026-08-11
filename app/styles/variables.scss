@@ -302,6 +302,12 @@
   /* Ambient "breathing" background (mandate section 14): deliberately a different, much longer
      scale than the UI-transition tokens above -- this animates a full cycle, not a state change. */
   --veldra-breathe-duration: 26s;
+
+  /* Composer focus/drag treatment. Skins can tune the glow without changing component markup. */
+  --veldra-composer-glow-start: var(--bolt-elements-focus);
+  --veldra-composer-glow-mid: var(--bolt-elements-borderColorActive);
+  --veldra-composer-glow-end: var(--bolt-elements-focus);
+  --veldra-composer-border-duration: 12s;
 }
 
 /*
@@ -315,6 +321,7 @@
     --veldra-motion-duration-base: 0ms;
     --veldra-motion-duration-slow: 0ms;
     --veldra-motion-duration-theme: 0ms;
+    --veldra-composer-border-duration: 0ms;
   }
 }
 

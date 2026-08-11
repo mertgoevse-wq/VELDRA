@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { classNames } from '~/utils/classNames';
 import { PROVIDER_LIST } from '~/utils/constants';
@@ -20,6 +20,7 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import { WebSearch } from './WebSearch.client';
 import { isCapacitor } from '~/lib/adapters/platform';
+import { getImageFiles, readImageFileAsDataUrl } from './composer';
 
 /*
  * Provider API keys live server-side on Android (see docs/ANDROID_LLM_API_BRIDGE.md) --
@@ -102,6 +103,14 @@ interface ChatBoxProps {
 }
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const uploadedFilesRef = useRef(props.uploadedFiles);
+  const imageDataListRef = useRef(props.imageDataList);
+  const dropQueueRef = useRef(Promise.resolve());
+
+  uploadedFilesRef.current = props.uploadedFiles;
+  imageDataListRef.current = props.imageDataList;
+
   return (
     <div
       className={classNames(
@@ -125,10 +134,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             gradientUnits="userSpaceOnUse"
             gradientTransform="rotate(-45)"
           >
-            <stop offset="0%" stopColor="#50ADE2" stopOpacity="0%"></stop>
-            <stop offset="40%" stopColor="#50ADE2" stopOpacity="80%"></stop>
-            <stop offset="50%" stopColor="#50ADE2" stopOpacity="80%"></stop>
-            <stop offset="100%" stopColor="#50ADE2" stopOpacity="0%"></stop>
+            <stop offset="0%" stopColor="var(--veldra-composer-glow-start)" stopOpacity="0%"></stop>
+            <stop offset="40%" stopColor="var(--veldra-composer-glow-mid)" stopOpacity="80%"></stop>
+            <stop offset="50%" stopColor="var(--veldra-composer-glow-mid)" stopOpacity="80%"></stop>
+            <stop offset="100%" stopColor="var(--veldra-composer-glow-end)" stopOpacity="0%"></stop>
           </linearGradient>
           <linearGradient id="shine-gradient">
             <stop offset="0%" stopColor="white" stopOpacity="0%"></stop>
@@ -201,7 +210,61 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           </button>
         </div>
       )}
-      <div className={classNames('relative veldra-control')}>
+      <div
+        className={classNames('relative veldra-control', styles.ComposerControl)}
+        data-dragging={isDraggingFiles ? 'true' : undefined}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setIsDraggingFiles(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setIsDraggingFiles(false);
+          }
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setIsDraggingFiles(false);
+
+          const droppedImages = getImageFiles(Array.from(event.dataTransfer.files));
+
+          if (droppedImages.length === 0) {
+            return;
+          }
+
+          dropQueueRef.current = dropQueueRef.current
+            .then(async () => {
+              const results = await Promise.allSettled(droppedImages.map(readImageFileAsDataUrl));
+              const successfulFiles = droppedImages.filter((_, index) => results[index]?.status === 'fulfilled');
+              const imageData = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
+
+              if (successfulFiles.length === 0) {
+                toast.error('Could not read the dropped image.');
+                return;
+              }
+
+              if (successfulFiles.length !== droppedImages.length) {
+                toast.error('Some dropped images could not be read.');
+              }
+
+              const nextFiles = [...uploadedFilesRef.current, ...successfulFiles];
+              const nextImageData = [...imageDataListRef.current, ...imageData];
+
+              uploadedFilesRef.current = nextFiles;
+              imageDataListRef.current = nextImageData;
+              props.setUploadedFiles?.(nextFiles);
+              props.setImageDataList?.(nextImageData);
+            })
+            .catch(() => {
+              toast.error('Could not read the dropped image.');
+            });
+        }}
+      >
         <textarea
           ref={props.textareaRef}
           className={classNames(
@@ -209,36 +272,6 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             'transition-all duration-200',
             'hover:border-bolt-elements-focus',
           )}
-          onDragEnter={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '2px solid #1488fc';
-          }}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '2px solid #1488fc';
-          }}
-          onDragLeave={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '1px solid var(--bolt-elements-borderColor)';
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '1px solid var(--bolt-elements-borderColor)';
-
-            const files = Array.from(e.dataTransfer.files);
-            files.forEach((file) => {
-              if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-
-                reader.onload = (e) => {
-                  const base64Image = e.target?.result as string;
-                  props.setUploadedFiles?.([...props.uploadedFiles, file]);
-                  props.setImageDataList?.([...props.imageDataList, base64Image]);
-                };
-                reader.readAsDataURL(file);
-              }
-            });
-          }}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               if (event.shiftKey) {

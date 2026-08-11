@@ -39,6 +39,35 @@
   stroke: url(#line-gradient);
   stroke-dasharray: 35px 65px;
   stroke-dashoffset: 10;
+  animation: veldra-composer-border var(--veldra-composer-border-duration) linear infinite;
+}
+
+.ComposerControl {
+  position: relative;
+  isolation: isolate;
+}
+
+.ComposerControl[data-dragging='true'] {
+  border-color: var(--bolt-elements-borderColorActive);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--bolt-elements-borderColorActive) 22%, transparent),
+    var(--veldra-shadow-sm);
+}
+
+@keyframes veldra-composer-border {
+  from {
+    stroke-dashoffset: 10;
+  }
+
+  to {
+    stroke-dashoffset: -90;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .PromptEffectLine {
+    animation: none;
+  }
 }
 
 .PromptShine {

@@ -2,8 +2,8 @@
 
 **Updated:** 2026-08-11
 **Branch:** `freebuff/veldra-mobile-development` (working from the existing mobile-development branch)
-**Current commit:** `074f91c` — "docs: record Loop 22 Slice 7 (composer overflow fix + breathing background)"
-**Remote:** `origin/claude/veldra-autonomous-build-gbctv8` (`https://github.com/mertgoevse-wq/VELDRA`), verified at session start; the working tree contains the in-progress Mobile Settings slice below.
+**Current commit:** `1db9769` — "feat(settings): harden mobile navigation"
+**Remote:** `origin/freebuff/veldra-mobile-development` (`https://github.com/mertgoevse-wq/VELDRA`), verified after the Settings slice push; the working tree contains the in-progress composer slice below.
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
 
@@ -85,6 +85,18 @@ A new, larger BIG BUILD mandate arrived asking (among much else) to fix composer
 **Validated**: 316/316 tests, typecheck clean, lint clean, production build clean. Playwright verification across 8 configurations (320/360/390/1440px, light/dark, veldra/brutalism/glass skins, plus an explicit `emulateMedia({ reducedMotion: 'reduce' })` run): `document.documentElement.scrollWidth > clientWidth` is `false` at every width (page-level overflow gone); `getComputedStyle` on `.veldra-breathing-bg` confirms the animation actually runs (`animationName: veldra-breathe`, opacity oscillating ~0.43-0.44 across repeated reads) in the normal case and is fully disabled (`animationName: none`, `animationDuration: 0s`, static `opacity: 0.32`) under reduced motion. Screenshots confirm the composer's icon row now scrolls internally instead of spilling, the Supabase/QR controls stay reachable at every width, and the breathing glow reads as a subtle ambient presence (not a distraction) in both veldra and brutalism skins.
 
 **Not attempted this cycle, disclosed not hidden**: the BIG BUILD mandate's much larger asks (CLI, remote runtimes, mesh/Bluetooth model transport, authentication architecture, MCP/connector browser redesign, competitive feature matrix, additional external-repo research) were not started — this slice deliberately scoped to two well-specified, independently verifiable, already-flagged-as-real items rather than spreading thin across dozens of large, mostly-unscoped asks in one pass. `project/research/*.md` already covers the bulk of the mandate's repeated design/competitor-research requests from prior loops; no redundant re-research was run.
+
+### Loop 22 Slice 8 (working tree, 2026-08-11) — skin-aware composer border and resilient image drops
+
+Continued the existing composer rather than adding a second toolbar or upload path. The prompt border now reads its glow colors and cycle duration from the shared `--veldra-composer-*` tokens, so active skins can tune the treatment without hardcoded component colors. Its existing SVG dash is animated on a deliberately slow 12-second cycle and the CSS-module rule disables it under `prefers-reduced-motion`; the previously existing ambient breathing animation remains unchanged.
+
+The composer control now owns an explicit `data-dragging` state instead of mutating the textarea's inline border on every drag event. The state uses the existing border/shadow tokens and is cleared correctly when leaving nested children. Dropped files are filtered through a small pure helper so only images enter the existing preview arrays. Reads are serialized to avoid concurrent drops overwriting newer state, use `Promise.allSettled` so one bad image does not discard the rest, and report genuine read failures without showing an error for unsupported files. No provider, model, skin, or persistence architecture was duplicated.
+
+Added focused tests for the browser-independent image-file filter. The browser-only `FileReader` boundary remains intentionally untested in the Node Vitest environment; its rejection is handled by the composer and the UI path is not claimed as browser-verified.
+
+**Validated**: focused composer tests 2/2, full Vitest suite 321/321, typecheck clean, ESLint clean, Prettier clean, `git diff --check` clean. `pnpm build` was attempted and reproduced the known sandbox Miniflare/TCMalloc 1 GiB virtual-address allocation failure (`MmapAligned`/`ERR_RUNTIME_FAILURE`), with no application diagnostic. Chrome/Chromium and Playwright are unavailable in this environment, so no screenshots, computed-style checks, or 360/390/412px browser QA are claimed. Android web/Gradle validation was not rerun for this web-only composer slice.
+
+**Remaining limitation**: the animation moves the existing border dash rather than interpolating gradient stop colors; the effect is intentionally subtle motion, not a new neon gradient system. The next useful slice is real browser/mobile QA when a browser runtime is available, followed by the next core mobile surface rather than another speculative architecture.
 
 ### Mobile Settings continuation (working tree, 2026-08-11) — compact navigation hardening
 
