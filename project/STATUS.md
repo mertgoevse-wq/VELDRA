@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-11
 **Branch:** `main`
-**Current commit:** (Slice 10 in progress, not yet committed — will follow `c8dfa87`)
+**Current commit:** (Slice 11 in progress, not yet committed — will follow `2b09834`)
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
 
 ## Loop 21+ (IN PROGRESS): productization mandate — Slices 1-6 of 15
@@ -39,7 +39,20 @@ Verified functionally: real Playwright check confirmed `getComputedStyle(documen
 
 Validated through Slice 10: 307/307 tests, typecheck clean, lint clean, web build clean, full Android cycle (`android:sync` clean, native Gradle debug APK `BUILD SUCCESSFUL`) since this changes fonts across the whole Android-rendered app including the code editor and terminal.
 
-**Not started yet**: Slices 11-15 (responsive audit, motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
+**Slice 11** (in progress) — Responsive audit (§K), real screenshots not assumptions. Re-verified the welcome/chat screen (already covered by Loop 19) at 320/390/768/1024/1440px -- still clean after Slices 7-10's changes, no regression. Extended the audit to the Control Panel/Settings modal (`app/components/@settings/core/ControlPanel.tsx`), flagged in earlier loops as "spot-checked via static code review only, not screenshotted" -- and found **two real, high-severity, previously-unnoticed responsive bugs**:
+
+1. **Below the `md:` breakpoint (mobile), the modal's header and close button were completely inaccessible.** The modal used `h-full` on mobile (only `md:h-[90vh]` at desktop); `h-full` had no resolvable percentage basis up its ancestor chain (its flex-container parent uses `align-items: center`, giving the modal an `auto`-height ancestor), so the modal grew to its full unconstrained content height -- centered by the outer `fixed inset-0 flex items-center justify-center` wrapper, this pushed the header roughly 1000px above the visible viewport with no scrollbar to recover it (confirmed via `getBoundingClientRect()`: `y: -1082.5`). A user opening Settings on a phone would see a random mid-scroll slice of tiles with no way to see the title or close the panel except backing out entirely.
+2. **At exactly the `md:` breakpoint (768px, the exact width of a huge range of tablets/split-screen windows), the modal forced itself to a hardcoded `md:w-[1200px]` -- wider than the actual viewport**, causing horizontal overflow and clipped card text (confirmed via screenshot: "Explore new and upcoming features" rendered as "lore new and upcoming features").
+
+Both traced to the same `className` string (line ~244) and fixed with a two-token change: `'w-full max-w-[1200px] h-full md:h-[90vh] md:w-[1200px]'` → `'w-full max-w-[1200px] h-[90vh]'` -- the existing `w-full max-w-[1200px]` already correctly caps width at every breakpoint without a hardcoded override; `h-[90vh]` applied unconditionally gives the modal a definite height at every breakpoint so its own `overflow-y-auto` content region (already correctly implemented) can actually do its job. Verified via real screenshots at 320/390/430/768/1024/1440px: both bugs fixed, zero visual change at desktop widths (1024px+), where the fix is a no-op relative to the previous behavior.
+
+Also verified Slice 9's new Skin selector renders correctly inside the fixed modal at 390px -- no regression from either the container fix or the earlier addition.
+
+**Scope note (honest, not silently narrowed)**: Terminal, diff viewer, live preview, and the file-tree workbench require an actively running project (either a configured LLM provider or an imported/cloned repo) to reach -- neither is available in this sandboxed session, so those screens were not re-audited this slice. This mirrors Loop 19's own documented gap for the same screens; still open, not claimed as done.
+
+Validated through Slice 11: 307/307 tests, typecheck clean, lint clean, web build clean, full Android cycle (`android:sync` clean, native Gradle debug APK `BUILD SUCCESSFUL`) since this fixes an Android-rendered screen.
+
+**Not started yet**: Slices 12-15 (motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
 
 ## Loop 20 (RESEARCH ONLY, per its own mandate — no product code changed): architecture research, repository candidates, design system, product roadmap
 
