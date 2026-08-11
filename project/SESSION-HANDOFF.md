@@ -2,10 +2,20 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `freebuff/veldra-mobile-development` (existing development branch)
-**Current commit:** `f9c1a49` — "feat(composer): add skin-aware border and resilient drops"
+**Current commit:** `80c9895` — "docs: record composer slice validation" (next mobile picker slice is in the working tree)
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
 **Last verified remote state:** `HEAD == origin/freebuff/veldra-mobile-development` after the composer slice push
-**Working tree:** clean
+**Working tree:** contains the next mobile picker slice and its status documentation update
+
+## Loop 22 Slice 9 (working tree, 2026-08-11) — mobile model/provider picker surface
+
+The shared `ModelSelector` retains the existing provider/model data, filtering, callbacks, Auto routing, local-provider status, and loading behavior. At widths up to 768px, both existing pickers are presented as VELDRA bottom sheets with a safe-area-aware `100vh` fallback plus `100dvh`, skin-driven surface/radius/shadow/blur tokens, a dimmed backdrop, a drag handle, and a layer above Android bottom navigation. Desktop keeps the normal dropdown geometry via the desktop media override.
+
+Accessibility behavior added: sheet headings and dialog labeling, nested real `listbox`/`option` controls, mobile touch-sized controls, backdrop close, mobile Tab focus looping, Escape support through the existing keyboard path, focus restoration to the originating combobox, and an explicit reduced-motion animation override. No provider capability data or credential flow was invented or moved.
+
+**Validation:** 321/321 tests, full typecheck, full ESLint, Prettier, and `git diff --check` passed. Production `pnpm build` remains blocked before application build completion by the known Miniflare/TCMalloc sandbox address-space OOM. `pnpm android:webbuild` remains blocked during Vite chunk generation by Node heap OOM. Chrome/Chromium is unavailable, so browser screenshots, accessibility-tree inspection, and physical Android/WebView validation remain open and are not claimed.
+
+**Next:** commit and push this bounded slice, then use a browser-capable environment to verify 320/360/390/412px plus desktop picker interaction before calling it visually verified.
 
 **Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
 

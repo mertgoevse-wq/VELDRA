@@ -2,8 +2,8 @@
 
 **Updated:** 2026-08-11
 **Branch:** `freebuff/veldra-mobile-development` (working from the existing mobile-development branch)
-**Current commit:** `f9c1a49` — "feat(composer): add skin-aware border and resilient drops"
-**Remote:** `origin/freebuff/veldra-mobile-development` (`https://github.com/mertgoevse-wq/VELDRA`), verified after the composer slice push; the working tree is clean.
+**Current commit:** `80c9895` — "docs: record composer slice validation" (next mobile picker slice is in the working tree)
+**Remote:** `origin/freebuff/veldra-mobile-development` (`https://github.com/mertgoevse-wq/VELDRA`), verified after the composer slice push; the working tree contains the next mobile picker slice.
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
 
@@ -510,3 +510,16 @@ Investigated what it would take to make "user types `create hello.txt with conte
 - Upstream bolt.diy attribution and MIT licensing remain preserved.
 - No fake image, provider, model capability, Android hardware result, or live provider result is represented as verified.
 - Historical repositories remain read-only references and are not active VELDRA workspaces.
+
+## Loop 22 Slice 9 (working tree) — mobile model/provider picker surface
+
+The existing provider/model state and `ModelSelector` filtering logic were retained. On viewports up to 768px, the two existing pickers now present as VELDRA mobile bottom sheets instead of narrow in-flow dropdowns:
+
+- fixed, safe-area-aware sheet with `100vh` fallback plus `100dvh`, skin-driven surface/radius/shadow/blur tokens, drag handle, dimmed backdrop, and z-index above the Android bottom navigation;
+- provider and model sheet headings with dialog semantics, while the options remain real `listbox`/`option` controls and existing search, free-model filtering, local-provider status, model loading, and Auto routing behavior are unchanged;
+- 44px-class search/action targets, keyboard focus loop on mobile, focus restoration to the originating combobox, backdrop close, and explicit reduced-motion handling;
+- desktop presentation is restored through the existing dropdown geometry in the desktop media override.
+
+**Validation:** 321/321 Vitest tests, full typecheck, full ESLint, Prettier, and `git diff --check` passed. `pnpm build` remains blocked before application build completion by the known Miniflare/TCMalloc sandbox address-space OOM. `pnpm android:webbuild` remains blocked during Vite chunk generation by Node heap OOM. Chrome/Chromium is unavailable, so no browser screenshot, accessibility-tree, or physical Android WebView QA is claimed for this slice.
+
+**Remaining follow-up:** run 320–412px and desktop browser/WebView QA in an environment with a working browser, then continue with the next highest-value mobile shell surface (loading/progress language or designed workbench fallback).

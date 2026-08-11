@@ -261,9 +261,95 @@
     right: 0.5rem;
   }
 
-  /* ===== Model selector dropdown ===== */
+  /* ===== Mobile model/provider picker ===== */
   .mobile-model-selector {
     max-width: calc(100vw - 2rem) !important;
+  }
+
+  .mobile-model-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 310;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: rgba(8, 9, 13, 0.42);
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-model-sheet {
+    position: fixed !important;
+    inset: auto 0 0;
+    z-index: 311;
+    width: 100vw !important;
+    max-height: min(78vh, 680px);
+    max-height: min(78dvh, 680px);
+    margin: 0 !important;
+    padding: 0.75rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom)) !important;
+    overflow: hidden;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    border-left: 0 !important;
+    border-radius: var(--veldra-radius-xl) var(--veldra-radius-xl) 0 0 !important;
+    background: var(--veldra-surface-bg);
+    box-shadow: var(--veldra-shadow-lg);
+    backdrop-filter: blur(var(--veldra-backdrop-blur)) saturate(var(--veldra-backdrop-saturate));
+    animation: veldra-mobile-sheet-in var(--veldra-motion-duration-base) var(--veldra-motion-ease) both;
+  }
+
+  .mobile-model-sheet-title {
+    margin: 0 0 0.75rem;
+    color: var(--bolt-elements-textPrimary);
+    font-size: 0.9375rem;
+    font-weight: 650;
+    text-align: center;
+  }
+
+  .mobile-model-sheet::before {
+    display: block;
+    width: 2.5rem;
+    height: 0.25rem;
+    margin: 0 auto 0.75rem;
+    border-radius: var(--veldra-radius-full);
+    background: var(--bolt-elements-borderColorActive);
+    content: '';
+    opacity: 0.7;
+  }
+
+  .mobile-model-sheet [role='option'] {
+    min-height: 52px;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .mobile-model-sheet input {
+    min-height: 44px;
+  }
+
+  .mobile-model-sheet button {
+    min-height: 44px;
+  }
+
+  @keyframes veldra-mobile-sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-model-sheet {
+      animation: none;
+    }
   }
 
   /* Hide desktop-only elements on mobile */
@@ -275,8 +361,29 @@
 /* Show mobile-only elements only on mobile */
 @media (min-width: 769px) {
   .mobile-only,
-  .settings-mobile-list {
+  .settings-mobile-list,
+  .mobile-model-sheet-backdrop {
     display: none !important;
+  }
+
+  .mobile-model-sheet {
+    position: absolute !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-height: none;
+    padding: 0.25rem 0 !important;
+    overflow: visible;
+    border-width: 1px !important;
+    border-radius: var(--veldra-radius-md) !important;
+    background: var(--bolt-elements-background-depth-2);
+    box-shadow: var(--veldra-shadow-md);
+    backdrop-filter: none;
+    animation: none;
+  }
+
+  .mobile-model-sheet::before,
+  .mobile-model-sheet-title {
+    display: none;
   }
 }
 
