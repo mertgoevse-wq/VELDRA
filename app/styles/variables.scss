@@ -298,6 +298,10 @@
   /* Matches the duration transition-theme already used before this token existed -- this slice
      makes that duration respect prefers-reduced-motion, it does not change its default value. */
   --veldra-motion-duration-theme: 150ms;
+
+  /* Ambient "breathing" background (mandate section 14): deliberately a different, much longer
+     scale than the UI-transition tokens above -- this animates a full cycle, not a state change. */
+  --veldra-breathe-duration: 26s;
 }
 
 /*

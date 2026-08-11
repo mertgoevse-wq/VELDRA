@@ -47,3 +47,51 @@
     transform: translateY(6px);
   }
 }
+
+/*
+ * VELDRA "breathing" ambient background (mandate section 14): a slow, subtle radial-gradient glow
+ * behind the homescreen. GPU-cheap by construction -- only `opacity`/`transform` are animated
+ * (both compositor-only properties); the blur is a static part of the layer's paint, never
+ * re-computed per frame, so this does not behave like an expensive animated-filter or canvas loop.
+ * Accent-scale colors keep it visually consistent across every skin/theme without per-skin
+ * overrides -- an ambient identity layer, not a themed surface.
+ */
+.veldra-breathing-bg {
+  position: absolute;
+  inset: -15%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 28% 24%, theme('colors.accent.300') 0%, transparent 55%),
+    radial-gradient(circle at 74% 68%, theme('colors.accent.500') 0%, transparent 60%);
+  filter: blur(64px);
+  opacity: 0.32;
+  animation: veldra-breathe var(--veldra-breathe-duration) ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+:root[data-theme='dark'] .veldra-breathing-bg {
+  background:
+    radial-gradient(circle at 28% 24%, theme('colors.accent.600') 0%, transparent 55%),
+    radial-gradient(circle at 74% 68%, theme('colors.accent.400') 0%, transparent 60%);
+  opacity: 0.2;
+}
+
+@keyframes veldra-breathe {
+  0%,
+  100% {
+    opacity: 0.24;
+    transform: scale(1) translate3d(-2%, -1%, 0);
+  }
+
+  50% {
+    opacity: 0.44;
+    transform: scale(1.08) translate3d(2%, 1%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .veldra-breathing-bg {
+    animation: none;
+  }
+}

@@ -38,6 +38,7 @@ import { isCapacitor } from '~/lib/adapters/platform';
 import { getAndroidModelsRequest } from '~/lib/android-api/backend-config';
 import { ProjectGuidedBuild } from '~/components/chat/ProjectGuidedBuild';
 import { WelcomeHero } from '~/components/chat/WelcomeHero.client';
+import { BreathingBackground } from '~/components/ui/BreathingBackground';
 import {
   composeMessageWithProjectBrief,
   hasProjectBriefDetails,
@@ -400,6 +401,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
             <ClientOnly>{() => <RuntimeModeBanner />}</ClientOnly>
             {!chatStarted && (
               <div id="intro" className="relative mt-[10vh] lg:mt-[14vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
+                <BreathingBackground />
                 <div
                   aria-hidden="true"
                   className="hidden dark:lg:block absolute -inset-x-24 -top-16 -z-10 h-64 opacity-[0.08] bg-repeat bg-[length:220px_220px] [background-image:url('/veldra-brand-background.webp')] [mask-image:radial-gradient(ellipse_60%_100%_at_50%_0%,black,transparent)] pointer-events-none"
