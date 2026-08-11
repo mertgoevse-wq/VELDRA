@@ -19,7 +19,7 @@ export async function openDatabase(): Promise<IDBDatabase | undefined> {
   }
 
   return new Promise((resolve) => {
-    const request = indexedDB.open('boltHistory', 2);
+    const request = indexedDB.open('boltHistory', 3);
 
     request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const db = (event.target as IDBOpenDBRequest).result;
@@ -36,6 +36,16 @@ export async function openDatabase(): Promise<IDBDatabase | undefined> {
       if (oldVersion < 2) {
         if (!db.objectStoreNames.contains('snapshots')) {
           db.createObjectStore('snapshots', { keyPath: 'chatId' });
+        }
+      }
+
+      if (oldVersion < 3) {
+        /*
+         * Serialized orchestrator WorkflowRun state (see app/lib/orchestrator/adapters.ts's
+         * RunStore port) -- one record per run, so a Goal/Task workflow survives a restart.
+         */
+        if (!db.objectStoreNames.contains('orchestratorRuns')) {
+          db.createObjectStore('orchestratorRuns', { keyPath: 'runId' });
         }
       }
     };
@@ -329,6 +339,63 @@ export async function deleteSnapshot(db: IDBDatabase, chatId: string): Promise<v
     const transaction = db.transaction('snapshots', 'readwrite');
     const store = transaction.objectStore('snapshots');
     const request = store.delete(chatId);
+
+    request.onsuccess = () => resolve();
+
+    request.onerror = (event) => {
+      if ((event.target as IDBRequest).error?.name === 'NotFoundError') {
+        resolve();
+      } else {
+        reject(request.error);
+      }
+    };
+  });
+}
+
+/*
+ * Backs the orchestrator's RunStore port (app/lib/orchestrator/adapters.ts). The core only ever
+ * hands this a pre-serialized string (its own WorkflowRun JSON) -- this layer stores and retrieves
+ * that string, it never parses or shapes it, matching every other RunStore obligation.
+ */
+
+export async function getOrchestratorRun(db: IDBDatabase, runId: string): Promise<string | undefined> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('orchestratorRuns', 'readonly');
+    const store = transaction.objectStore('orchestratorRuns');
+    const request = store.get(runId);
+
+    request.onsuccess = () => resolve(request.result?.serialized as string | undefined);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function setOrchestratorRun(db: IDBDatabase, runId: string, serialized: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('orchestratorRuns', 'readwrite');
+    const store = transaction.objectStore('orchestratorRuns');
+    const request = store.put({ runId, serialized, updatedAt: Date.now() });
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function listOrchestratorRunIds(db: IDBDatabase): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('orchestratorRuns', 'readonly');
+    const store = transaction.objectStore('orchestratorRuns');
+    const request = store.getAllKeys();
+
+    request.onsuccess = () => resolve(request.result as string[]);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function deleteOrchestratorRun(db: IDBDatabase, runId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('orchestratorRuns', 'readwrite');
+    const store = transaction.objectStore('orchestratorRuns');
+    const request = store.delete(runId);
 
     request.onsuccess = () => resolve();
 
