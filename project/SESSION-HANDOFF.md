@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `claude/veldra-autonomous-build-gbctv8` (this session's designated feature branch; branched from `main` at `db0cfcf`, did not exist on origin before this session — created and pushed)
-**Current commit:** `e4ffc3e` — "docs: record the real Android Gradle cycle (BUILD SUCCESSFUL, 6006cb3)"
+**Current commit:** `9a48c4a` — "feat(guided-build): redesign entry point as a real veldra-control affordance"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last successful push:** `e4ffc3e` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8` after push)
+**Last successful push:** `9a48c4a` (verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8` after push)
 **Working tree:** clean
 
 **Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
@@ -117,6 +117,18 @@ Slice 4 left this open after several honest but failed automation attempts again
 6. Clicked Glassmorphism next (not a one-shot fluke check) → `skin after second switch`: `glass`, toast "Skin set to Glassmorphism" fired, stacking correctly with the first toast.
 
 Screenshots at every step (`skinpicker-step1` through `step6`) confirm this visually: the selected card gets the accent-blue ring + checkmark badge, and the Brutalism swatch itself renders its own thick black border/square corners (the swatch scopes `data-skin="brutalism"` internally per its own live-preview design — not a stray focus ring, verified by reading `SkinPicker.tsx` before concluding this). **Task closed**: the full sidebar → avatar dropdown → Settings tab → skin card path works end-to-end via real Playwright interaction, not just code inspection.
+
+## Loop 22 Slice 6 (`9a48c4a`, this session) — Guided Build entry-point redesign
+
+Per the mandate's §Q ("Guided Build button visually unconvincing, needs a complete redesign, should feel like a central VELDRA function"): `ProjectGuidedBuild.tsx` was a bare `‹caret› Guided Build` text link — real functionality (optional platform/visual-style/integrations/offline fields that fold into the first chat message via `composeMessageWithProjectBrief()`), but nothing about its appearance said "important feature."
+
+- **Redesigned as a card**, using the same `veldra-control`/`veldra-surface` design-system shortcuts `Button`/`Dialog`/`Checkbox` already use (Slice 4): an icon badge (`i-ph:compass`) + title + a subtitle that reflects real state ("Answer a few quick questions before you start" vs. "Details added — ready when you are") + chevron. Expanded panel switched from ad hoc `border`/`rounded-md` to `veldra-surface`/`veldra-control`, so it now genuinely changes shape/border/shadow per active skin instead of looking identical everywhere.
+- **Deliberately did not** invent a multi-step questions/plan wizard, even though that's what the mandate's full §13 vibecoding loop eventually wants — checked again before starting that `Goal.openQuestions[]`/orchestrator `Task` are still unwired to chat (no real producer exists), so building a fake "Plan" step here would have been exactly the appearance-of-completeness D-007 forbids. This slice is scoped to what's real: a better-designed entry point for the one thing that actually exists (the optional-details form).
+- **Specifically re-checked for Slice 4's exact bug class**: the active-state platform toggle needed a `border-accent-500` override on top of `veldra-control`'s baked-in `border-bolt-elements-borderColor` — the same same-specificity-utility-tie shape that silently broke 3 skins in Slice 4. Verified via `getComputedStyle` this time before calling it done, not just eyeballing a screenshot: `borderColor`/`backgroundColor` both resolve to `rgb(80, 173, 226)` in veldra, brutalism, and glass skins alike — no regression.
+
+**Validated**: 316/316 tests, typecheck clean, lint clean, production build clean. Real Playwright screenshots across 5 configurations (390px light/dark veldra, 1440px light veldra, 390px light brutalism, 390px light glass): zero horizontal overflow in any, Brutalism's thick square border and Glass's translucent panel both apply correctly to the new card in their expanded state, the rotating welcome-line and time-aware greeting from Slice 2 render correctly alongside it (confirmed not to have regressed by this change).
+
+**Next steps** (unchanged from before this slice, still the mandate's own priority order): mobile Settings navigation redesign (bottom sheets), then the much larger open items — Live Preview/Remote Runtime, Terminal/Command Runner, Templates, real vibecoding engine wiring — all still contract-only or not started.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 

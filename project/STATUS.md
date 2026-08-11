@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-11
 **Branch:** `claude/veldra-autonomous-build-gbctv8` (feature branch for the current autonomous session; based on `main` at `db0cfcf`)
-**Current commit:** `969e48e` — "docs: fix self-referential commit hash in SESSION-HANDOFF header"
+**Current commit:** `9a48c4a` — "feat(guided-build): redesign entry point as a real veldra-control affordance"
 **Remote:** `origin/claude/veldra-autonomous-build-gbctv8` (`https://github.com/mertgoevse-wq/VELDRA`), verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
@@ -66,6 +66,14 @@ Overdue across 4 consecutive web/CSS-only slices (2 through 5). Ran the full cyc
 ### SkinPicker click-through — Slice 4's open gap, now closed
 
 Re-attempted the interactive verification that was flaky in Slice 4, this time carrying it through the whole real path via Playwright against the running dev server: edge-hover to open the sidebar → click `button[title="Settings"]` → `ControlPanel` modal opens → click the avatar trigger → Radix `AvatarDropdown`'s "Settings" `menuitem` → `SkinPicker` renders. Clicked the Brutalism card: `document.documentElement.getAttribute('data-skin')` went `veldra` → `brutalism`, `aria-pressed` became `true`, toast fired. Clicked Glassmorphism next to rule out a one-shot fluke: `data-skin` → `glass`, second toast stacked correctly. Screenshots at every step confirm visually (selected-card ring + checkmark, correct swatch previews). The full click-through works end-to-end via real interaction, not just code inspection.
+
+### Slice 6 (`9a48c4a`) — Guided Build entry-point redesign
+
+Per the mandate's §Q: the Guided Build entry point was "visually unconvincing" — a bare `caret + "Guided Build"` text link with no visual weight, easy to miss, not reading as a real product feature. `ProjectGuidedBuild.tsx` (`app/components/chat/`) redesigned as a proper card affordance using the skin-aware `veldra-control`/`veldra-surface` shortcuts (the same primitives `Button`/`Dialog`/`Checkbox` already use, from Slice 4's design system): an icon badge (`i-ph:compass`), a title/subtitle row, and a chevron, expanding into a `veldra-surface` panel. The platform toggle buttons and text inputs inside were switched from ad hoc `border`/`rounded-md` classes to `veldra-control`, so the whole component now actually varies its radius/border/shadow per active skin instead of being a fixed look bolted onto a themed page.
+
+**Scope discipline, per D-007**: this is a visual/structural redesign only — the underlying behavior (collecting optional platform/visual-style/integrations/offline details and folding them into the first outgoing message) is unchanged, and no new questions, planning steps, or backend logic were invented. The mandate's full IDEA→QUESTIONS→PLAN→BUILD vibecoding engine (§13) has no real implementation to redesign yet — `Goal.openQuestions[]`/`Task` in the orchestrator are still unwired to chat, confirmed again before starting this slice — so this slice intentionally scoped to the one real, existing surface rather than fabricating a multi-step wizard UI with nothing behind it.
+
+**Validated**: 316/316 tests, typecheck clean, lint clean, production build clean. Playwright verification across 5 configurations (mobile/desktop, light/dark, veldra/brutalism/glass skins): no horizontal overflow in any, `getComputedStyle` on the active "Android" platform toggle confirms `borderColor`/`backgroundColor` both resolve to `rgb(80, 173, 226)` (`#50ADE2`, accent-500) in every skin — specifically checked because Slice 4's real bug was exactly this class of same-specificity border-color tie, and it did not recur here. Screenshots confirm the Brutalism skin's thick square border and the Glass skin's translucent panel both apply correctly to the redesigned card.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 
