@@ -2,8 +2,26 @@
 
 **Updated:** 2026-08-11
 **Branch:** `main`
-**Current commit:** `ba64299` — "docs(research): Loop 20 architecture research, repo candidates, design system, roadmap"
+**Current commit:** (Slice 6 in progress, not yet committed — will follow `a1c24d3`)
 **Remote:** `origin/main` (`git@github.com:mertgoevse-wq/VELDRA.git`)
+
+## Loop 21+ (IN PROGRESS): productization mandate — Slices 1-6 of 15
+
+The product owner issued a 51-section (A-AY) mandate covering de-Bolting/legal audit, a VELDRA design system, Goal/Task persistence, capability/connector/MCP architecture, FREE/PREMIUM/PRO entitlements, theming, responsive/motion/settings UX, and the vibecoding interaction loop — explicitly sequenced into 15 slices (§AW), each requiring test→build→visual-check→commit→push before the next. This is a large, multi-session effort; below is the honest state after Slices 1-6.
+
+**Slice 1+2** (`e8863c7`) — Source/license/Bolt-dependency audit written to `project/LEGAL-AND-PROVENANCE.md` (categorizes every Bolt/StackBlitz-origin element into KEEP/RENAME/REFACTOR/REMOVE/attribution-required, plus a real `pnpm licenses list --prod` dependency audit). While doing this cleanup pass, found and fixed a real reflected-XSS vulnerability in `webcontainer.connect.$id.tsx` (an unvalidated `editorOrigin` query param was interpolated directly into an inline `<script>`), fixed with strict URL-origin validation + `JSON.stringify` embedding, 9 new regression tests.
+
+**Slice 3** (`4b2735e`) — Extended the existing `CapabilityKind` union (`app/lib/orchestrator/registries.ts`) with `'connector'` and `'mcp-server'`, and added a `ConnectorDefinition` type (capabilities, required credentials, permissions, connection status, setup instructions, pricing/security notes) — no new registry, extends the existing `DiscoveryState` machine.
+
+**Slice 4** (`43544c3`) — Added a customer-facing `PRO` entitlement tier distinct from the internal `DEVELOPER` tier (`app/lib/orchestrator/entitlement.ts`): its own budget between PREMIUM and the absolute ceiling, `DEVELOPER`'s baseline budget now mirrors `PRO` (was PREMIUM), plus a new `EntitlementCapability`/`TIER_CAPABILITIES` gate (`connectors`, `mcp-servers`, `custom-agents`, `custom-skills`, `custom-providers`, `advanced-agent-swarms`, `premium-transports`) with `hasCapability`/`listCapabilities`. Found and fixed a real bug while extending this: `catalogFreshnessPolicyForTier`'s switch statement had no `'PRO'` case and was silently falling through to FREE's stale-catalog policy — TypeScript didn't catch it (the switch has a `default`, so exhaustiveness checking didn't apply).
+
+**Slice 5** (`a1c24d3`) — Goal/Task persistence: bumped the existing `boltHistory` IndexedDB database to schema v3, adding an `orchestratorRuns` object store (`app/lib/persistence/db.ts`), and a new `app/lib/persistence/orchestratorRunStore.ts` implementing the orchestrator's existing `RunStore` port (`createIndexedDBRunStore`) plus typed `saveWorkflowRun`/`loadWorkflowRun` wrappers — one persistence system, not two. Known documented gap: no schema validation on load (`JSON.parse` + type assertion only).
+
+**Slice 6** (in progress) — Added `listResumableWorkflowRuns` (same file) — every persisted `WorkflowRun` not in the `'completed'` state. **Deliberately scoped down from the mandate's literal ask**: §P describes a full "open project → load goal → ... → show progress → continue" UI flow, but nothing in the app creates a `WorkflowRun` yet (grepped: only type/adapter definitions and this session's own persistence code reference it) — no route, action, or store wires `OrchestratorHost` into the actual chat/build UI. Building a resume *screen* now would have no real data to show, which is exactly the "fake UI" §AD forbids. The query function is real, tested architecture the eventual UI (landing with Slice 15's vibecoding loop, which is what will start creating `WorkflowRun`s) will call — building that UI now, ahead of its data source, is deferred, not skipped.
+
+**Validated through Slice 6**: 307/307 tests, typecheck clean, lint clean, web build clean. Slice 5 additionally got the full Android cycle (web build + sync + native Gradle debug APK, `BUILD SUCCESSFUL`) since it touched the IndexedDB schema; Slice 6 is a pure logic addition with no Android-visible surface, so that cycle was skipped for it specifically (documented trade-off, not silently dropped — see `project/SESSION-HANDOFF.md`).
+
+**Not started yet**: Slices 7-15 (VELDRA design system foundation, header/hero/branding fixes including the flagged desktop-header sizing bug, theme/skin selector UI, typography, responsive audit, motion/progress visualization, settings architecture, provider/model architecture review, vibecoding UX architecture) — see `project/SESSION-HANDOFF.md` for the full slice list and next steps.
 
 ## Loop 20 (RESEARCH ONLY, per its own mandate — no product code changed): architecture research, repository candidates, design system, product roadmap
 

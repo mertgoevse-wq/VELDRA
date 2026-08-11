@@ -1,5 +1,5 @@
 import type { RunStore } from '~/lib/orchestrator/adapters';
-import type { WorkflowRun } from '~/lib/orchestrator/types';
+import type { WorkflowRun, WorkflowState } from '~/lib/orchestrator/types';
 import { getOrchestratorRun, listOrchestratorRunIds, setOrchestratorRun } from './db';
 
 /**
@@ -67,4 +67,28 @@ export async function loadWorkflowRun(store: RunStore, runId: string): Promise<W
 
 export async function listWorkflowRunIds(store: RunStore): Promise<string[]> {
   return store.list();
+}
+
+/**
+ * A run in one of these states has something left to continue -- 'completed' does
+ * not, and there is no 'abandoned'/'cancelled' WorkflowState today (see
+ * orchestrator/types.ts) so this list is exactly WorkflowState minus 'completed'.
+ */
+const RESUMABLE_STATES: ReadonlySet<WorkflowState> = new Set(['planning', 'running', 'awaiting-approval', 'halted']);
+
+/**
+ * The query a "continue where you left off" UI needs on app start: every persisted
+ * run that isn't finished. WorkflowRun carries no timestamp (the core stays host-
+ * agnostic and must not grow a field one host wants for sorting -- see this file's
+ * loadWorkflowRun doc comment on the same string-in/string-out boundary), so this
+ * deliberately returns an unordered list rather than inventing a "most recent" that
+ * isn't backed by real data. No caller renders this yet: nothing in the app creates
+ * a WorkflowRun today (that lands with the vibecoding loop), so a resume screen
+ * would have nothing real to show -- this is the query it will call once one exists.
+ */
+export async function listResumableWorkflowRuns(store: RunStore): Promise<WorkflowRun[]> {
+  const ids = await store.list();
+  const loaded = await Promise.all(ids.map((id) => loadWorkflowRun(store, id)));
+
+  return loaded.filter((run): run is WorkflowRun => run !== null && RESUMABLE_STATES.has(run.state));
 }

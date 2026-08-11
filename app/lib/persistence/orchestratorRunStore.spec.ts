@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RunStore } from '~/lib/orchestrator/adapters';
 import type { WorkflowRun } from '~/lib/orchestrator/types';
-import { createIndexedDBRunStore, loadWorkflowRun, saveWorkflowRun } from './orchestratorRunStore';
+import {
+  createIndexedDBRunStore,
+  listResumableWorkflowRuns,
+  loadWorkflowRun,
+  saveWorkflowRun,
+} from './orchestratorRunStore';
 import * as db from './db';
 
 vi.mock('./db', () => ({
@@ -134,5 +139,36 @@ describe('saveWorkflowRun / loadWorkflowRun', () => {
   it('returns null for a run that was never saved, matching load()s own null contract', async () => {
     const store = inMemoryRunStore();
     expect(await loadWorkflowRun(store, 'never-saved')).toBeNull();
+  });
+});
+
+describe('listResumableWorkflowRuns', () => {
+  it('returns an empty array when nothing is persisted', async () => {
+    const store = inMemoryRunStore();
+    expect(await listResumableWorkflowRuns(store)).toEqual([]);
+  });
+
+  it('excludes completed runs but keeps every other WorkflowState', async () => {
+    const store = inMemoryRunStore();
+    const states = ['planning', 'running', 'awaiting-approval', 'completed', 'halted'] as const;
+
+    for (const state of states) {
+      await saveWorkflowRun(store, exampleWorkflowRun({ id: `run-${state}`, state }));
+    }
+
+    const resumable = await listResumableWorkflowRuns(store);
+
+    expect(resumable.map((run) => run.state).sort()).toEqual(['awaiting-approval', 'halted', 'planning', 'running']);
+    expect(resumable.find((run) => run.state === 'completed')).toBeUndefined();
+  });
+
+  it('preserves the full run, not just its state, for each resumable entry', async () => {
+    const store = inMemoryRunStore();
+    const run = exampleWorkflowRun({ id: 'run-1', state: 'awaiting-approval' });
+    await saveWorkflowRun(store, run);
+
+    const [resumed] = await listResumableWorkflowRuns(store);
+
+    expect(resumed).toEqual(run);
   });
 });
