@@ -2,9 +2,9 @@
 
 **Last updated:** 2026-08-11
 **Branch:** `claude/veldra-autonomous-build-gbctv8` (this session's designated feature branch; branched from `main` at `db0cfcf`, did not exist on origin before this session — created and pushed)
-**Current commit:** `1e559d0` — "feat(settings): redesign Control Panel navigation as compact mobile list rows"
+**Current commit:** `0b77558` — "fix(providers): calm the default key-not-set state, fix mobile header wrap + edit-mode overflow"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last successful push:** pending this doc commit (see push note at the end of the Slice 8 section below)
+**Last successful push:** pending this doc commit (see push note at the end of the Slice 9 section below)
 **Working tree:** clean
 
 **Correction to earlier entries below**: Loop 22 Slice 1 (brand mark correction) is NOT "not yet committed" — it landed as `db0cfcf` on `main` before this session started continuing the work; this doc just hadn't caught up. Slice 2 (Hero/Welcome redesign, this session) is now on the feature branch above, not yet merged to `main`.
@@ -156,6 +156,18 @@ The mandate's own named current priority ("Continue from the current queued task
 **Validated**: 316/316 tests, typecheck clean, lint clean, production build clean. The fix is proven numerically, not just visually: grid `scrollHeight` at 320/390/430px dropped from an estimated ~2500px to a **measured 1109px** (≈2.3x reduction) — consistent across light/dark and the veldra/brutalism/glass skins — with zero page-level overflow at any width, and the 1440px desktop grid unaffected (783px, still 4 columns, screenshot-confirmed unchanged appearance). Real screenshots at 390px light/dark/brutalism show clean, evenly-spaced compact rows with BETA/update-dot badges correctly positioned alongside the new chevron, no visual collision.
 
 **Next steps**: Provider management / Model selection / Skin selection screens (currently reached via this same TabTile grid → individual tab content) are the natural next targets per the mandate's own §44 ordering, followed by Account/auth structure, Appearance, Memory, connectors, agents, project/session management — each large enough to deserve its own scoped slice.
+
+## Loop 22 Slice 9 (`0b77558`, this session) — Cloud Providers: calmer defaults + a real overflow bug caught by getComputedStyle
+
+Went straight into Provider management, the item named next at the end of Slice 8. Opened the newly-compact Cloud Providers row and read its actual content instead of assuming the entry-point fix was the whole job.
+
+- **Header/toggle wrap (real, fixed)**: the in-tab "Cloud Providers" header used a `justify-between` two-column row with no mobile stacking — "Enable All Cloud" wrapped to 3 lines next to its switch. Now `flex-col` below `sm`, `flex-row` at `sm`+.
+- **Alarming default state (real, fixed, scope kept narrow)**: confirmed in `settings.ts` that ~23 non-local providers are enabled by default (`enabled: !LOCAL_PROVIDERS.includes(...)`) — a pre-existing product decision, deliberately *not* touched here (changing which providers are enabled by default is a real product-direction call, not a UI polish item, and would ripple into `ModelSelector.tsx`'s dropdown contents). What *was* in scope: `APIKeyManager.tsx` rendered every one of those 23 as an expanded red `✕ Not Set (Please set via UI or ENV_VAR)` error on first open — a wall of alarm-red text for "not yet configured," working directly against the mandate's own repeated calm/premium language. Softened to neutral `Not configured` (dashed circle, tertiary text), reusing the exact tone `ChatBox.tsx`'s `ProviderConnectionStatus` already established for the same state back in Slice 5 — not inventing a third convention.
+- **Found a second bug while fixing a smaller one**: the key-input's hardcoded `w-[300px]` was itself a real overflow risk below ~340px. The obvious first fix (`w-full` on the input) silently traded one overflow for another: `getComputedStyle`/`getBoundingClientRect` checks — the same discipline that caught the Slice 7 composer bug, applied proactively this time instead of after a user complaint — showed the Cancel button's `right` edge at `410px` inside a 390px viewport, genuinely off-screen and unreachable, not just visually cramped. Root cause: a nested wrapper `div`'s `w-full` was fighting its `flex-1` label sibling for space inside one wrapped flex row. Fixed by restructuring to stack label and actions vertically below `sm` (one flex row per line instead of two rows silently competing for the same horizontal space), so the actions row gets the full card width and the input shares it properly with Save/Cancel via `flex-1 min-w-0`.
+
+**Validated**: 316/316 tests, typecheck clean, lint clean, production build clean. Position checks before/after: Cancel button `right` went from `410px` (off-screen) to `347px` (fully visible, 43px of margin inside a 390px viewport) — re-confirmed at 320px too. Zero page-level overflow in both collapsed and edit-mode states at both widths. Screenshots confirm the calmer tone and both action buttons reachable while editing.
+
+**Next steps**: Model selection UI, then Skin selection (both reachable from this same Providers-adjacent surface), then Account/auth structure, Appearance, Memory, connectors, agents, project/session management per the mandate's own §44 ordering — each large enough for its own scoped slice.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 

@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-11
 **Branch:** `claude/veldra-autonomous-build-gbctv8` (feature branch for the current autonomous session; based on `main` at `db0cfcf`)
-**Current commit:** `1e559d0` — "feat(settings): redesign Control Panel navigation as compact mobile list rows"
+**Current commit:** `0b77558` — "fix(providers): calm the default key-not-set state, fix mobile header wrap + edit-mode overflow"
 **Remote:** `origin/claude/veldra-autonomous-build-gbctv8` (`https://github.com/mertgoevse-wq/VELDRA`), verified `HEAD == origin/claude/veldra-autonomous-build-gbctv8`
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
@@ -99,6 +99,16 @@ The mandate's own named next priority. Audited the real mobile behavior first ra
 - **Real pre-existing gap found, disclosed, not silently expanded into scope**: `TabTile`'s outer card border uses a hardcoded `border-[#E5E5E5]`/`dark:border-[#333333]`, not the skin-aware `veldra-border` token — so Brutalism's thick-border treatment never actually reaches these rows, predating this slice (Slice 4 wired Button/Dialog/Checkbox/Card/TabTile into the skin system but apparently missed this specific border). Noted for a future skin-coverage pass, not fixed here to keep this slice's diff focused on the navigation-density problem it set out to solve.
 
 **Validated**: 316/316 tests, typecheck clean, lint clean, production build clean. Playwright confirms the fix numerically, not just visually: grid `scrollHeight` at 320/390/430px dropped from an estimated ~2500px to a measured **1109px** (roughly 2.3x reduction) across light/dark and the veldra/brutalism/glass skins alike, zero page-level overflow at any width, and the 1440px desktop card grid is unaffected (783px, 4-column, unchanged appearance confirmed by screenshot). Real screenshots at 390px light/dark/brutalism show clean, evenly-spaced rows with correctly-positioned BETA/update-dot badges and no collision with the new chevron.
+
+### Slice 9 (`0b77558`) — Cloud Providers screen: calmer defaults + a real edit-mode overflow bug
+
+Continuing down the mandate's own §44 priority list (Settings → Provider management next), opened the newly-redesigned Cloud Providers list row and audited its content, not just its entry point.
+
+- **Header/toggle wrap, real, fixed**: the in-tab "Cloud Providers" heading row and "Enable All Cloud" toggle used a two-column `justify-between` layout with no mobile stacking — the toggle's own label wrapped to 3 lines ("Enable / All / Cloud") next to the switch. Now stacks vertically below `sm`.
+- **Alarming default state, real, fixed**: `settings.ts` enables all ~23 non-local cloud providers by default (`enabled: !LOCAL_PROVIDERS.includes(provider.name)`) — an existing, unchanged product decision, not something this slice second-guessed. But `APIKeyManager.tsx` rendered every one of those as an expanded red `✕ Not Set (Please set via UI or ENV_VAR)` error the moment the screen opens — a wall of alarm-red text for a state that just means "not yet configured," directly working against the mandate's own repeated "calm, not alarming, premium" language. Softened to a neutral `Not configured` (dashed-circle icon, tertiary text), matching the tone `ChatBox.tsx`'s own `ProviderConnectionStatus` already uses for the identical state (Slice 5).
+- **A second, more interesting bug surfaced while fixing the first**: the API-key input had a hardcoded `w-[300px]`, itself a real overflow risk below ~340px. The first fix attempt (`w-full` on the input) traded one overflow for another — `getComputedStyle` position checks (not a screenshot glance, the exact discipline that caught the Slice 7 composer bug) showed the Cancel button pushed to `right: 410px` inside a 390px viewport, invisible and unreachable. Root cause: a nested wrapper div's `w-full` was fighting its `flex-1` label sibling for space inside one wrapped flex row. Fixed by restructuring the row to stack label/actions vertically below `sm` (one flex row per line, no cross-sibling flex-basis competition) so the actions row gets the full card width to itself and the input can genuinely share it with its Save/Cancel buttons via `flex-1`/`min-w-0`.
+
+**Validated**: 316/316 tests, typecheck clean, lint clean, production build clean. `getComputedStyle`/`getBoundingClientRect` checks before and after: Cancel button `right` position went from `410px` (off-screen) to `347px` (fully visible) inside a 390px viewport; re-confirmed at 320px. Zero page-level overflow at 320/390px in both the collapsed and edit-mode states. Screenshots confirm the calmer "Not configured" tone and both Save/Cancel buttons visible and reachable during editing at both widths.
 
 ## Loop 22 Slice 1 (COMPLETE, `db0cfcf`): master design/product-architecture rework — brand mark correction
 
