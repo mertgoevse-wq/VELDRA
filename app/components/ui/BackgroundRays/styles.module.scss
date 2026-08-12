@@ -17,6 +17,10 @@
   z-index: 0;
   //   background-color: transparent;
 
+  &.rayContainerContained {
+    position: absolute;
+  }
+
   :global(html[data-theme='dark']) & {
     mix-blend-mode: screen;
   }
