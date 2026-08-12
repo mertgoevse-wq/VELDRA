@@ -149,11 +149,11 @@ const CloudProvidersTab = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex items-center justify-between gap-4 mt-8 mb-4">
+        <div className="flex flex-col gap-3 mt-8 mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex items-center gap-2">
             <div
               className={classNames(
-                'w-8 h-8 flex items-center justify-center rounded-lg',
+                'w-8 h-8 flex items-center justify-center rounded-lg shrink-0',
                 'bg-bolt-elements-background-depth-3',
                 'text-accent-500',
               )}
@@ -166,8 +166,8 @@ const CloudProvidersTab = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-bolt-elements-textSecondary">Enable All Cloud</span>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <span className="text-sm text-bolt-elements-textSecondary whitespace-nowrap">Enable All Cloud</span>
             <Switch checked={categoryEnabled} onCheckedChange={handleToggleCategory} />
           </div>
         </div>
