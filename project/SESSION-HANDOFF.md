@@ -2,12 +2,21 @@
 
 **Last updated:** 2026-08-12
 **Branch:** `claude/veldra-integration-freebuff` (new integration branch from `origin/freebuff/veldra-mobile-development`; `main` untouched, do not push there)
-**Current commit:** `d47e9d1` — "feat(composer): consolidate paperclip/paste onto the shared upload pipeline"
+**Current commit:** `90522f3` — "docs: bring README in line with real mobile/skin/splash work"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
 **Last verified remote state:** `HEAD == origin/claude/veldra-integration-freebuff`
 **Working tree:** clean
 
-## Productization pass 2 (this session)
+## Premium productization pass (this session)
+
+Picking this up cold: continued from the "PREMIUM AI DEVELOPMENT WORKSTATION" directive's Phase 1 (splash screen) and Phase 4 (documentation honesty).
+
+- **Animated startup splash built** (`4276c37`): `app/components/ui/SplashScreen.tsx`, mounted in `root.tsx` via `<ClientOnly>`. `sessionStorage`-gated so it shows once per app open, not once per component mount. Mark + wordmark + "© 2026 Mert Gövse" on `#0B3146`, 1200ms visible + 320ms fade (500ms total under `prefers-reduced-motion`, no CSS entrance animation). Fixed a leftover violet (`#17142D`) splash background in both `android/app/src/main/res/values/veldra_colors.xml` and `capacitor.config.ts` — now matches the real brand navy everywhere. Verified via `sessionStorage` flag + timed-polling (not raw screenshots, which were unreliable in this environment due to CDP latency — traced to stray accumulated dev-server processes and a hanging Google Fonts request; fixed the *test's* `waitUntil` strategy, not the app). **Not yet verified inside an actual Capacitor WebView build** — no device/emulator available this session.
+- **README.md honesty pass** (`90522f3`, doc-only): Android Status Table and "Limitations & Fallback UX" still described Terminal/Preview with dated pessimistic wording that undersold the real `RemoteCommandPanel`/`Preview.tsx` — rewritten to match actual behavior. Fixed stale `.svg` asset references (files no longer exist) to the real PNG marks. Fixed `npm install --legacy-peer-deps` → `pnpm install` (project is pinned to `pnpm@9.14.4`). Roadmap: checked off genuinely-done items, added real remaining ones (remote runtime server, physical device testing).
+
+**Not reached this pass**: Phase 1's home hero / atmospheric background re-evaluation against a "premium SaaS" bar (existing implementation not yet re-judged this turn), Phase 2's Terminal "design the next implementation step" (remote runtime server/WebSocket/sandbox architecture — only the *existing* `RemoteCommandPanel` was reviewed, nothing new built), Phase 2's Preview "path toward live preview" design work, Phase 3's APK rebuild (last APK predates the splash-screen commit), physical Android device testing (still no device available).
+
+## Productization pass 2 (2026-08-12)
 
 Picking this up cold: continued from the prior session's "NEXT" list (consolidate composer upload paths, accessibility pass on bottom sheets).
 
