@@ -2,10 +2,21 @@
 
 **Last updated:** 2026-08-12
 **Branch:** `claude/veldra-integration-freebuff` (new integration branch from `origin/freebuff/veldra-mobile-development`; `main` untouched, do not push there)
-**Current commit:** `4f7e35b` — "chore(android): sync web bundle with the header/model-selector fixes"
+**Current commit:** (pending this doc commit — see header note below once pushed)
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last verified remote state:** `HEAD == origin/claude/veldra-integration-freebuff`
+**Last verified remote state:** `HEAD == origin/claude/veldra-integration-freebuff` (verify again after this push)
 **Working tree:** clean
+
+## Finalization pass (this session) — audited every "unfinished" item, found no new bugs
+
+Continuation of the ULTRACODE sprint below. Went through the prior handoff's full "not reached" list with real interaction tests:
+
+- Composer upload (valid + corrupt image) via the paperclip button: works correctly, `FilePreview` already degrades gracefully on invalid images. One inconsistency noted, not fixed: paperclip/paste handlers in `BaseChat.tsx` predate freebuff's `composer.ts` helpers (parallel processing, per-file error isolation) which only cover drag-and-drop — worth consolidating later, not a functional bug today.
+- Guided Build: centering re-confirmed numerically (32px/32px), platform toggle + textarea fill both work end-to-end.
+- Terminal fallback (`RemoteCommandPanel`) and Preview fallback (`Live Preview Unavailable` state): both are real, substantial implementations already — connection state, status tracking, clear messaging. Not decorative placeholders. Not interactively re-tested (would need a real remote server), code-reviewed as adequate.
+- Multi-viewport QA at 360×800/375×812/412×915 (previously untested widths): zero overflow anywhere, header/modal fix from earlier this session generalizes correctly across all three.
+
+**No code changes this pass** — everything audited was already working correctly. 321/321 tests, typecheck/lint clean (unchanged).
 
 ## ULTRACODE sprint: 2 critical bugs found + fixed (this session)
 

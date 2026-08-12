@@ -2,8 +2,20 @@
 
 **Updated:** 2026-08-12
 **Branch:** `claude/veldra-integration-freebuff` (new integration branch, created from `origin/freebuff/veldra-mobile-development`; `main` untouched)
-**Current commit:** `4f7e35b` — "chore(android): sync web bundle with the header/model-selector fixes"
+**Current commit:** `4de1a82` — "docs: record ULTRACODE sprint (header + model-selector critical fixes)"
 **Remote:** `origin/claude/veldra-integration-freebuff`, verified `HEAD == origin/claude/veldra-integration-freebuff`
+
+## Finalization pass (this session) — composer/Guided Build/fallback audit, no new bugs
+
+Continuation of the ULTRACODE sprint below. Audited every item still marked "unfinished" in the prior handoff, real interaction tests not just code reading:
+
+- **Composer upload path**: valid image via the paperclip button → real file-chooser interception → preview thumbnail appears, send button correctly reacts to `uploadedFiles.length > 0`. Corrupt/invalid "image" file → `FileReader` still succeeds (it doesn't validate image content), but `FilePreview` already degrades gracefully to a filename chip instead of a broken `<img>` — genuinely handled, not a bug. Noted (not fixed, out of scope for this pass): the paperclip/paste handlers in `BaseChat.tsx` predate freebuff's new `composer.ts` helpers (parallel processing + per-file error isolation, used only by drag-and-drop) — an inconsistency worth a future consolidation pass, not a functional defect today.
+- **Guided Build re-verified end-to-end**: centering confirmed numerically (`leftGap === rightGap === 32px`, not just eyeballed), platform toggle (Android) and textarea fill both work, send button reacts correctly. No regression from the freebuff integration.
+- **Terminal fallback** (`RemoteCommandPanel` in `TerminalTabs.tsx`): real WebSocket-based remote command runner already exists — connection state, missing-config detection (server URL/auth token/workspace ID), command status tracking. Substantial, not decorative. Not interactively re-tested (would need a real remote runtime server); code-reviewed as adequate.
+- **Preview fallback** (`Preview.tsx`): real "Live Preview Unavailable" state with a clear explanation and a color-coded remote-preview status card (starting/running/failed). Substantial, not decorative.
+- **Multi-viewport QA** (360×800, 375×812, 412×915 — widths not covered by prior 390px-only testing): zero horizontal overflow on home or Settings at any width; the header/modal fix from this session's earlier slice generalizes correctly (confirmed via screenshot, not just a bounding-box heuristic — a naive Y-range overlap check flagged false positives at every width since the modal's own title bar naturally occupies the same vertical band the header did, which is expected).
+
+No code changes this pass — everything audited was already working. 321/321 tests, typecheck clean, lint clean (unchanged baseline, re-verified).
 
 ## ULTRACODE mobile prototype sprint (this session, 2 critical bugs found + fixed)
 
