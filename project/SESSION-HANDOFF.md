@@ -2,10 +2,21 @@
 
 **Last updated:** 2026-08-12
 **Branch:** `claude/veldra-integration-freebuff` (new integration branch from `origin/freebuff/veldra-mobile-development`; `main` untouched, do not push there)
-**Current commit:** `02edc3b` — "fix(settings): actually hide the desktop tile grid on mobile"
+**Current commit:** `4f7e35b` — "chore(android): sync web bundle with the header/model-selector fixes"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
 **Last verified remote state:** `HEAD == origin/claude/veldra-integration-freebuff`
 **Working tree:** clean
+
+## ULTRACODE sprint: 2 critical bugs found + fixed (this session)
+
+Picking this up cold: two severe, real bugs were found and fixed this pass, both root-caused via DOM isolation (element toggling, `elementFromPoint`, `getComputedStyle`) rather than assumed from a screenshot.
+
+1. **`dfcf6d7`** — the app header ("VELDRA" wordmark) painted through every modal, including Settings. Cause: `z-logo` (z-index:998) on a flex-item child of `header`'s `display:flex` — flex items respect z-index even under `position:static` (a real, spec-documented rule, not a bug in the framework). Fixed by removing the class. Also hardened `BackgroundRays` for use inside transformed modal ancestors (new `variant="contained"` prop, git.tsx usage untouched).
+2. **`6adb582`** — CRITICAL: mobile provider/model bottom sheets could not be operated by tap at all. The full-viewport backdrop button (z-index:310) sat above the sheet's list (z-20/z-10, mobile.scss's `!important` override wasn't landing). Every tap on a provider/model was swallowed by the backdrop. Fixed by setting `z-[311]` directly on both dialogs. Verified end-to-end: selecting "Anthropic" now closes the sheet and updates provider + model state for real.
+
+Also verified (not assumed): composer border animation genuinely runs (`stroke-dashoffset` measurably moving over time). Android APK rebuilt with both fixes (`app-debug.apk`, 20,116,695 bytes).
+
+**Not reached this pass**: full composer audit (attachments/errors/loading), Guided Build re-verification, Terminal/Preview fallback states, further accessibility work. All are reasonable next slices.
 
 ## Freebuff → Claude handoff + integration (this session, 2026-08-12)
 

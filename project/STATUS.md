@@ -2,8 +2,20 @@
 
 **Updated:** 2026-08-12
 **Branch:** `claude/veldra-integration-freebuff` (new integration branch, created from `origin/freebuff/veldra-mobile-development`; `main` untouched)
-**Current commit:** `02edc3b` — "fix(settings): actually hide the desktop tile grid on mobile"
+**Current commit:** `4f7e35b` — "chore(android): sync web bundle with the header/model-selector fixes"
 **Remote:** `origin/claude/veldra-integration-freebuff`, verified `HEAD == origin/claude/veldra-integration-freebuff`
+
+## ULTRACODE mobile prototype sprint (this session, 2 critical bugs found + fixed)
+
+Structurally root-caused (not dismissed as screenshot artifacts) two real bugs, both severe:
+
+**1. Header painting through every modal (`dfcf6d7`)**: proven real via binary-search DOM isolation (hiding `<header>` fixed it; disabling `backdrop-filter` and GPU compositing did not). Root cause: `Header.tsx`'s logo wrapper carried a `z-logo` class (`z-index: 998`) and is a flex-item child of the header's `display:flex` container — per the flex/grid spec, z-index applies to flex items even under `position:static`, so this "should be inert" z-index was real and outranked every modal (`z-[100]`/`z-[101]`). Fixed by dropping the unnecessary class. Also hardened `BackgroundRays` (used standalone in `routes/git.tsx` too) with a `variant="contained"` prop so its `position:fixed` + `mix-blend-mode` rays can't escape a modal on a transformed ancestor either.
+
+**2. Provider/model bottom sheets unselectable by tap (`6adb582`) — product-breaking**: the sheet backdrop button (`z-index: 310`, full-viewport `position:fixed`) sat above the sheet's own list content, which only carried a hardcoded `z-20`/`z-10` utility class — mobile.scss's intended `z-index: 311 !important` override wasn't taking effect in practice. `elementFromPoint` at a real list item's coordinates resolved to the backdrop, not the option: **every tap to select a provider or model was silently swallowed.** Fixed by setting `z-[311]` directly on both dialog panels (safe for desktop — the backdrop is `display:none` there). Verified end-to-end: selecting "Anthropic" now closes the sheet and updates both provider AND model state (auto-selected "Claude 3.5 Sonnet").
+
+Composer border animation verified genuinely running (`getComputedStyle` on `.PromptEffectLine` shows `stroke-dashoffset` moving frame-to-frame, not just a static declaration). Android APK rebuilt with both fixes: `app-debug.apk`, 20,116,695 bytes, commit `4f7e35b`. 321/321 tests, typecheck/lint clean throughout.
+
+**Not reached this pass** (time budget): full composer end-to-end audit (attachments/errors/loading states), Guided Build functional re-verification post-integration, fallback (Terminal/Preview) states, accessibility pass beyond what freebuff already built.
 
 ## Handoff: Freebuff → Claude Code, integration (this session)
 
