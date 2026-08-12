@@ -20,7 +20,7 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import { WebSearch } from './WebSearch.client';
 import { isCapacitor } from '~/lib/adapters/platform';
-import { getImageFiles, readImageFileAsDataUrl } from './composer';
+import { getImageFiles, processImageFiles } from './composer';
 
 /*
  * Provider API keys live server-side on Android (see docs/ANDROID_LLM_API_BRIDGE.md) --
@@ -231,24 +231,22 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           event.preventDefault();
           setIsDraggingFiles(false);
 
-          const droppedImages = getImageFiles(Array.from(event.dataTransfer.files));
+          const droppedFiles = Array.from(event.dataTransfer.files);
 
-          if (droppedImages.length === 0) {
+          if (getImageFiles(droppedFiles).length === 0) {
             return;
           }
 
           dropQueueRef.current = dropQueueRef.current
             .then(async () => {
-              const results = await Promise.allSettled(droppedImages.map(readImageFileAsDataUrl));
-              const successfulFiles = droppedImages.filter((_, index) => results[index]?.status === 'fulfilled');
-              const imageData = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
+              const { successfulFiles, imageData, failedCount } = await processImageFiles(droppedFiles);
 
               if (successfulFiles.length === 0) {
                 toast.error('Could not read the dropped image.');
                 return;
               }
 
-              if (successfulFiles.length !== droppedImages.length) {
+              if (failedCount > 0) {
                 toast.error('Some dropped images could not be read.');
               }
 
