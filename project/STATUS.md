@@ -1,9 +1,43 @@
 # VELDRA Status
 
-**Updated:** 2026-08-11
-**Branch:** `freebuff/veldra-mobile-development` (working from the existing mobile-development branch)
-**Current commit:** `ef423f1` — "feat(mobile): add model picker bottom sheets"
-**Remote:** `origin/freebuff/veldra-mobile-development` (`https://github.com/mertgoevse-wq/VELDRA`), verified after the mobile picker slice push; the working tree is clean.
+**Updated:** 2026-08-12
+**Branch:** `claude/veldra-integration-freebuff` (new integration branch, created from `origin/freebuff/veldra-mobile-development`; `main` untouched)
+**Current commit:** `02edc3b` — "fix(settings): actually hide the desktop tile grid on mobile"
+**Remote:** `origin/claude/veldra-integration-freebuff`, verified `HEAD == origin/claude/veldra-integration-freebuff`
+
+## Handoff: Freebuff → Claude Code, integration (this session)
+
+Freebuff pushed real work to `freebuff/veldra-mobile-development` (branched from Claude's `074f91c`): a much more thorough mobile Settings redesign (real `<button>` TabTile, `focus-visible` rings, a tested `mobile-tab-groups` grouping system), skin-aware composer border animation, resilient drag-and-drop, and model-picker bottom sheets. Read the actual diffs (`git diff 074f91c origin/freebuff/...`) before touching anything, not just commit messages.
+
+**Integration, not overwrite**: created `claude/veldra-integration-freebuff` from freebuff's HEAD (`6ed898c`), then cherry-picked only Claude's non-overlapping work (`0b77558`, Cloud Providers calm-state + overflow fix — untouched by freebuff, clean pick). Claude's own simpler `TabTile`/`ControlPanel` mobile redesign (`1e559d0`) was **not** re-applied — freebuff's version is a real, technically better implementation (semantic `<button>`, accessible focus rings, grouped sections, its own test coverage) and both branches touched the same files; per the consolidation instruction, kept the better one rather than merging two competing implementations.
+
+**Real bug found integrating, not assumed**: freebuff's `.settings-desktop-grid { display: none; }` (in the mobile media query) lost a same-specificity tie against UnoCSS's `.grid` utility (`display: grid`) — the desktop card grid AND the new compact mobile list were both rendering simultaneously on a 390px viewport. Confirmed via `getComputedStyle` (grid `display` was `"grid"`, not `"none"`), fixed with `!important` (matching two sibling rules already using it in the same file — a clear miss, not a design choice). Fixed in `02edc3b`.
+
+**Branch inspection re-verified (§42)**: `main` is still `db0cfcf`, untouched. Freebuff did not push to `main`. `claude/veldra-project-takeover-pitd9o` remains an untouched 4-commit fork from the same base (already assessed in a prior slice — 3 commits' doc content adopted, 1 purple-sweep commit rejected for regressing file-icon legibility). No merges performed; `claude/veldra-integration-freebuff` is the new active development branch going forward.
+
+### Android APK — built successfully, real artifact
+
+Freebuff reported Node-heap OOM on `android:webbuild` and Miniflare/TCMalloc OOM on the production build, blocked from ever producing an APK. Retried both in this session's environment (fresh container restart, 15GB RAM free): **both builds succeeded with no OOM**, confirming the OOM was specific to freebuff's sandbox instance, not a project defect. Full pipeline run for real:
+
+- `pnpm android:webbuild` (`NODE_OPTIONS=--max-old-space-size=6144`, precautionary, likely not even necessary) — clean.
+- `pnpm android:sync` — clean, 3 Capacitor plugins.
+- Android SDK installed ad hoc (not persisted in this ephemeral environment): `commandlinetools-linux-11076708`, `platform-tools`, `platforms;android-35`, `build-tools;35.0.0`.
+- `node scripts/build-apk.mjs` → real Gradle wrapper (8.11.1) run: **`BUILD SUCCESSFUL in 2m 29s`**, 168 tasks executed.
+
+**APK**: `/home/user/VELDRA/android/app/build/outputs/apk/debug/app-debug.apk` — **20,116,580 bytes (19.2 MB)**, `versionName "1.0"`, `versionCode 1`, debug build, built from commit `f1b238c` (before the grid fix landed; re-buildable from `02edc3b` in under 3 minutes with the same SDK already installed). Not launched on an emulator/device — none available in this environment, disclosed rather than claimed.
+
+### Mobile QA (this session) — real Chromium available, unlike freebuff's sandbox
+
+This environment has pre-installed Chromium (`/opt/pw-browsers/chromium`), unlike freebuff's, which had none. Ran Playwright at 360/390/412px:
+
+- Homescreen: no overflow, Guided Build card correctly centered as a block (`mx-auto`), breathing background subtle and correct.
+- Settings: compact grouped mobile list (Account / AI Setup / Workspace) renders correctly **after** the grid-hiding fix above; freebuff's grouping/labeling is genuinely good.
+- **One unresolved visual observation, disclosed honestly, not fixed**: automated screenshots show the outer app header ("VELDRA" wordmark) visually overlapping the Settings modal's "Control Panel" title. Investigated with `getComputedStyle`/`getBoundingClientRect`/`elementFromPoint` — all three independently confirm correct stacking (dialog surface is opaque white, covers the full 390×844 viewport, z-index 100 fixed overlay, and `elementFromPoint` returns the modal's own H2 as topmost at that pixel). Given the programmatic checks contradict the screenshot, this is most likely a headless-Chromium screenshot-compositing artifact rather than a real user-facing bug — flagged for a quick real-device/real-browser sanity check rather than chased further under this session's time budget.
+- Provider/model bottom-sheet clicks in the QA script didn't hit their target selectors (test-harness issue, not verified as a product bug either way) — not re-attempted given the time budget; worth a follow-up pass.
+
+**Validated**: 321/321 tests, typecheck clean, lint clean. `pnpm build` (production) also re-run and confirmed clean — **no Miniflare/TCMalloc OOM reproduced either**, confirming both of freebuff's reported build blockers were specific to their sandbox instance, not real project defects. One bundle-size observation (not a bug, not chased further): a new `Header-*.js` chunk is 3.6 MB, much larger than any prior chunk — likely from freebuff's 730-line `ModelSelector.tsx` rewrite pulling something heavy into that chunk; worth a `manualChunks` look in a future perf pass.
+
+
 
 ## Loop 22 (IN PROGRESS): master design/product-architecture rework
 

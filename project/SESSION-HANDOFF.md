@@ -1,11 +1,25 @@
 # VELDRA Session Handoff
 
-**Last updated:** 2026-08-11
-**Branch:** `freebuff/veldra-mobile-development` (existing development branch)
-**Current commit:** `ef423f1` — "feat(mobile): add model picker bottom sheets"
+**Last updated:** 2026-08-12
+**Branch:** `claude/veldra-integration-freebuff` (new integration branch from `origin/freebuff/veldra-mobile-development`; `main` untouched, do not push there)
+**Current commit:** `02edc3b` — "fix(settings): actually hide the desktop tile grid on mobile"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
-**Last verified remote state:** `HEAD == origin/freebuff/veldra-mobile-development` after the mobile picker slice push
+**Last verified remote state:** `HEAD == origin/claude/veldra-integration-freebuff`
 **Working tree:** clean
+
+## Freebuff → Claude handoff + integration (this session, 2026-08-12)
+
+Picking this up cold: **work on `claude/veldra-integration-freebuff`, not `claude/veldra-autonomous-build-gbctv8`** (that branch's last commit `7b7aa10` is now superseded here — its non-overlapping work was cherry-picked forward, its overlapping work was deliberately dropped in favor of freebuff's better implementation, see below). Full detail in STATUS.md's "Handoff" section; short version:
+
+1. Freebuff built a genuinely more thorough mobile Settings redesign than Claude's own prior slice (semantic `<button>` TabTile, `focus-visible` rings, tested `mobile-tab-groups` grouping, composer border animation, drag-and-drop) on `freebuff/veldra-mobile-development`, branched from Claude's `074f91c`.
+2. New branch `claude/veldra-integration-freebuff` created from freebuff's HEAD (`6ed898c`). Claude's overlapping `TabTile`/`ControlPanel` work was **not** reapplied (freebuff's is better — kept it, didn't merge two implementations). Claude's non-overlapping provider-tab polish (`0b77558`) was cherry-picked cleanly.
+3. **Real bug found and fixed** (`02edc3b`): freebuff's `.settings-desktop-grid { display: none; }` lost a specificity tie against UnoCSS's `.grid` utility (no `!important`, unlike two sibling rules in the same file that do have it) — both the desktop grid and the new mobile list were rendering at once on a 390px viewport. Confirmed via `getComputedStyle`, fixed with `!important`.
+4. **Android APK actually built** — freebuff was blocked by OOM in their sandbox; this session's fresh environment (15GB RAM) built clean with no OOM on either the web build or the native Gradle build. Real APK at `android/app/build/outputs/apk/debug/app-debug.apk`, 19.2 MB, `versionName 1.0`. Full details and exact build commands in STATUS.md.
+5. Mobile QA ran for real (this environment has Chromium preinstalled; freebuff's didn't). One unresolved-but-investigated finding: a header/title visual overlap that shows up in Playwright screenshots but that `getComputedStyle`/`elementFromPoint` checks say isn't real (correct z-index, opaque background, correct hit-testing) — likely a headless-screenshot artifact, flagged for a real-device check, not fixed blind.
+
+**Next**: re-verify the header-overlap finding on a real device/browser; fix the provider/model bottom-sheet Playwright selectors and actually QA those surfaces (this session's script didn't hit them); re-run `pnpm build` (production, not just android:webbuild) to confirm freebuff's reported Miniflare/TCMalloc OOM also doesn't reproduce here; continue mobile-first QA at the remaining item list in the mandate (composer icon alignment, touch targets, keyboard behavior).
+
+## Loop 22 Slice 9 (`ef423f1`, 2026-08-11) — mobile model/provider picker surface
 
 ## Loop 22 Slice 9 (`ef423f1`, 2026-08-11) — mobile model/provider picker surface
 
