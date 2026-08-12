@@ -66,21 +66,21 @@ export function RuntimeModeBanner() {
         exit={{ height: 0, opacity: 0 }}
         className={classNames(
           'relative overflow-hidden',
-          'bg-amber-50 dark:bg-amber-950/30',
-          'border-b border-amber-200 dark:border-amber-800/50',
+          'bg-bolt-elements-bg-depth-2 backdrop-blur',
+          'border-b border-bolt-elements-borderColor',
         )}
       >
-        <div className="flex items-start gap-3 px-4 py-2.5 text-sm">
+        <div className="flex items-start gap-3 px-4 py-3 text-sm">
           {/* Icon */}
           <div className="flex-shrink-0 mt-0.5">
-            <div className={classNames('i-ph:info-bold w-4 h-4', 'text-amber-600 dark:text-amber-400')} />
+            <div className={classNames('i-ph:info-fill w-4 h-4', 'text-accent-500')} />
           </div>
 
           {/* Text */}
-          <div className="flex-1 min-w-0">
-            <p className="text-amber-800 dark:text-amber-200 leading-snug">{bannerText}</p>
+          <div className="flex-1 min-w-0 font-mono tracking-tight">
+            <p className="text-bolt-elements-textPrimary leading-snug">{bannerText}</p>
             {!isRemoteConfigured && (
-              <p className="text-amber-600 dark:text-amber-400 text-xs mt-1">
+              <p className="text-bolt-elements-textSecondary text-xs mt-1">
                 Configure a remote runtime URL in Settings → Runtime Mode to enable command execution.
               </p>
             )}
@@ -89,10 +89,10 @@ export function RuntimeModeBanner() {
           {/* Dismiss button */}
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 p-1 rounded hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+            className="flex-shrink-0 p-1 rounded hover:bg-bolt-elements-item-backgroundActive transition-colors"
             aria-label="Dismiss banner"
           >
-            <div className="i-ph:x-bold w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <div className="i-ph:x-bold w-3.5 h-3.5 text-bolt-elements-textTertiary" />
           </button>
         </div>
       </motion.div>
