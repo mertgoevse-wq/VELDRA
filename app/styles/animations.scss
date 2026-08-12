@@ -95,3 +95,42 @@
     animation: none;
   }
 }
+
+/*
+ * Splash-screen entrance: mark, wordmark and copyright fade/scale in with a short stagger --
+ * a single shared keyframe (fadeScaleIn) driven by per-element animation-delay, not three
+ * separate keyframes, since the only difference between them is timing.
+ */
+@keyframes veldra-splash-fade-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.veldra-splash-mark,
+.veldra-splash-wordmark,
+.veldra-splash-copyright {
+  animation: veldra-splash-fade-scale-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.veldra-splash-wordmark {
+  animation-delay: 90ms;
+}
+
+.veldra-splash-copyright {
+  animation-delay: 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .veldra-splash-mark,
+  .veldra-splash-wordmark,
+  .veldra-splash-copyright {
+    animation: none;
+  }
+}

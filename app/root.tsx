@@ -12,6 +12,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
 import { ClientOnly } from 'remix-utils/client-only';
 import { cssTransition, ToastContainer } from 'react-toastify';
+import { SplashScreen } from './components/ui/SplashScreen';
 
 import reactToastifyStyles from 'react-toastify/dist/ReactToastify.css?url';
 import globalStyles from './styles/index.scss?url';
@@ -130,6 +131,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <ClientOnly>{() => <SplashScreen />}</ClientOnly>
       <ClientOnly>{() => <DndProvider backend={getDndBackend()}>{children}</DndProvider>}</ClientOnly>
       <ToastContainer
         closeButton={({ closeToast }) => {
