@@ -59,7 +59,7 @@ function StatusDashboard({ onBack }: { onBack: () => void }) {
                   <HealthStatusBadge status={status.status} responseTime={status.responseTime} />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div className="text-center">
                     <div className="text-bolt-elements-textSecondary">Models</div>
                     <div className="text-lg font-semibold text-bolt-elements-textPrimary">

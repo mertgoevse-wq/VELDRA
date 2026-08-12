@@ -1,4 +1,4 @@
-import type { PathWatcherEvent, WebContainer } from '@webcontainer/api';
+import type { SandboxSession, SandboxFileChange } from '~/lib/execution/types';
 import { isWebContainerSupported, isCapacitor } from '~/lib/adapters/platform';
 import { getEncoding } from 'istextorbinary';
 import { map, type MapStore } from 'nanostores';
@@ -53,7 +53,7 @@ type Dirent = File | Folder;
 export type FileMap = Record<string, Dirent | undefined>;
 
 export class FilesStore {
-  #webcontainer: Promise<WebContainer>;
+  #getSession: () => Promise<SandboxSession | null>;
   #isFallbackMode = false;
 
   /**
@@ -82,8 +82,8 @@ export class FilesStore {
     return this.#size;
   }
 
-  constructor(webcontainerPromise: Promise<WebContainer>) {
-    this.#webcontainer = webcontainerPromise;
+  constructor(getSession: () => Promise<SandboxSession | null>) {
+    this.#getSession = getSession;
 
     // Check if we're in fallback mode (Android/no WebContainer)
     if (!import.meta.env.SSR) {
@@ -590,10 +590,11 @@ export class FilesStore {
       return;
     }
 
-    const webcontainer = await this.#webcontainer;
+    const session = await this.#getSession();
+    if (!session) throw new Error('No active sandbox session');
 
     try {
-      const relativePath = path.relative(webcontainer.workdir, filePath);
+      const relativePath = path.relative(session.workdir, filePath);
 
       if (!relativePath) {
         throw new Error(`EINVAL: invalid file path, write '${relativePath}'`);
@@ -605,7 +606,7 @@ export class FilesStore {
         unreachable('Expected content to be defined');
       }
 
-      await webcontainer.fs.writeFile(relativePath, content);
+      await session.writeFiles([{ path: relativePath, content }]);
 
       if (!this.#modifiedFiles.has(filePath)) {
         this.#modifiedFiles.set(filePath, oldContent);
@@ -750,12 +751,13 @@ export class FilesStore {
       return;
     }
 
-    let webcontainer: WebContainer;
+    let session: SandboxSession | null = null;
 
     try {
-      webcontainer = await this.#webcontainer;
+      session = await this.#getSession();
+      if (!session) throw new Error('No active sandbox session');
     } catch (error) {
-      console.warn('[FilesStore] WebContainer unavailable, entering fallback mode:', error);
+      console.warn('[FilesStore] WebContainer/Sandbox unavailable, entering fallback mode:', error);
       this.#isFallbackMode = true;
       this.#cleanupDeletedFiles();
 
@@ -769,15 +771,16 @@ export class FilesStore {
     // Clean up any files that were previously deleted
     this.#cleanupDeletedFiles();
 
-    // Set up file watcher
-    webcontainer.internal.watchPaths(
-      {
-        include: [`${WORK_DIR}/**`],
-        exclude: ['**/node_modules', '.git', '**/package-lock.json'],
-        includeContent: true,
-      },
-      bufferWatchEvents(100, this.#processEventBuffer.bind(this)),
-    );
+    // Set up file watcher if supported
+    if (session.capabilities.fileWatch && session.watch) {
+      session.watch(
+        {
+          include: [`${WORK_DIR}/**`],
+          exclude: ['**/node_modules', '.git', '**/package-lock.json'],
+        },
+        bufferWatchEvents(100, this.#processEventBuffer.bind(this)),
+      );
+    }
 
     // Get the current chat ID
     const currentChatId = getCurrentChatId();
@@ -867,61 +870,65 @@ export class FilesStore {
     }
   }
 
-  #processEventBuffer(events: Array<[events: PathWatcherEvent[]]>) {
+  async #processEventBuffer(events: Array<[SandboxFileChange[]]>) {
     const watchEvents = events.flat(2);
+    const session = await this.#getSession();
+    if (!session) return;
 
-    for (const { type, path, buffer } of watchEvents) {
+    for (const { type, path } of watchEvents) {
       // remove any trailing slashes
       const sanitizedPath = path.replace(/\/+$/g, '');
 
       switch (type) {
-        case 'add_dir': {
-          // we intentionally add a trailing slash so we can distinguish files from folders in the file tree
-          this.files.setKey(sanitizedPath, { type: 'folder' });
+        case 'add':
+        case 'change': {
+          try {
+            // First check if it's a directory
+            let isDir = false;
+            try {
+              const entries = await session.readDir(sanitizedPath);
+              if (entries) isDir = true;
+            } catch (e) {
+              // It's a file
+            }
+
+            if (isDir) {
+              this.files.setKey(sanitizedPath, { type: 'folder' });
+            } else {
+              if (type === 'add') {
+                this.#size++;
+              }
+
+              let content = '';
+              let isBinary = false;
+              
+              try {
+                // readFile currently returns string, so binary files might not be fully supported here yet.
+                content = await session.readFile(sanitizedPath);
+              } catch (e) {
+                console.warn('Failed to read file from sandbox', sanitizedPath);
+              }
+
+              this.files.setKey(sanitizedPath, { type: 'file', content, isBinary });
+            }
+          } catch (e) {
+            console.error('Error processing file change', e);
+          }
           break;
         }
-        case 'remove_dir': {
+        case 'remove': {
+          const existing = this.files.get()[sanitizedPath];
+          if (existing?.type === 'file') {
+             this.#size--;
+          }
           this.files.setKey(sanitizedPath, undefined);
 
-          for (const [direntPath] of Object.entries(this.files)) {
-            if (direntPath.startsWith(sanitizedPath)) {
+          for (const [direntPath] of Object.entries(this.files.get())) {
+            if (direntPath.startsWith(sanitizedPath + '/')) {
               this.files.setKey(direntPath, undefined);
             }
           }
 
-          break;
-        }
-        case 'add_file':
-        case 'change': {
-          if (type === 'add_file') {
-            this.#size++;
-          }
-
-          let content = '';
-
-          /**
-           * @note This check is purely for the editor. The way we detect this is not
-           * bullet-proof and it's a best guess so there might be false-positives.
-           * The reason we do this is because we don't want to display binary files
-           * in the editor nor allow to edit them.
-           */
-          const isBinary = isBinaryFile(buffer);
-
-          if (!isBinary) {
-            content = this.#decodeFileContent(buffer);
-          }
-
-          this.files.setKey(sanitizedPath, { type: 'file', content, isBinary });
-
-          break;
-        }
-        case 'remove_file': {
-          this.#size--;
-          this.files.setKey(sanitizedPath, undefined);
-          break;
-        }
-        case 'update_directory': {
-          // we don't care about these events
           break;
         }
       }
@@ -964,10 +971,11 @@ export class FilesStore {
       return true;
     }
 
-    const webcontainer = await this.#webcontainer;
+    const session = await this.#getSession();
+    if (!session) throw new Error('No active sandbox session');
 
     try {
-      const relativePath = path.relative(webcontainer.workdir, filePath);
+      const relativePath = path.relative(session.workdir, filePath);
 
       if (!relativePath) {
         throw new Error(`EINVAL: invalid file path, create '${relativePath}'`);
@@ -976,13 +984,13 @@ export class FilesStore {
       const dirPath = path.dirname(relativePath);
 
       if (dirPath !== '.') {
-        await webcontainer.fs.mkdir(dirPath, { recursive: true });
+        await session.mkdir(dirPath, { recursive: true });
       }
 
       const isBinary = content instanceof Uint8Array;
 
       if (isBinary) {
-        await webcontainer.fs.writeFile(relativePath, Buffer.from(content));
+        await session.writeFiles([{ path: relativePath, content: Buffer.from(content) }]);
 
         const base64Content = Buffer.from(content).toString('base64');
         this.files.setKey(filePath, {
@@ -995,7 +1003,7 @@ export class FilesStore {
         this.#modifiedFiles.set(filePath, base64Content);
       } else {
         const contentToWrite = (content as string).length === 0 ? ' ' : content;
-        await webcontainer.fs.writeFile(relativePath, contentToWrite);
+        await session.writeFiles([{ path: relativePath, content: contentToWrite as string }]);
 
         this.files.setKey(filePath, {
           type: 'file',
@@ -1024,16 +1032,17 @@ export class FilesStore {
       return true;
     }
 
-    const webcontainer = await this.#webcontainer;
+    const session = await this.#getSession();
+    if (!session) throw new Error('No active sandbox session');
 
     try {
-      const relativePath = path.relative(webcontainer.workdir, folderPath);
+      const relativePath = path.relative(session.workdir, folderPath);
 
       if (!relativePath) {
         throw new Error(`EINVAL: invalid folder path, create '${relativePath}'`);
       }
 
-      await webcontainer.fs.mkdir(relativePath, { recursive: true });
+      await session.mkdir(relativePath, { recursive: true });
 
       this.files.setKey(folderPath, { type: 'folder' });
 
@@ -1061,16 +1070,17 @@ export class FilesStore {
       return true;
     }
 
-    const webcontainer = await this.#webcontainer;
+    const session = await this.#getSession();
+    if (!session) throw new Error('No active sandbox session');
 
     try {
-      const relativePath = path.relative(webcontainer.workdir, filePath);
+      const relativePath = path.relative(session.workdir, filePath);
 
       if (!relativePath) {
         throw new Error(`EINVAL: invalid file path, delete '${relativePath}'`);
       }
 
-      await webcontainer.fs.rm(relativePath);
+      await session.remove(relativePath);
 
       this.#deletedPaths.add(filePath);
 
@@ -1119,16 +1129,17 @@ export class FilesStore {
       return true;
     }
 
-    const webcontainer = await this.#webcontainer;
+    const session = await this.#getSession();
+    if (!session) throw new Error('No active sandbox session');
 
     try {
-      const relativePath = path.relative(webcontainer.workdir, folderPath);
+      const relativePath = path.relative(session.workdir, folderPath);
 
       if (!relativePath) {
         throw new Error(`EINVAL: invalid folder path, delete '${relativePath}'`);
       }
 
-      await webcontainer.fs.rm(relativePath, { recursive: true });
+      await session.remove(relativePath, { recursive: true });
 
       this.#deletedPaths.add(folderPath);
 

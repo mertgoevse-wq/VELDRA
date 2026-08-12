@@ -30,9 +30,15 @@ export const shortcutEventEmitter = new ShortcutEventEmitter();
  * keyboard doesn't have Ctrl/Cmd keys, so shortcut listeners just
  * waste cycles and can intercept keypresses unpredictably.
  */
+import { isCapacitor } from '~/lib/adapters/platform';
+
 function isTouchOnlyDevice(): boolean {
   if (typeof window === 'undefined') {
     return false;
+  }
+
+  if (isCapacitor()) {
+    return true;
   }
 
   return (

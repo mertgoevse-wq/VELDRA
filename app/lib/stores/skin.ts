@@ -6,11 +6,11 @@ import { atom } from 'nanostores';
  * 'veldra' has no CSS override (see variables.scss) and is a deliberate no-op — it's the
  * palette already shipping today, kept as the explicit default rather than an implicit one.
  */
-export type Skin = 'veldra' | 'obsidian';
+export type Skin = 'core' | 'dark' | 'light' | 'midnight' | 'matrix' | 'aurora' | 'industrial' | 'minimal';
 
 export const kSkin = 'bolt_skin';
 
-export const DEFAULT_SKIN: Skin = 'veldra';
+export const DEFAULT_SKIN: Skin = 'core';
 
 export const skinStore = atom<Skin>(initStore());
 
@@ -18,8 +18,8 @@ function initStore(): Skin {
   if (!import.meta.env.SSR) {
     const persisted = localStorage.getItem(kSkin) as Skin | null;
 
-    if (persisted === 'veldra' || persisted === 'obsidian') {
-      return persisted;
+    if (['core', 'dark', 'light', 'midnight', 'matrix', 'aurora', 'industrial', 'minimal'].includes(persisted as string)) {
+      return persisted!;
     }
   }
 

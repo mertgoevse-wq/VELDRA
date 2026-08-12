@@ -1,4 +1,4 @@
-import type { WebContainer } from '@webcontainer/api';
+import type { SandboxSession } from '~/lib/execution/types';
 import { atom } from 'nanostores';
 
 // Extend Window interface to include our custom property
@@ -19,7 +19,7 @@ const PREVIEW_CHANNEL = 'preview-updates';
 
 export class PreviewsStore {
   #availablePreviews = new Map<number, PreviewInfo>();
-  #webcontainer: Promise<WebContainer>;
+  #getSession: () => Promise<SandboxSession | null>;
   #broadcastChannel?: BroadcastChannel;
   #lastUpdate = new Map<string, number>();
   #watchedFiles = new Set<string>();
@@ -29,8 +29,8 @@ export class PreviewsStore {
 
   previews = atom<PreviewInfo[]>([]);
 
-  constructor(webcontainerPromise: Promise<WebContainer>) {
-    this.#webcontainer = webcontainerPromise;
+  constructor(getSession: () => Promise<SandboxSession | null>) {
+    this.#getSession = getSession;
     this.#broadcastChannel = this.#maybeCreateChannel(PREVIEW_CHANNEL);
     this.#storageChannel = this.#maybeCreateChannel('storage-sync-channel');
 
@@ -167,43 +167,41 @@ export class PreviewsStore {
   }
 
   async #init() {
-    const webcontainer = await this.#webcontainer;
+    const session = await this.#getSession();
+    if (!session) return;
 
-    // Listen for server ready events
-    webcontainer.on('server-ready', (port, url) => {
-      console.log('[Preview] Server ready on port:', port, url);
-      this.broadcastUpdate(url);
+    session.subscribe((event) => {
+      if (event.type === 'port-open') {
+        const { port, url } = event;
+        const stringUrl = url || '';
+        console.log('[Preview] Server ready on port:', port, url);
+        this.broadcastUpdate(stringUrl);
 
-      // Initial storage sync when preview is ready
-      this._broadcastStorageSync();
-    });
+        // Initial storage sync when preview is ready
+        this._broadcastStorageSync();
 
-    // Listen for port events
-    webcontainer.on('port', (port, type, url) => {
-      let previewInfo = this.#availablePreviews.get(port);
+        let previewInfo = this.#availablePreviews.get(port);
+        const previews = this.previews.get();
 
-      if (type === 'close' && previewInfo) {
-        this.#availablePreviews.delete(port);
-        this.previews.set(this.previews.get().filter((preview) => preview.port !== port));
+        if (!previewInfo) {
+          previewInfo = { port, ready: true, baseUrl: stringUrl };
+          this.#availablePreviews.set(port, previewInfo);
+          previews.push(previewInfo);
+        }
 
-        return;
-      }
+        previewInfo.ready = true;
+        previewInfo.baseUrl = stringUrl;
 
-      const previews = this.previews.get();
+        this.previews.set([...previews]);
+        this.broadcastUpdate(stringUrl);
+      } else if (event.type === 'port-close') {
+        const { port } = event;
+        const previewInfo = this.#availablePreviews.get(port);
 
-      if (!previewInfo) {
-        previewInfo = { port, ready: type === 'open', baseUrl: url };
-        this.#availablePreviews.set(port, previewInfo);
-        previews.push(previewInfo);
-      }
-
-      previewInfo.ready = type === 'open';
-      previewInfo.baseUrl = url;
-
-      this.previews.set([...previews]);
-
-      if (type === 'open') {
-        this.broadcastUpdate(url);
+        if (previewInfo) {
+          this.#availablePreviews.delete(port);
+          this.previews.set(this.previews.get().filter((preview) => preview.port !== port));
+        }
       }
     });
   }
@@ -303,10 +301,10 @@ let previewsStore: PreviewsStore | null = null;
 export function usePreviewStore() {
   if (!previewsStore) {
     /*
-     * Initialize with a Promise that resolves to WebContainer
-     * This should match how you're initializing WebContainer elsewhere
+     * Initialize with a function that resolves to SandboxSession
+     * This should match how you're initializing SandboxSession elsewhere
      */
-    previewsStore = new PreviewsStore(Promise.resolve({} as WebContainer));
+    previewsStore = new PreviewsStore(async () => null);
   }
 
   return previewsStore;

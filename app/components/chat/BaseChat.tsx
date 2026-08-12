@@ -35,6 +35,8 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
 import { RuntimeModeBanner } from '~/components/mobile/RuntimeModeBanner';
 import { isCapacitor } from '~/lib/adapters/platform';
+import { workbenchStore } from '~/lib/stores/workbench';
+import { BottomNav, type MobileTab } from '~/components/mobile/BottomNav';
 import { getAndroidModelsRequest } from '~/lib/android-api/backend-config';
 import { ProjectGuidedBuild } from '~/components/chat/ProjectGuidedBuild';
 import {
@@ -156,6 +158,28 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
     const expoUrl = useStore(expoUrlAtom);
     const [qrModalOpen, setQrModalOpen] = useState(false);
+    const showWorkbench = useStore(workbenchStore.showWorkbench);
+    const selectedView = useStore(workbenchStore.currentView);
+
+    const activeTab: MobileTab = showWorkbench
+      ? selectedView === 'preview'
+        ? 'preview'
+        : 'files'
+      : 'chat';
+
+    const handleTabChange = (tab: MobileTab) => {
+      if (tab === 'chat') {
+        workbenchStore.showWorkbench.set(false);
+      } else if (tab === 'files') {
+        workbenchStore.showWorkbench.set(true);
+        workbenchStore.currentView.set('code');
+      } else if (tab === 'preview') {
+        workbenchStore.showWorkbench.set(true);
+        workbenchStore.currentView.set('preview');
+      } else if (tab === 'settings') {
+        window.dispatchEvent(new CustomEvent('open-mobile-tab', { detail: 'settings' }));
+      }
+    };
 
     useEffect(() => {
       if (expoUrl) {
@@ -398,34 +422,30 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
             <ClientOnly>{() => <RuntimeModeBanner />}</ClientOnly>
             {!chatStarted && (
-              <div id="intro" className="relative mt-[8vh] lg:mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
-                <div
-                  aria-hidden="true"
-                  className="hidden dark:lg:block absolute -inset-x-24 -top-16 -z-10 h-64 opacity-[0.08] bg-repeat bg-[length:220px_220px] [background-image:url('/veldra-brand-background.webp')] [mask-image:radial-gradient(ellipse_60%_100%_at_50%_0%,black,transparent)] pointer-events-none"
-                />
-                <div className="hidden lg:flex justify-center mb-6 animate-fade-in">
-                  <picture>
-                    <source srcSet="/veldra-hero-art.webp" type="image/webp" />
-                    <img
-                      src="/veldra-hero-art.jpg"
-                      alt="VELDRA connecting local and cloud AI models, Android, agents, and tools around a single build"
-                      loading="lazy"
-                      width={1200}
-                      height={670}
-                      className="w-full max-w-xl aspect-[1200/670] rounded-2xl border border-bolt-elements-borderColor object-cover shadow-lg"
-                    />
-                  </picture>
+              <div id="intro" className="relative mt-[8vh] lg:mt-[16vh] max-w-3xl mx-auto text-center px-4 lg:px-0 flex flex-col items-center">
+                {/* Minimalist VELDRA Icon/Logo */}
+                <div className="mb-6 flex justify-center animate-fade-in">
+                  <div className="w-20 h-20 rounded-xl bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor flex items-center justify-center shadow-lg relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-accent-500/10 group-hover:bg-accent-500/20 transition-colors" />
+                    <div className="i-ph:cube-duotone text-4xl text-accent-500" />
+                  </div>
                 </div>
+                
+                {/* Main Heading */}
                 <h1
-                  className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in"
-                  style={{ fontFamily: 'var(--veldra-font-brand)' }}
+                  className="text-4xl lg:text-5xl font-semibold text-bolt-elements-textPrimary mb-3 animate-fade-in tracking-tight"
+                  style={{ fontFamily: 'var(--veldra-font-brand, system-ui)' }}
                 >
-                  Where ideas begin
+                  VELDRA <span className="font-light text-bolt-elements-textTertiary">Workspace</span>
                 </h1>
-                <p className="text-md lg:text-xl mb-4 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
-                  Bring ideas to life in seconds or get help on existing projects.
+                
+                {/* Subheading / Description */}
+                <p className="text-md lg:text-lg mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200 max-w-xl mx-auto font-mono">
+                  Autonomous AI Engineering Environment
                 </p>
-                <div className="mb-4">
+                
+                {/* Project Guided Build / Quick Actions Container */}
+                <div className="w-full mb-4 animate-fade-in animation-delay-300">
                   <ClientOnly>{() => <ProjectGuidedBuild />}</ClientOnly>
                 </div>
               </div>
@@ -567,6 +587,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               <Workbench chatStarted={chatStarted} isStreaming={isStreaming} setSelectedElement={setSelectedElement} />
             )}
           </ClientOnly>
+          <BottomNav activeTab={activeTab} onTabChange={handleTabChange} workbenchAvailable={chatStarted} />
         </div>
       </div>
     );

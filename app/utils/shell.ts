@@ -1,21 +1,26 @@
-import type { WebContainer, WebContainerProcess } from '@webcontainer/api';
+import type { SandboxSession, SandboxProcess } from '~/lib/execution/types';
 import type { ITerminal } from '~/types/terminal';
 import { withResolvers } from './promises';
 import { atom } from 'nanostores';
 import { expoUrlAtom } from '~/lib/stores/qrCodeStore';
 
-export async function newShellProcess(webcontainer: WebContainer, terminal: ITerminal) {
+export async function newShellProcess(session: SandboxSession, terminal: ITerminal) {
   const args: string[] = [];
 
-  // we spawn a JSH process with a fallback cols and rows in case the process is not attached yet to a visible terminal
-  const process = await webcontainer.spawn('/bin/jsh', ['--osc', ...args], {
+  const isWebContainer = session.id === 'webcontainer:default';
+  const command = isWebContainer ? '/bin/jsh' : 'bash';
+  const spawnArgs = isWebContainer ? ['--osc', ...args] : args;
+
+  // we spawn a shell process with a fallback cols and rows in case the process is not attached yet to a visible terminal
+  const process = await session.spawn(command, spawnArgs, {
     terminal: {
       cols: terminal.cols ?? 80,
       rows: terminal.rows ?? 15,
     },
   });
 
-  const input = process.input.getWriter();
+  const input = process.input?.getWriter();
+  if (!input) throw new Error('Process input is not writable');
   const output = process.output;
 
   const jshReady = withResolvers<void>();
@@ -24,7 +29,7 @@ export async function newShellProcess(webcontainer: WebContainer, terminal: ITer
   output.pipeTo(
     new WritableStream({
       write(data) {
-        if (!isInteractive) {
+        if (!isInteractive && isWebContainer) {
           const [, osc] = data.match(/\x1b\]654;([^\x07]+)\x07/) || [];
 
           if (osc === 'interactive') {
@@ -33,6 +38,9 @@ export async function newShellProcess(webcontainer: WebContainer, terminal: ITer
 
             jshReady.resolve();
           }
+        } else if (!isInteractive && !isWebContainer) {
+           isInteractive = true;
+           jshReady.resolve();
         }
 
         terminal.write(data);
@@ -94,9 +102,9 @@ export type ExecutionResult = { output: string; exitCode: number } | undefined;
 export class BoltShell {
   #initialized: (() => void) | undefined;
   #readyPromise: Promise<void>;
-  #webcontainer: WebContainer | undefined;
+  #session: SandboxSession | undefined;
   #terminal: ITerminal | undefined;
-  #process: WebContainerProcess | undefined;
+  #process: SandboxProcess | undefined;
   executionState = atom<
     { sessionId: string; active: boolean; executionPrms?: Promise<any>; abort?: () => void } | undefined
   >();
@@ -113,32 +121,40 @@ export class BoltShell {
     return this.#readyPromise;
   }
 
-  async init(webcontainer: WebContainer, terminal: ITerminal) {
-    this.#webcontainer = webcontainer;
+  async init(session: SandboxSession, terminal: ITerminal) {
+    this.#session = session;
     this.#terminal = terminal;
 
     // Use all three streams from tee: one for terminal, one for command execution, one for Expo URL detection
-    const { process, commandStream, expoUrlStream } = await this.newBoltShellProcess(webcontainer, terminal);
+    const { process, commandStream, expoUrlStream } = await this.newBoltShellProcess(session, terminal);
     this.#process = process;
     this.#outputStream = commandStream.getReader();
 
     // Start background Expo URL watcher immediately
     this._watchExpoUrlInBackground(expoUrlStream);
 
-    await this.waitTillOscCode('interactive');
+    if (session.id === 'webcontainer:default') {
+      await this.waitTillOscCode('interactive');
+    }
+    
     this.#initialized?.();
   }
 
-  async newBoltShellProcess(webcontainer: WebContainer, terminal: ITerminal) {
+  async newBoltShellProcess(session: SandboxSession, terminal: ITerminal) {
     const args: string[] = [];
-    const process = await webcontainer.spawn('/bin/jsh', ['--osc', ...args], {
+    const isWebContainer = session.id === 'webcontainer:default';
+    const command = isWebContainer ? '/bin/jsh' : 'bash';
+    const spawnArgs = isWebContainer ? ['--osc', ...args] : args;
+
+    const process = await session.spawn(command, spawnArgs, {
       terminal: {
         cols: terminal.cols ?? 80,
         rows: terminal.rows ?? 15,
       },
     });
 
-    const input = process.input.getWriter();
+    const input = process.input?.getWriter();
+    if (!input) throw new Error('Process input is not writable');
     this.#shellInputStream = input;
 
     // Tee the output so we can have three independent readers
@@ -150,13 +166,16 @@ export class BoltShell {
     streamA.pipeTo(
       new WritableStream({
         write(data) {
-          if (!isInteractive) {
+          if (!isInteractive && isWebContainer) {
             const [, osc] = data.match(/\x1b\]654;([^\x07]+)\x07/) || [];
 
             if (osc === 'interactive') {
               isInteractive = true;
               jshReady.resolve();
             }
+          } else if (!isInteractive && !isWebContainer) {
+             isInteractive = true;
+             jshReady.resolve();
           }
 
           terminal.write(data);

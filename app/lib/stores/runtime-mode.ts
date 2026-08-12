@@ -218,7 +218,19 @@ function createInitialState(): RuntimeModeState {
   };
 }
 
+import { createRemoteRuntimeProvider, REMOTE_RUNTIME_PROVIDER_ID } from '~/lib/execution/remote-runtime';
+import { registerSandboxProvider, getSandboxProvider } from '~/lib/execution/registry';
+
 export const runtimeModeStore = atom<RuntimeModeState>(createInitialState());
+
+// Register the Remote Runtime provider dynamically if it hasn't been registered.
+if (typeof window !== 'undefined' && !getSandboxProvider(REMOTE_RUNTIME_PROVIDER_ID)) {
+  try {
+    registerSandboxProvider(createRemoteRuntimeProvider());
+  } catch (err) {
+    console.error('Failed to register Remote Runtime Provider', err);
+  }
+}
 
 /*
  * ---------------------------------------------------------------------------

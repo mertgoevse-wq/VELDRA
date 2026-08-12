@@ -146,7 +146,8 @@ export const TerminalTabs = memo(() => {
     >
       <div className="h-full">
         <div className="bg-bolt-elements-terminals-background h-full flex flex-col">
-          <div className="flex items-center bg-bolt-elements-background-depth-2 border-y border-bolt-elements-borderColor gap-1.5 min-h-[34px] p-2">
+          <div className="flex items-center bg-bolt-elements-background-depth-2 border-y border-bolt-elements-borderColor min-h-[34px] p-1">
+            <div className="flex-1 flex items-center gap-1.5 overflow-x-auto modern-scrollbar px-1 no-scrollbar-buttons">
             {/*
              * Tab switching / add-terminal / reset only make sense for the real xterm terminals
              * rendered in the branch below -- RemoteCommandPanel ignores terminalCount/
@@ -156,8 +157,8 @@ export const TerminalTabs = memo(() => {
              * actually shown.
              */}
             {showTerminalFallback ? (
-              <span className="flex items-center gap-1.5 text-sm text-bolt-elements-textSecondary px-1">
-                <div className="i-ph:terminal-window-duotone text-lg" />
+              <span className="flex items-center gap-1.5 text-sm text-bolt-elements-textSecondary px-1 whitespace-nowrap">
+                <div className="i-ph:terminal-window-duotone text-lg shrink-0" />
                 Remote Runtime Commands
               </span>
             ) : (
@@ -238,13 +239,15 @@ export const TerminalTabs = memo(() => {
                 />
               </>
             )}
-            <IconButton
-              className="ml-auto"
-              icon="i-ph:caret-down"
-              title="Close"
-              size="md"
-              onClick={() => workbenchStore.toggleTerminal(false)}
-            />
+            </div>
+            <div className="flex items-center pl-2 ml-auto shrink-0 bg-bolt-elements-background-depth-2 border-l border-bolt-elements-borderColor/30">
+              <IconButton
+                icon="i-ph:caret-down"
+                title="Close"
+                size="md"
+                onClick={() => workbenchStore.toggleTerminal(false)}
+              />
+            </div>
           </div>
           {showTerminalFallback ? (
             <RemoteCommandPanel runtime={runtime} showRemoteCommandPanel={showRemoteCommandPanel} />

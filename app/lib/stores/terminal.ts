@@ -1,4 +1,4 @@
-import type { WebContainer, WebContainerProcess } from '@webcontainer/api';
+import type { SandboxSession, SandboxProcess } from '~/lib/execution/types';
 import { atom, type WritableAtom } from 'nanostores';
 import type { ITerminal } from '~/types/terminal';
 import { newBoltShellProcess, newShellProcess } from '~/utils/shell';
@@ -6,15 +6,15 @@ import { coloredText } from '~/utils/terminal';
 import { isWebContainerSupported, isCapacitor } from '~/lib/adapters/platform';
 
 export class TerminalStore {
-  #webcontainer: Promise<WebContainer>;
-  #terminals: Array<{ terminal: ITerminal; process: WebContainerProcess }> = [];
+  #getSession: () => Promise<SandboxSession | null>;
+  #terminals: Array<{ terminal: ITerminal; process: SandboxProcess }> = [];
   #boltTerminal = newBoltShellProcess();
   #isFallbackMode = false;
 
   showTerminal: WritableAtom<boolean> = import.meta.hot?.data.showTerminal ?? atom(true);
 
-  constructor(webcontainerPromise: Promise<WebContainer>) {
-    this.#webcontainer = webcontainerPromise;
+  constructor(getSession: () => Promise<SandboxSession | null>) {
+    this.#getSession = getSession;
 
     // Check if we're in fallback mode (Android/no WebContainer)
     if (!import.meta.env.SSR) {
@@ -50,8 +50,9 @@ export class TerminalStore {
     }
 
     try {
-      const wc = await this.#webcontainer;
-      await this.#boltTerminal.init(wc, terminal);
+      const session = await this.#getSession();
+      if (!session) throw new Error('No active sandbox session');
+      await this.#boltTerminal.init(session, terminal);
     } catch (error: any) {
       terminal.write(coloredText.red('Failed to spawn bolt shell\n\n') + error.message);
       return;
@@ -67,7 +68,9 @@ export class TerminalStore {
     }
 
     try {
-      const shellProcess = await newShellProcess(await this.#webcontainer, terminal);
+      const session = await this.#getSession();
+      if (!session) throw new Error('No active sandbox session');
+      const shellProcess = await newShellProcess(session, terminal);
       this.#terminals.push({ terminal, process: shellProcess });
     } catch (error: any) {
       terminal.write(coloredText.red('Failed to spawn shell\n\n') + error.message);

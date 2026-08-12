@@ -189,7 +189,7 @@ function GitHubStatsContent({
             {/* Activity Summary */}
             <div className="mb-6">
               <h5 className="text-sm font-medium text-bolt-elements-textPrimary mb-2">Activity Summary</h5>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   {
                     label: 'Total Branches',

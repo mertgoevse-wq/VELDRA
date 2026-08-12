@@ -21,6 +21,7 @@ import GithubProvider from './providers/github';
 import MoonshotProvider from './providers/moonshot';
 import ZaiProvider from './providers/z-ai';
 import NvidiaNimProvider from './providers/nvidia-nim';
+import ExternalCLIProvider from './providers/external-cli';
 
 export {
   AnthropicProvider,
@@ -46,4 +47,5 @@ export {
   GithubProvider,
   ZaiProvider,
   NvidiaNimProvider,
+  ExternalCLIProvider,
 };

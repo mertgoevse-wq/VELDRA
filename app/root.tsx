@@ -12,6 +12,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
 import { ClientOnly } from 'remix-utils/client-only';
 import { cssTransition, ToastContainer } from 'react-toastify';
+import { isCapacitor } from '~/lib/adapters/platform';
 
 import reactToastifyStyles from 'react-toastify/dist/ReactToastify.css?url';
 import globalStyles from './styles/index.scss?url';
@@ -111,7 +112,7 @@ function getDndBackend() {
   }
 
   const hasTouch =
-    'ontouchstart' in window || (navigator.maxTouchPoints ?? 0) > 0 || window.matchMedia('(pointer: coarse)').matches;
+    'ontouchstart' in window || (navigator.maxTouchPoints ?? 0) > 0 || window.matchMedia('(pointer: coarse)').matches || isCapacitor();
 
   return hasTouch ? TouchBackend : HTML5Backend;
 }

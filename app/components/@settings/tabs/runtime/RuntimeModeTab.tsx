@@ -297,7 +297,7 @@ export default function RuntimeModeTab() {
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Current Runtime</span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
           <div>
             <span className="text-bolt-elements-textSecondary">Mode:</span>{' '}
             <span className="font-medium text-bolt-elements-textPrimary">

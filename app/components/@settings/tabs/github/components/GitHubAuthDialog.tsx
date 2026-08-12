@@ -42,7 +42,7 @@ export function GitHubAuthDialog({ isOpen, onClose, onSuccess }: GitHubAuthDialo
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-[200]" />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-full max-w-md"
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-full max-w-md p-4 md:p-0"
           onEscapeKeyDown={handleClose}
           onPointerDownOutside={handleClose}
         >

@@ -18,6 +18,7 @@ import { createScopedLogger } from '~/utils/logger';
 import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
+import { SkillService } from '~/lib/services/skillService';
 
 export type Messages = Message[];
 
@@ -180,6 +181,11 @@ export async function streamText(props: {
     `Token limits for model ${modelDetails.name}: maxTokens=${safeMaxTokens}, maxTokenAllowed=${modelDetails.maxTokenAllowed}, maxCompletionTokens=${modelDetails.maxCompletionTokens}`,
   );
 
+  const availableSkills = await SkillService.getInstance().discoverSkills();
+  const skillPromptExt = availableSkills.length > 0 
+    ? `\n\nYou have access to the following skills via the 'load_skill' tool: ${availableSkills.join(', ')}.\nLoad a skill if its name seems highly relevant to the task at hand.` 
+    : '';
+
   let systemPrompt =
     PromptLibrary.getPropmtFromLibrary(promptId || 'default', {
       cwd: WORK_DIR,
@@ -192,6 +198,8 @@ export async function streamText(props: {
         credentials: options?.supabaseConnection?.credentials || undefined,
       },
     }) ?? getSystemPrompt();
+
+  systemPrompt += skillPromptExt;
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
     const codeContext = createFilesContext(contextFiles, true);

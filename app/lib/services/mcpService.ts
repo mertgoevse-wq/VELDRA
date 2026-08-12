@@ -17,6 +17,8 @@ import {
   TOOL_NO_EXECUTE_FUNCTION,
 } from '~/utils/constants';
 import { createScopedLogger } from '~/utils/logger';
+import { SkillService } from '~/lib/services/skillService';
+import { SubagentService } from '~/lib/services/subagentService';
 
 const logger = createScopedLogger('mcp-service');
 
@@ -205,10 +207,42 @@ export class MCPService {
     return Object.assign(client, { serverName });
   }
 
+  private _registerBuiltinTools() {
+    const builtinTools = {
+      load_skill: {
+        description: 'Load a skill document containing detailed instructions into context.',
+        parameters: z.object({
+          skillName: z.string().describe('The name of the skill to load'),
+        }),
+        execute: async ({ skillName }: { skillName: string }) => {
+          return await SkillService.getInstance().loadSkill(skillName);
+        },
+      },
+      spawn_subagent: {
+        description: 'Spawn an isolated subagent to perform background research or planning without polluting the main context.',
+        parameters: z.object({
+          model: z.string().describe('The model name to use for the subagent, e.g. gemini-1.5-pro'),
+          systemPrompt: z.string().describe('The system prompt describing the subagent\'s specific role and tools'),
+          initialPrompt: z.string().describe('The task or query to kick off the subagent'),
+        }),
+        execute: async (args: any) => {
+          return await SubagentService.getInstance().spawnSubagent(args);
+        },
+      },
+    };
+
+    this._registerTools('__builtin__', builtinTools as unknown as ToolSet);
+  }
+
   private _registerTools(serverName: string, tools: ToolSet) {
     for (const [toolName, tool] of Object.entries(tools)) {
       if (this._tools[toolName]) {
         const existingServerName = this._toolNamesToServerNames.get(toolName);
+
+        if (existingServerName === '__builtin__' && serverName !== '__builtin__') {
+          logger.warn(`Tool conflict: External server "${serverName}" attempted to override builtin tool "${toolName}". Ignoring.`);
+          continue;
+        }
 
         if (existingServerName && existingServerName !== serverName) {
           logger.warn(`Tool conflict: "${toolName}" from "${serverName}" overrides tool from "${existingServerName}"`);
@@ -277,9 +311,11 @@ export class MCPService {
   }
 
   async checkServersAvailabilities() {
+    this._toolNamesToServerNames.clear();
     this._tools = {};
     this._toolsWithoutExecute = {};
-    this._toolNamesToServerNames.clear();
+    
+    this._registerBuiltinTools();
 
     const checkPromises = Object.entries(this._mcpToolsPerServer).map(async ([serverName, server]) => {
       let client = server.client;

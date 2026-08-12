@@ -241,7 +241,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
           >
             <div
               className={classNames(
-                'w-full max-w-[1200px] h-[90vh]',
+                'w-full max-w-[1200px] h-full md:h-[90vh]',
                 'bg-bolt-elements-background-depth-1',
                 'rounded-2xl shadow-2xl',
                 'border border-bolt-elements-borderColor',
@@ -310,12 +310,12 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
                     {activeTab ? (
                       getTabComponent(activeTab)
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative">
+                      <div className="flex overflow-x-auto snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 relative pb-4 sm:pb-0 hide-scrollbar">
                         {visibleTabs.map((tab, index) => (
                           <div
                             key={tab.id}
                             className={classNames(
-                              'aspect-[1.5/1] transition-transform duration-100 ease-out',
+                              'w-[85vw] sm:w-auto flex-shrink-0 snap-center aspect-[1.5/1] transition-transform duration-100 ease-out',
                               'hover:scale-[1.01]',
                             )}
                             style={{

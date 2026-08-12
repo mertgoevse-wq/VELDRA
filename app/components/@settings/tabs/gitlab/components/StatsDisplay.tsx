@@ -39,7 +39,7 @@ export function StatsDisplay({ stats, onRefresh, isRefreshing }: StatsDisplayPro
       {/* Contribution Stats */}
       <div>
         <h5 className="text-sm font-medium text-bolt-elements-textPrimary mb-2">Contribution Stats</h5>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {[
             {
               label: 'Stars',

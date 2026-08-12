@@ -221,19 +221,164 @@
  * (see BRANDING.md) — proof that the token architecture supports more than one skin; the rest
  * are a scoped follow-up, not fabricated here.
  */
-:root[data-theme='dark'][data-skin='obsidian'] {
-  --bolt-elements-bg-depth-1: #08090d;
-  --bolt-elements-bg-depth-2: #0d0f16;
-  --bolt-elements-bg-depth-3: #161925;
-  --bolt-elements-bg-depth-4: rgba(255, 255, 255, 0.04);
+:root[data-theme='dark'][data-skin='core'] {
+  /* VELDRA Core - The default tech-focused aesthetic */
+  --bolt-elements-bg-depth-1: #0A0F1C;
+  --bolt-elements-bg-depth-2: #0D1326;
+  --bolt-elements-bg-depth-3: #111A33;
+  --bolt-elements-bg-depth-4: rgba(80, 173, 226, 0.05);
 
-  --bolt-elements-borderColor: rgba(255, 255, 255, 0.08);
+  --bolt-elements-borderColor: rgba(80, 173, 226, 0.15);
+  --bolt-elements-borderColorActive: #50ADE2;
 
-  --bolt-elements-artifacts-background: #0d0f16;
-  --bolt-elements-actions-background: #0d0f16;
-  --bolt-elements-messages-background: #12141d;
-  --bolt-elements-prompt-background: rgba(8, 9, 13, 0.85);
-  --bolt-elements-terminals-background: #08090d;
+  --bolt-elements-artifacts-background: #0D1326;
+  --bolt-elements-actions-background: #0D1326;
+  --bolt-elements-messages-background: #0A0F1C;
+  --bolt-elements-prompt-background: rgba(10, 15, 28, 0.85);
+  --bolt-elements-terminals-background: #060913;
+}
+
+:root[data-theme='dark'][data-skin='midnight'] {
+  /* Ultra dark navy/black */
+  --bolt-elements-bg-depth-1: #030712;
+  --bolt-elements-bg-depth-2: #0B0F19;
+  --bolt-elements-bg-depth-3: #111827;
+  --bolt-elements-bg-depth-4: rgba(255, 255, 255, 0.03);
+
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.1);
+  --bolt-elements-borderColorActive: #38BDF8;
+
+  --bolt-elements-artifacts-background: #0B0F19;
+  --bolt-elements-actions-background: #0B0F19;
+  --bolt-elements-messages-background: #030712;
+  --bolt-elements-prompt-background: rgba(3, 7, 18, 0.9);
+  --bolt-elements-terminals-background: #000000;
+}
+
+:root[data-theme='dark'][data-skin='matrix'] {
+  /* Retro hacker green on black */
+  --bolt-elements-bg-depth-1: #000500;
+  --bolt-elements-bg-depth-2: #000F00;
+  --bolt-elements-bg-depth-3: #001A00;
+  --bolt-elements-bg-depth-4: rgba(0, 255, 65, 0.05);
+
+  --bolt-elements-borderColor: rgba(0, 255, 65, 0.2);
+  --bolt-elements-borderColorActive: #00FF41;
+
+  --bolt-elements-textPrimary: #00FF41;
+  --bolt-elements-textSecondary: #008F11;
+  
+  --bolt-elements-item-contentAccent: #00FF41;
+  --bolt-elements-button-primary-text: #000000;
+  --bolt-elements-button-primary-background: #00FF41;
+  --bolt-elements-button-primary-backgroundHover: #00CC33;
+
+  --bolt-elements-artifacts-background: #000F00;
+  --bolt-elements-actions-background: #000F00;
+  --bolt-elements-messages-background: #000500;
+  --bolt-elements-prompt-background: rgba(0, 5, 0, 0.9);
+  --bolt-elements-terminals-background: #000000;
+}
+
+:root[data-theme='dark'][data-skin='aurora'] {
+  /* Vibrant purple/pink nebulas */
+  --bolt-elements-bg-depth-1: #0a0b16;
+  --bolt-elements-bg-depth-2: #101223;
+  --bolt-elements-bg-depth-3: #1a1d36;
+  --bolt-elements-bg-depth-4: rgba(138, 43, 226, 0.1);
+
+  --bolt-elements-borderColor: rgba(138, 43, 226, 0.3);
+  --bolt-elements-borderColorActive: #8a2be2;
+
+  --bolt-elements-textPrimary: #e6e6fa;
+  --bolt-elements-textSecondary: #b0c4de;
+  
+  --bolt-elements-item-contentAccent: #9370db;
+  --bolt-elements-button-primary-text: #ffffff;
+  --bolt-elements-button-primary-background: rgba(147, 112, 219, 0.2);
+  --bolt-elements-button-primary-backgroundHover: rgba(147, 112, 219, 0.3);
+
+  --bolt-elements-artifacts-background: #101223;
+  --bolt-elements-actions-background: #101223;
+  --bolt-elements-messages-background: #14172a;
+  --bolt-elements-prompt-background: rgba(10, 11, 22, 0.85);
+  --bolt-elements-terminals-background: #0a0b16;
+}
+
+:root[data-theme='dark'][data-skin='industrial'] {
+  /* High contrast, greyscale, orange accent */
+  --bolt-elements-bg-depth-1: #121212;
+  --bolt-elements-bg-depth-2: #1A1A1A;
+  --bolt-elements-bg-depth-3: #222222;
+  --bolt-elements-bg-depth-4: rgba(255, 107, 0, 0.05);
+
+  --bolt-elements-borderColor: #333333;
+  --bolt-elements-borderColorActive: #FF6B00;
+
+  --bolt-elements-textPrimary: #E0E0E0;
+  --bolt-elements-textSecondary: #888888;
+  
+  --bolt-elements-item-contentAccent: #FF6B00;
+  --bolt-elements-button-primary-text: #000000;
+  --bolt-elements-button-primary-background: #FF6B00;
+  --bolt-elements-button-primary-backgroundHover: #CC5500;
+
+  --bolt-elements-artifacts-background: #1A1A1A;
+  --bolt-elements-actions-background: #1A1A1A;
+  --bolt-elements-messages-background: #121212;
+  --bolt-elements-prompt-background: rgba(18, 18, 18, 0.9);
+  --bolt-elements-terminals-background: #0A0A0A;
+}
+
+:root[data-theme='dark'][data-skin='minimal'] {
+  /* True black and white */
+  --bolt-elements-bg-depth-1: #000000;
+  --bolt-elements-bg-depth-2: #050505;
+  --bolt-elements-bg-depth-3: #111111;
+  --bolt-elements-bg-depth-4: rgba(255, 255, 255, 0.05);
+
+  --bolt-elements-borderColor: #222222;
+  --bolt-elements-borderColorActive: #ffffff;
+
+  --bolt-elements-textPrimary: #ffffff;
+  --bolt-elements-textSecondary: #888888;
+  
+  --bolt-elements-item-contentAccent: #ffffff;
+  --bolt-elements-button-primary-text: #000000;
+  --bolt-elements-button-primary-background: #ffffff;
+  --bolt-elements-button-primary-backgroundHover: #cccccc;
+
+  --bolt-elements-artifacts-background: #050505;
+  --bolt-elements-actions-background: #050505;
+  --bolt-elements-messages-background: #000000;
+  --bolt-elements-prompt-background: rgba(0, 0, 0, 0.9);
+  --bolt-elements-terminals-background: #000000;
+}
+
+:root[data-theme='light'][data-skin='light'] {
+  /* Crisp, bright UI */
+  --bolt-elements-bg-depth-1: #ffffff;
+  --bolt-elements-bg-depth-2: #f8f9fa;
+  --bolt-elements-bg-depth-3: #e9ecef;
+  --bolt-elements-bg-depth-4: rgba(0, 0, 0, 0.05);
+
+  --bolt-elements-borderColor: rgba(0, 0, 0, 0.1);
+  --bolt-elements-borderColorActive: #000000;
+
+  --bolt-elements-textPrimary: #111827;
+  --bolt-elements-textSecondary: #4b5563;
+  --bolt-elements-textTertiary: #9ca3af;
+  
+  --bolt-elements-item-contentAccent: #000000;
+  --bolt-elements-button-primary-text: #ffffff;
+  --bolt-elements-button-primary-background: #111827;
+  --bolt-elements-button-primary-backgroundHover: #374151;
+
+  --bolt-elements-artifacts-background: #ffffff;
+  --bolt-elements-actions-background: #ffffff;
+  --bolt-elements-messages-background: #f3f4f6;
+  --bolt-elements-prompt-background: rgba(255, 255, 255, 0.9);
+  --bolt-elements-terminals-background: #ffffff;
 }
 
 /*
@@ -364,7 +509,8 @@
   :root,
   :root[data-theme='light'],
   :root[data-theme='dark'] {
-    --header-height: 48px;
+    --header-height: 56px;
+    --mobile-bottom-nav-height: 56px;
     --chat-min-width: 100%;
     --workbench-width: 100%;
     --workbench-inner-width: 100%;

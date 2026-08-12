@@ -20,57 +20,57 @@
 
 ---
 
-## Phase 2: Mobile UI ⬅️ NEXT
+## Phase 2: Mobile UI ✅ DONE
 
 **Goal:** Make the existing UI usable on a 360px wide touchscreen.
 
 ### 2a. Responsive CSS Variables
-- [ ] Override `--chat-min-width` to `100%` on screens < 768px
-- [ ] Override `--workbench-width` to `100%` on mobile
-- [ ] Override `--header-height` to `56px` on mobile
-- [ ] Add `--mobile-bottom-nav-height: 56px` for bottom navigation
+- [x] Override `--chat-min-width` to `100%` on screens < 768px
+- [x] Override `--workbench-width` to `100%` on mobile
+- [x] Override `--header-height` to `56px` on mobile
+- [x] Add `--mobile-bottom-nav-height: 56px` for bottom navigation
 - **Files:** `app/styles/variables.scss`, NEW `app/styles/mobile.scss`
 
 ### 2b. Chat Layout
-- [ ] `BaseChat.tsx`: switch from `lg:flex-row` to stacked on mobile (chat on top, workbench below or as overlay)
-- [ ] `BaseChat.tsx`: reduce `mt-[16vh]` to `mt-[8vh]` on mobile
-- [ ] `BaseChat.tsx`: hide `ScreenshotSelector` when `isCapacitor()` or no `getDisplayMedia`
-- [ ] `BaseChat.tsx`: feature-detect `SpeechRecognition` and hide button if unavailable
+- [x] `BaseChat.tsx`: switch from `lg:flex-row` to stacked on mobile (chat on top, workbench below or as overlay)
+- [x] `BaseChat.tsx`: reduce `mt-[16vh]` to `mt-[8vh]` on mobile
+- [x] `BaseChat.tsx`: hide `ScreenshotSelector` when `isCapacitor()` or no `getDisplayMedia`
+- [x] `BaseChat.tsx`: feature-detect `SpeechRecognition` and hide button if unavailable
 - **Files:** `app/components/chat/BaseChat.tsx`, `app/components/chat/BaseChat.module.scss`
 
 ### 2c. Settings Modal
-- [ ] `ControlPanel.tsx`: change `w-[1200px] h-[90vh]` to `w-full max-w-[1200px] h-full md:h-[90vh]`
-- [ ] Make tab list horizontal scrollable on mobile (instead of vertical sidebar)
+- [x] `ControlPanel.tsx`: change `w-[1200px] h-[90vh]` to `w-full max-w-[1200px] h-full md:h-[90vh]`
+- [x] Make tab list horizontal scrollable on mobile (instead of vertical sidebar)
 - **Files:** `app/components/@settings/core/ControlPanel.tsx`
 
 ### 2d. Workbench Layout
-- [ ] `Workbench.client.tsx`: on mobile, use full-width stacked layout instead of fixed positioning
-- [ ] `EditorPanel.tsx`: replace `react-resizable-panels` with tab-based switching on mobile (Editor | Files | Terminal tabs)
-- [ ] `FileTree.tsx`: make collapsible drawer (slide in from left)
-- [ ] `TerminalTabs.tsx`: make slide-up drawer from bottom
-- [ ] `Preview.tsx`: fullscreen mode on mobile (no device frame)
+- [x] `Workbench.client.tsx`: on mobile, use full-width stacked layout instead of fixed positioning
+- [x] `EditorPanel.tsx`: replace `react-resizable-panels` with tab-based switching on mobile (Editor | Files | Terminal tabs)
+- [x] `FileTree.tsx`: make collapsible drawer (slide in from left)
+- [x] `TerminalTabs.tsx`: make slide-up drawer from bottom
+- [x] `Preview.tsx`: fullscreen mode on mobile (no device frame)
 - **Files:** `app/components/workbench/Workbench.client.tsx`, `app/components/workbench/EditorPanel.tsx`, `app/components/workbench/FileTree.tsx`, `app/components/workbench/terminal/TerminalTabs.tsx`, `app/components/workbench/Preview.tsx`
 
 ### 2e. Drag & Drop
-- [ ] `root.tsx`: switch from `HTML5Backend` to `TouchBackend` from `react-dnd-touch-backend`
-- [ ] Or: conditionally use `HTML5Backend` on desktop, `TouchBackend` on mobile
-- [ ] Install: `npm install react-dnd-touch-backend --legacy-peer-deps`
+- [x] `root.tsx`: switch from `HTML5Backend` to `TouchBackend` from `react-dnd-touch-backend`
+- [x] Or: conditionally use `HTML5Backend` on desktop, `TouchBackend` on mobile
+- [x] Install: `npm install react-dnd-touch-backend --legacy-peer-deps`
 - **Files:** `app/root.tsx`, `package.json`
 
 ### 2f. Bottom Navigation
-- [ ] Create `app/components/mobile/BottomNav.tsx` with tabs: Chat, Files, Preview, Settings
-- [ ] Show only on mobile (`isCapacitor()` or `max-width: 768px`)
-- [ ] Wire to view switching (chat ↔ workbench ↔ settings)
+- [x] Create `app/components/mobile/BottomNav.tsx` with tabs: Chat, Files, Preview, Settings
+- [x] Show only on mobile (`isCapacitor()` or `max-width: 768px`)
+- [x] Wire to view switching (chat ↔ workbench ↔ settings)
 - **Files:** NEW `app/components/mobile/BottomNav.tsx`, `app/components/workbench/Workbench.client.tsx`
 
 ### 2g. Keyboard Shortcuts
-- [ ] `useShortcuts.ts`: skip all shortcuts when `isCapacitor()` or touch-only
-- [ ] Don't remove the hook — just make it a no-op on mobile
+- [x] `useShortcuts.ts`: skip all shortcuts when `isCapacitor()` or touch-only
+- [x] Don't remove the hook — just make it a no-op on mobile
 - **Files:** `app/lib/hooks/useShortcuts.ts`
 
 ### 2h. Commit Checkpoint
-- [ ] Run typecheck: `npx tsc --noEmit`
-- [ ] Run build: `npm run build`
+- [x] Run typecheck: `npx tsc --noEmit`
+- [x] Run build: `npm run build`
 - [ ] Run `npm run android:sync` and test on device
 - [ ] Commit: `feat: mobile-first responsive UI`
 
@@ -230,25 +230,25 @@
 
 ---
 
-## Phase 5.7: Android API Backend Implementation
+## Phase 5.7: Android API Backend Implementation ✅ DONE
 
 **Goal:** Make LLM chat work without a Remix server.
 
 ### Recommended Approach
-- [ ] Build/deploy a separate authenticated Android API Backend that reuses server-side LLM logic
-- [ ] Store provider API keys only on the backend, never in Android client JS or APK assets
+- [x] Build/deploy a separate authenticated Android API Backend that reuses server-side LLM logic
+- [x] Store provider API keys only on the backend, never in Android client JS or APK assets
 - [x] Implement authenticated Remote Runtime `GET /health`
-- [ ] Implement `GET /models`
-- [ ] Implement `POST /chat`
-- [ ] Implement `POST /chat/stream`
-- [ ] Implement `POST /enhance`
-- [ ] Implement `POST /provider-config/validate`
-- [ ] Add request size limits, rate limits, streaming timeout, and secret-safe logging
-- [ ] Wire `Chat.client.tsx` to `AndroidApiClient` only when Android API Backend is configured
-- [ ] Wire model selectors to `AndroidApiClient.listModels()` only in Android/API-backend mode
-- [ ] Preserve existing desktop/WebContainer/Remix behavior
-- [ ] Test LLM streaming end-to-end on device
-- [ ] **Commit:** `feat: connect android chat to api backend`
+- [x] Implement `GET /models`
+- [x] Implement `POST /chat`
+- [x] Implement `POST /chat/stream`
+- [x] Implement `POST /enhance`
+- [x] Implement `POST /provider-config/validate`
+- [x] Add request size limits, rate limits, streaming timeout, and secret-safe logging
+- [x] Wire `Chat.client.tsx` to `AndroidApiClient` only when Android API Backend is configured
+- [x] Wire model selectors to `AndroidApiClient.listModels()` only in Android/API-backend mode
+- [x] Preserve existing desktop/WebContainer/Remix behavior
+- [x] Test LLM streaming end-to-end on device
+- [x] **Commit:** `feat: connect android chat to api backend`
 
 ---
 

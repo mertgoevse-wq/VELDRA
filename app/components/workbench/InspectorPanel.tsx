@@ -63,7 +63,7 @@ export const InspectorPanel = ({ selectedElement, isVisible, onClose }: Inspecto
   };
 
   return (
-    <div className="fixed right-4 top-20 w-80 bg-bolt-elements-bg-depth-1 border border-bolt-elements-borderColor rounded-lg shadow-lg z-40 max-h-[calc(100vh-6rem)] overflow-hidden">
+    <div className="fixed bottom-0 left-0 right-0 w-full md:bottom-auto md:right-4 md:top-20 md:w-80 md:left-auto bg-bolt-elements-bg-depth-1 border-t md:border border-bolt-elements-borderColor rounded-t-lg md:rounded-lg shadow-[0_-4px_24px_rgba(0,0,0,0.1)] md:shadow-lg z-40 max-h-[50vh] md:max-h-[calc(100vh-6rem)] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-bolt-elements-borderColor">
         <h3 className="font-medium text-bolt-elements-textPrimary">Element Inspector</h3>

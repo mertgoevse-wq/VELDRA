@@ -18,10 +18,10 @@ const DEFAULT_TIMEOUT_MS = 1000;
 const EXECUTION_PROVIDER_BY_MODE: Record<ExecutionRuntimeMode, string | null> = {
   webcontainer: 'webcontainer',
   'android-fallback': null,
-  remote: null,
+  remote: 'remote-runtime',
 };
 
-const COMMAND_EXECUTION_REQUIREMENTS = { interactiveShell: true } as const;
+const COMMAND_EXECUTION_REQUIREMENTS = {} as const;
 
 function timeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -126,4 +126,42 @@ export async function getExecutionProviderStatus(
       capabilities: provider.capabilities,
     };
   }
+}
+
+import { runtimeModeStore } from '~/lib/stores/runtime-mode';
+import type { SandboxSession } from './types';
+import { WORK_DIR_NAME } from '~/utils/constants';
+
+let activeSession: SandboxSession | null = null;
+let activeSessionPromise: Promise<SandboxSession | null> | null = null;
+let lastMode: ExecutionRuntimeMode | null = null;
+
+export function clearActiveSandboxSession(): void {
+  activeSession = null;
+  activeSessionPromise = null;
+}
+
+export async function getActiveSandboxSession(): Promise<SandboxSession | null> {
+  const mode = runtimeModeStore.get().mode;
+  if (lastMode !== mode) {
+    clearActiveSandboxSession();
+    lastMode = mode;
+  }
+
+  if (activeSession) return activeSession;
+  if (activeSessionPromise) return activeSessionPromise;
+
+  activeSessionPromise = (async () => {
+    const status = await getExecutionProviderStatus(mode);
+    if (status.state === 'available' && status.providerId) {
+      const provider = getSandboxProvider(status.providerId);
+      if (provider) {
+        activeSession = await provider.create({ workdirName: WORK_DIR_NAME });
+        return activeSession;
+      }
+    }
+    return null;
+  })();
+
+  return activeSessionPromise;
 }

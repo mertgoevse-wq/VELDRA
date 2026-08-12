@@ -809,11 +809,13 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
       <div className="bg-bolt-elements-background-depth-2 p-2 flex items-center flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <IconButton icon="i-ph:arrow-clockwise" onClick={reloadPreview} />
-          <IconButton
-            icon="i-ph:selection"
-            onClick={() => setIsSelectionMode(!isSelectionMode)}
-            className={isSelectionMode ? 'bg-bolt-elements-background-depth-3' : ''}
-          />
+          {(!isCapacitor() && typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia) && (
+            <IconButton
+              icon="i-ph:selection"
+              onClick={() => setIsSelectionMode(!isSelectionMode)}
+              className={isSelectionMode ? 'bg-bolt-elements-background-depth-3' : ''}
+            />
+          )}
         </div>
 
         <div className="flex-grow min-w-[140px] flex items-center gap-1 bg-bolt-elements-preview-addressBar-background border border-bolt-elements-borderColor text-bolt-elements-preview-addressBar-text rounded-full px-1 py-1 text-sm hover:bg-bolt-elements-preview-addressBar-backgroundHover hover:focus-within:bg-bolt-elements-preview-addressBar-backgroundActive focus-within:bg-bolt-elements-preview-addressBar-backgroundActive focus-within-border-bolt-elements-borderColorActive focus-within:text-bolt-elements-preview-addressBar-textActive">
@@ -1145,11 +1147,13 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                   allow="geolocation; ch-ua-full-version-list; cross-origin-isolated; screen-wake-lock; publickey-credentials-get; shared-storage-select-url; ch-ua-arch; bluetooth; compute-pressure; ch-prefers-reduced-transparency; deferred-fetch; usb; ch-save-data; publickey-credentials-create; shared-storage; deferred-fetch-minimal; run-ad-auction; ch-ua-form-factors; ch-downlink; otp-credentials; payment; ch-ua; ch-ua-model; ch-ect; autoplay; camera; private-state-token-issuance; accelerometer; ch-ua-platform-version; idle-detection; private-aggregation; interest-cohort; ch-viewport-height; local-fonts; ch-ua-platform; midi; ch-ua-full-version; xr-spatial-tracking; clipboard-read; gamepad; display-capture; keyboard-map; join-ad-interest-group; ch-width; ch-prefers-reduced-motion; browsing-topics; encrypted-media; gyroscope; serial; ch-rtt; ch-ua-mobile; window-management; unload; ch-dpr; ch-prefers-color-scheme; ch-ua-wow64; attribution-reporting; fullscreen; identity-credentials-get; private-state-token-redemption; hid; ch-ua-bitness; storage-access; sync-xhr; ch-device-memory; ch-viewport-width; picture-in-picture; magnetometer; clipboard-write; microphone"
                 />
               )}
-              <ScreenshotSelector
-                isSelectionMode={isSelectionMode}
-                setIsSelectionMode={setIsSelectionMode}
-                containerRef={iframeRef}
-              />
+              {(!isCapacitor() && typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia) && (
+                <ScreenshotSelector
+                  isSelectionMode={isSelectionMode}
+                  setIsSelectionMode={setIsSelectionMode}
+                  containerRef={iframeRef}
+                />
+              )}
             </>
           ) : remotePreview?.status === 'running' && remotePreview.previewUrl ? (
             <div className="flex flex-col w-full h-full relative">

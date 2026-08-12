@@ -103,10 +103,15 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             gradientUnits="userSpaceOnUse"
             gradientTransform="rotate(-45)"
           >
-            <stop offset="0%" stopColor="#b44aff" stopOpacity="0%"></stop>
-            <stop offset="40%" stopColor="#b44aff" stopOpacity="80%"></stop>
-            <stop offset="50%" stopColor="#b44aff" stopOpacity="80%"></stop>
-            <stop offset="100%" stopColor="#b44aff" stopOpacity="0%"></stop>
+            <stop offset="0%" stopColor="#50ADE2" stopOpacity="0%"></stop>
+            <stop offset="40%" stopColor="#50ADE2" stopOpacity="80%"></stop>
+            <stop offset="50%" stopColor="#50ADE2" stopOpacity="80%"></stop>
+            <stop offset="100%" stopColor="#50ADE2" stopOpacity="0%"></stop>
+          </linearGradient>
+          <linearGradient id="line-gradient-light">
+            <stop offset="0%" stopColor="rgba(80, 173, 226,0)"></stop>
+            <stop offset="50%" stopColor="rgba(80, 173, 226,1)"></stop>
+            <stop offset="100%" stopColor="rgba(80, 173, 226,0)"></stop>
           </linearGradient>
           <linearGradient id="shine-gradient">
             <stop offset="0%" stopColor="white" stopOpacity="0%"></stop>
@@ -303,12 +308,15 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               )}
             </IconButton>
 
-            <SpeechRecognitionButton
-              isListening={props.isListening}
-              onStart={props.startListening}
-              onStop={props.stopListening}
-              disabled={props.isStreaming}
-            />
+            {typeof window !== 'undefined' &&
+              ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) && (
+                <SpeechRecognitionButton
+                  isListening={props.isListening}
+                  onStart={props.startListening}
+                  onStop={props.stopListening}
+                  disabled={props.isStreaming}
+                />
+            )}
             {props.chatStarted && (
               <IconButton
                 title="Discuss"
