@@ -2,8 +2,16 @@
 
 **Updated:** 2026-08-12
 **Branch:** `claude/veldra-integration-freebuff` (new integration branch, created from `origin/freebuff/veldra-mobile-development`; `main` untouched)
-**Current commit:** `1199b9b` — "docs: record finalization audit pass (composer, Guided Build, fallbacks, multi-viewport)"
+**Current commit:** `d47e9d1` — "feat(composer): consolidate paperclip/paste onto the shared upload pipeline"
 **Remote:** `origin/claude/veldra-integration-freebuff`, verified `HEAD == origin/claude/veldra-integration-freebuff`
+
+## Productization pass 2 (this session) — header re-verified at 8 widths, composer consolidated, a11y confirmed
+
+- **Header/modal overlap re-verified with a stronger check** across 360×800/375×812/390×844/412×915/768×1024/1024×768/1280×800/1440×900: previous sessions only used a Y-range heuristic (false-positive-prone); this pass used `elementFromPoint` at the dialog title's own coordinates to confirm the dialog is genuinely the topmost paint target (`isDialogContent: true`) at every single width, mobile and desktop. Zero overflow anywhere. No regression, no further fix needed.
+- **Composer upload paths consolidated** (`d47e9d1`): paperclip and paste previously used an older, error-handling-free single-file `FileReader` path, inconsistent with drag-and-drop's parallel/error-isolated one. Extracted `processImageFiles()` into `composer.ts`, all three entry points now share it. Paperclip gained real multi-file support (`input.multiple = true`, previously silently took only `files[0]`); paste now collects every image clipboard item instead of stopping at the first. 3 new regression tests (success path, real per-file failure isolation via a `FileReader` subclass forced to error, empty-selection case) — baseline now 324/324. Verified end-to-end via Playwright (direct DOM query of the resulting `<img>` elements, not a screenshot guess, since a visual check was initially misleading due to a pre-existing composer-layout quirk unrelated to this change).
+- **Bottom-sheet accessibility confirmed working, not fixed** (nothing was broken): keyboard-only open (focus → trigger → Enter → dialog opens, focus correctly moves to the search input), Escape closes it, focus correctly returns to the trigger, `aria-expanded` toggles correctly. Real behavior verified via Playwright keyboard simulation, not assumed from reading the code.
+
+324/324 tests, typecheck clean, lint clean, `git diff --check` clean.
 
 ## Finalization pass (this session) — composer/Guided Build/fallback audit, no new bugs
 

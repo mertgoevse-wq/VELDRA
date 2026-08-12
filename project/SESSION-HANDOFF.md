@@ -2,12 +2,22 @@
 
 **Last updated:** 2026-08-12
 **Branch:** `claude/veldra-integration-freebuff` (new integration branch from `origin/freebuff/veldra-mobile-development`; `main` untouched, do not push there)
-**Current commit:** `1199b9b` — "docs: record finalization audit pass (composer, Guided Build, fallbacks, multi-viewport)"
+**Current commit:** `d47e9d1` — "feat(composer): consolidate paperclip/paste onto the shared upload pipeline"
 **Canonical remote:** `https://github.com/mertgoevse-wq/VELDRA`
 **Last verified remote state:** `HEAD == origin/claude/veldra-integration-freebuff`
 **Working tree:** clean
 
-## Finalization pass (this session) — audited every "unfinished" item, found no new bugs
+## Productization pass 2 (this session)
+
+Picking this up cold: continued from the prior session's "NEXT" list (consolidate composer upload paths, accessibility pass on bottom sheets).
+
+- **Header/modal overlap fix re-verified at 8 widths** (360-1440px, mobile+desktop) with a real `elementFromPoint` hit-test at the dialog title's coordinates — not the earlier Y-range heuristic, which produces false positives. Confirmed genuinely fixed everywhere, no regression.
+- **Composer upload consolidated** (`d47e9d1`): paperclip/paste now share `composer.ts`'s new `processImageFiles()` with drag-and-drop — parallel reads, per-file error isolation, toast feedback. Paperclip gained real multi-file support. 3 new regression tests, baseline now **324/324**. Note: `@playwright/test` is not actually installed and `tests/preview/` doesn't exist (dead config referenced by `playwright.config.preview.ts`) — regression coverage for the two prior critical CSS-stacking bugs (header z-index, model-sheet z-index) is intentionally *not* attempted as automated E2E tests; they're structural fixes verified once, thoroughly, via the ad hoc Playwright scripts already documented in this file's history.
+- **Bottom-sheet accessibility verified working** (no fix needed): keyboard-only open/close, focus moves to search on open and returns to the trigger on close, `aria-expanded` toggles correctly — real Playwright keyboard-simulation test, not a code read.
+
+**Not reached this pass**: Terminal/Preview interactive re-verification (would need a real remote runtime server — code-reviewed as substantial and real, not decorative, in the prior pass), Android APK rebuild (no functional/behavior change this pass, previous APK already reflects the last functional fix), physical device runtime testing (still no device available).
+
+## Finalization pass (2026-08-12) — audited every "unfinished" item, found no new bugs
 
 Continuation of the ULTRACODE sprint below. Went through the prior handoff's full "not reached" list with real interaction tests:
 
