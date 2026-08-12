@@ -70,6 +70,10 @@ android/app/src/main/assets/public/
 !docs/ANDROID_LLM_API_BRIDGE.md
 !docs/ANDROID_DEVICE_TEST_PLAN.md
 !docs/VELDRA_MIGRATION_PLAN.md
+!docs/design/
+!docs/design/*.md
+!VELDRA-RESEARCH/
+!VELDRA-RESEARCH/*.md
 !project/SESSION-HANDOFF.md
 !project/SOURCE-CONSOLIDATION-2026-08-09.md
 

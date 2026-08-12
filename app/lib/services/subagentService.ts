@@ -67,6 +67,7 @@ export class SubagentService {
         taskId,
         model: options.model,
         systemPrompt: options.systemPrompt,
+        task: options.initialPrompt,
         status: 'running',
         createdAt: Date.now(),
       });
@@ -86,6 +87,7 @@ export class SubagentService {
           ...subagentsStore.get()[taskId],
           status: 'completed',
           result: result.text,
+          completedAt: Date.now(),
         });
       }).catch(error => {
         logger.error(`Subagent ${taskId} execution failed`, error);
@@ -93,6 +95,7 @@ export class SubagentService {
           ...subagentsStore.get()[taskId],
           status: 'failed',
           error: error instanceof Error ? error.message : String(error),
+          completedAt: Date.now(),
         });
       });
 

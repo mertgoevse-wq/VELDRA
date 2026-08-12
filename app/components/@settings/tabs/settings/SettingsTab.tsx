@@ -6,12 +6,7 @@ import { classNames } from '~/utils/classNames';
 import { Switch } from '~/components/ui/Switch';
 import type { UserProfile } from '~/components/@settings/core/types';
 import { isMac } from '~/utils/os';
-import { setSkin, skinStore, type Skin } from '~/lib/stores/skin';
-
-const SKIN_LABELS: Record<Skin, string> = {
-  veldra: 'VELDRA (default)',
-  obsidian: 'Obsidian',
-};
+import { setSkin, skinStore, SKIN_OPTIONS, type Skin } from '~/lib/stores/skin';
 
 // Helper to get modifier key symbols/text
 const getModifierSymbol = (modifier: string): string => {
@@ -29,6 +24,7 @@ const getModifierSymbol = (modifier: string): string => {
 
 export default function SettingsTab() {
   const skin = useStore(skinStore);
+  const selectedSkin = SKIN_OPTIONS.find((option) => option.value === skin);
   const [currentTimezone, setCurrentTimezone] = useState('');
   const [settings, setSettings] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('bolt_user_profile');
@@ -71,30 +67,31 @@ export default function SettingsTab() {
     <div className="space-y-4">
       {/* Language & Notifications */}
       <motion.div
-        className="bg-white dark:bg-[#0A0A0A] rounded-lg shadow-sm dark:shadow-none p-4 space-y-4"
+        className="bg-bolt-elements-background-depth-2 rounded-lg shadow-sm p-4 space-y-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <div className="i-ph:palette-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:palette-fill w-4 h-4 text-bolt-elements-item-contentAccent" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Preferences</span>
         </div>
 
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="i-ph:translate-fill w-4 h-4 text-bolt-elements-textSecondary" />
-            <label className="block text-sm text-bolt-elements-textSecondary">Language</label>
+            <label htmlFor="settings-language" className="block text-sm text-bolt-elements-textSecondary">Language</label>
           </div>
           <select
+            id="settings-language"
             value={settings.language}
             onChange={(e) => setSettings((prev) => ({ ...prev, language: e.target.value }))}
             className={classNames(
               'w-full px-3 py-2 rounded-lg text-sm',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-1',
+              'border border-bolt-elements-borderColor',
               'text-bolt-elements-textPrimary',
-              'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+              'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
               'transition-all duration-200',
             )}
           >
@@ -114,36 +111,42 @@ export default function SettingsTab() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="i-ph:palette-fill w-4 h-4 text-bolt-elements-textSecondary" />
-            <label className="block text-sm text-bolt-elements-textSecondary">Skin</label>
+            <label htmlFor="settings-skin" className="block text-sm text-bolt-elements-textSecondary">Skin</label>
           </div>
           <select
+            id="settings-skin"
             value={skin}
+            aria-describedby="skin-description"
             onChange={(e) => {
               const next = e.target.value as Skin;
               setSkin(next);
-              toast.success(`Skin set to ${SKIN_LABELS[next]}`);
+              const label = SKIN_OPTIONS.find((option) => option.value === next)?.label ?? next;
+              toast.success(`Skin set to ${label}`);
             }}
             className={classNames(
               'w-full px-3 py-2 rounded-lg text-sm',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-1',
+              'border border-bolt-elements-borderColor',
               'text-bolt-elements-textPrimary',
-              'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+              'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
               'transition-all duration-200',
             )}
           >
-            {(Object.keys(SKIN_LABELS) as Skin[]).map((value) => (
-              <option key={value} value={value}>
-                {SKIN_LABELS[value]}
+            {SKIN_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
+          <p id="skin-description" className="mt-2 text-xs text-bolt-elements-textTertiary">
+            {selectedSkin?.description}
+          </p>
         </div>
 
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="i-ph:bell-fill w-4 h-4 text-bolt-elements-textSecondary" />
-            <label className="block text-sm text-bolt-elements-textSecondary">Notifications</label>
+            <span id="settings-notifications-label" className="block text-sm text-bolt-elements-textSecondary">Notifications</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-bolt-elements-textSecondary">
@@ -151,6 +154,7 @@ export default function SettingsTab() {
             </span>
             <Switch
               checked={settings.notifications}
+              aria-labelledby="settings-notifications-label"
               onCheckedChange={(checked) => {
                 // Update local state
                 setSettings((prev) => ({ ...prev, notifications: checked }));
@@ -180,30 +184,31 @@ export default function SettingsTab() {
 
       {/* Timezone */}
       <motion.div
-        className="bg-white dark:bg-[#0A0A0A] rounded-lg shadow-sm dark:shadow-none p-4"
+        className="bg-bolt-elements-background-depth-2 rounded-lg shadow-sm p-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <div className="i-ph:clock-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:clock-fill w-4 h-4 text-bolt-elements-item-contentAccent" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Time Settings</span>
         </div>
 
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="i-ph:globe-fill w-4 h-4 text-bolt-elements-textSecondary" />
-            <label className="block text-sm text-bolt-elements-textSecondary">Timezone</label>
+            <label htmlFor="settings-timezone" className="block text-sm text-bolt-elements-textSecondary">Timezone</label>
           </div>
           <select
+            id="settings-timezone"
             value={settings.timezone}
             onChange={(e) => setSettings((prev) => ({ ...prev, timezone: e.target.value }))}
             className={classNames(
               'w-full px-3 py-2 rounded-lg text-sm',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-1',
+              'border border-bolt-elements-borderColor',
               'text-bolt-elements-textPrimary',
-              'focus:outline-none focus:ring-2 focus:ring-purple-500/30',
+              'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
               'transition-all duration-200',
             )}
           >
@@ -214,33 +219,33 @@ export default function SettingsTab() {
 
       {/* Simplified Keyboard Shortcuts */}
       <motion.div
-        className="bg-white dark:bg-[#0A0A0A] rounded-lg shadow-sm dark:shadow-none p-4"
+        className="bg-bolt-elements-background-depth-2 rounded-lg shadow-sm p-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <div className="i-ph:keyboard-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:keyboard-fill w-4 h-4 text-bolt-elements-item-contentAccent" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Keyboard Shortcuts</span>
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between p-2 rounded-lg bg-[#FAFAFA] dark:bg-[#1A1A1A]">
+          <div className="flex items-center justify-between p-2 rounded-lg bg-bolt-elements-background-depth-3">
             <div className="flex flex-col">
               <span className="text-sm text-bolt-elements-textPrimary">Toggle Theme</span>
               <span className="text-xs text-bolt-elements-textSecondary">Switch between light and dark mode</span>
             </div>
             <div className="flex items-center gap-1">
-              <kbd className="px-2 py-1 text-xs font-semibold text-bolt-elements-textSecondary bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] rounded shadow-sm">
+              <kbd className="px-2 py-1 text-xs font-semibold text-bolt-elements-textSecondary bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded shadow-sm">
                 {getModifierSymbol('meta')}
               </kbd>
-              <kbd className="px-2 py-1 text-xs font-semibold text-bolt-elements-textSecondary bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] rounded shadow-sm">
+              <kbd className="px-2 py-1 text-xs font-semibold text-bolt-elements-textSecondary bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded shadow-sm">
                 {getModifierSymbol('alt')}
               </kbd>
-              <kbd className="px-2 py-1 text-xs font-semibold text-bolt-elements-textSecondary bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] rounded shadow-sm">
+              <kbd className="px-2 py-1 text-xs font-semibold text-bolt-elements-textSecondary bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded shadow-sm">
                 {getModifierSymbol('shift')}
               </kbd>
-              <kbd className="px-2 py-1 text-xs font-semibold text-bolt-elements-textSecondary bg-white dark:bg-[#0A0A0A] border border-[#E5E5E5] dark:border-[#1A1A1A] rounded shadow-sm">
+              <kbd className="px-2 py-1 text-xs font-semibold text-bolt-elements-textSecondary bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded shadow-sm">
                 D
               </kbd>
             </div>

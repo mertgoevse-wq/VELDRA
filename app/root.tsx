@@ -12,6 +12,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
 import { ClientOnly } from 'remix-utils/client-only';
 import { cssTransition, ToastContainer } from 'react-toastify';
+import { MotionConfig } from 'framer-motion';
 import { isCapacitor } from '~/lib/adapters/platform';
 
 import reactToastifyStyles from 'react-toastify/dist/ReactToastify.css?url';
@@ -79,7 +80,10 @@ const inlineThemeCode = stripIndents`
 
     document.querySelector('html')?.setAttribute('data-theme', theme);
 
-    const skin = localStorage.getItem('bolt_skin') || 'veldra';
+    const storedSkin = localStorage.getItem('bolt_skin');
+    const skin = ['core', 'dark', 'light', 'midnight', 'matrix', 'aurora', 'industrial', 'minimal'].includes(storedSkin || '')
+      ? storedSkin || 'core'
+      : 'core';
     document.querySelector('html')?.setAttribute('data-skin', skin);
   }
 `;
@@ -130,7 +134,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [skin]);
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <ClientOnly>{() => <DndProvider backend={getDndBackend()}>{children}</DndProvider>}</ClientOnly>
       <ToastContainer
         closeButton={({ closeToast }) => {
@@ -159,7 +163,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       />
       <ScrollRestoration />
       <Scripts />
-    </>
+    </MotionConfig>
   );
 }
 
