@@ -2,13 +2,11 @@ import { memo } from 'react';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import { classNames } from '~/utils/classNames';
 
-interface SwitchProps {
+export interface SwitchProps extends React.ComponentPropsWithoutRef<typeof SwitchPrimitive.Root> {
   className?: string;
-  checked?: boolean;
-  onCheckedChange?: (event: boolean) => void;
 }
 
-export const Switch = memo(({ className, onCheckedChange, checked }: SwitchProps) => {
+export const Switch = memo(({ className, ...props }: SwitchProps) => {
   return (
     <SwitchPrimitive.Root
       className={classNames(
@@ -19,8 +17,7 @@ export const Switch = memo(({ className, onCheckedChange, checked }: SwitchProps
         'data-[state=checked]:bg-bolt-elements-item-contentAccent',
         className,
       )}
-      checked={checked}
-      onCheckedChange={(e) => onCheckedChange?.(e)}
+      {...props}
     >
       <SwitchPrimitive.Thumb
         className={classNames(

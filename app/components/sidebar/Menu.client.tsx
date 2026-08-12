@@ -70,6 +70,7 @@ export const Menu = () => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [list, setList] = useState<ChatHistoryItem[]>([]);
   const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [dialogContent, setDialogContent] = useState<DialogContent>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const profile = useStore(profileStore);
@@ -83,10 +84,16 @@ export const Menu = () => {
 
   const loadEntries = useCallback(() => {
     if (db) {
+      setIsLoading(true);
       getAll(db)
         .then((list) => list.filter((item) => item.urlId && item.description))
         .then(setList)
-        .catch((error) => toast.error(error.message));
+        .catch((error) => {
+          toast.error(error.message);
+          // UX Audit: missing inline error state. Since we are just setting list to empty, we rely on toast for now,
+          // but we can at least stop loading.
+        })
+        .finally(() => setIsLoading(false));
     }
   }, []);
 
@@ -424,11 +431,15 @@ export const Menu = () => {
             )}
           </div>
           <div className="flex-1 overflow-auto px-3 pb-3">
-            {filteredList.length === 0 && (
+            {isLoading && list.length === 0 ? (
+              <div className="px-4 py-6 flex justify-center">
+                <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-2xl animate-spin" aria-label="Loading chat history" role="status"></div>
+              </div>
+            ) : filteredList.length === 0 ? (
               <div className="px-4 text-gray-500 dark:text-gray-400 text-sm">
                 {list.length === 0 ? 'No previous conversations' : 'No matches found'}
               </div>
-            )}
+            ) : null}
             <DialogRoot open={dialogContent !== null}>
               {binDates(filteredList).map(({ category, items }) => (
                 <div key={category} className="mt-2 first:mt-0 space-y-1">

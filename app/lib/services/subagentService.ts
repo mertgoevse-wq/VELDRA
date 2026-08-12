@@ -2,6 +2,7 @@ import { getActiveSandboxSession } from '~/lib/execution/runtime-status';
 import { createScopedLogger } from '~/utils/logger';
 import { LLMManager } from '~/lib/modules/llm/manager';
 import { generateText, type Message } from 'ai';
+import { subagentsStore } from '~/lib/stores/subagents';
 
 const logger = createScopedLogger('subagent-service');
 
@@ -62,6 +63,14 @@ export class SubagentService {
 
       const taskId = `subagent-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
       
+      subagentsStore.setKey(taskId, {
+        taskId,
+        model: options.model,
+        systemPrompt: options.systemPrompt,
+        status: 'running',
+        createdAt: Date.now(),
+      });
+
       // Run asynchronously without blocking the main agent
       generateText({
         model: modelInstance,
@@ -73,9 +82,18 @@ export class SubagentService {
         maxSteps: 5,
       }).then(result => {
         logger.info(`Subagent ${taskId} completed task. Result:\n${result.text}`);
-        // In the future, this result could be piped to the UI or stored in a status registry
+        subagentsStore.setKey(taskId, {
+          ...subagentsStore.get()[taskId],
+          status: 'completed',
+          result: result.text,
+        });
       }).catch(error => {
         logger.error(`Subagent ${taskId} execution failed`, error);
+        subagentsStore.setKey(taskId, {
+          ...subagentsStore.get()[taskId],
+          status: 'failed',
+          error: error instanceof Error ? error.message : String(error),
+        });
       });
 
       return `Subagent spawned successfully in the background with Task ID: ${taskId}. It will perform its work asynchronously.`;

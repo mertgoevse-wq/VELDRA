@@ -195,6 +195,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
       >
         <textarea
           ref={props.textareaRef}
+          aria-label="Chat input"
           className={classNames(
             'w-full pl-4 pt-4 pr-16 outline-none resize-none text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary bg-transparent text-sm',
             'transition-all duration-200',
@@ -227,6 +228,8 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                   props.setImageDataList?.([...props.imageDataList, base64Image]);
                 };
                 reader.readAsDataURL(file);
+              } else {
+                toast.error('Unsupported file type. Only images are allowed.');
               }
             });
           }}
@@ -298,7 +301,6 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               className={classNames('transition-all', props.enhancingPrompt ? 'opacity-100' : '')}
               onClick={() => {
                 props.enhancePrompt?.();
-                toast.success('Prompt enhanced!');
               }}
             >
               {props.enhancingPrompt ? (

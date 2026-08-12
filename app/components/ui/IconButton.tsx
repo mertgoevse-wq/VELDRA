@@ -3,7 +3,7 @@ import { classNames } from '~/utils/classNames';
 
 type IconSize = 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 
-interface BaseIconButtonProps {
+interface BaseIconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   size?: IconSize;
   className?: string;
   iconClassName?: string;
@@ -20,7 +20,7 @@ type IconButtonWithoutChildrenProps = {
 
 type IconButtonWithChildrenProps = {
   icon?: undefined;
-  children: string | JSX.Element | JSX.Element[];
+  children: string | React.ReactNode;
 } & BaseIconButtonProps;
 
 type IconButtonProps = IconButtonWithoutChildrenProps | IconButtonWithChildrenProps;
@@ -39,6 +39,7 @@ export const IconButton = memo(
         title,
         onClick,
         children,
+        ...props
       }: IconButtonProps,
       ref: ForwardedRef<HTMLButtonElement>,
     ) => {
@@ -46,7 +47,7 @@ export const IconButton = memo(
         <button
           ref={ref}
           className={classNames(
-            'flex items-center text-bolt-elements-item-contentDefault bg-transparent enabled:hover:text-bolt-elements-item-contentActive rounded-md p-1 enabled:hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed focus:outline-none',
+            'flex items-center text-bolt-elements-item-contentDefault bg-transparent enabled:hover:text-bolt-elements-item-contentActive rounded-md p-1 enabled:hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-bolt-elements-borderColorActive',
             {
               [classNames('opacity-30', disabledClassName)]: disabled,
             },
@@ -61,6 +62,7 @@ export const IconButton = memo(
 
             onClick?.(event);
           }}
+          {...props}
         >
           {children ? children : <div className={classNames(icon, getIconSize(size), iconClassName)}></div>}
         </button>

@@ -34,6 +34,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
 import { RuntimeModeBanner } from '~/components/mobile/RuntimeModeBanner';
+import { SubagentActivityWidget } from './SubagentActivityWidget';
 import { isCapacitor } from '~/lib/adapters/platform';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { BottomNav, type MobileTab } from '~/components/mobile/BottomNav';
@@ -515,6 +516,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   )}
                   {llmErrorAlert && <LlmErrorAlert alert={llmErrorAlert} clearAlert={() => clearLlmErrorAlert?.()} />}
                 </div>
+                <SubagentActivityWidget />
                 {progressAnnotations && <ProgressCompilation data={progressAnnotations} />}
                 <ChatBox
                   isModelSettingsCollapsed={isModelSettingsCollapsed}
