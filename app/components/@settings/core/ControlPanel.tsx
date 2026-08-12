@@ -303,19 +303,19 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
                 >
                   <div
                     className={classNames(
-                      'p-6 transition-opacity duration-150',
+                      'p-4 sm:p-6 transition-opacity duration-150',
                       activeTab || showTabManagement ? 'opacity-100' : 'opacity-100',
                     )}
                   >
                     {activeTab ? (
                       getTabComponent(activeTab)
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 relative">
                         {visibleTabs.map((tab, index) => (
                           <div
                             key={tab.id}
                             className={classNames(
-                              'aspect-[1.5/1] transition-transform duration-100 ease-out',
+                              'aspect-auto sm:aspect-[1.5/1] transition-transform duration-100 ease-out',
                               'hover:scale-[1.01]',
                             )}
                             style={{

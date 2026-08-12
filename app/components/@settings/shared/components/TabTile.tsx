@@ -31,8 +31,14 @@ export const TabTile: React.FC<TabTileProps> = ({
     <Tooltip.Provider delayDuration={0}>
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
-          <div className={classNames('min-h-[160px] list-none', className || '')}>
-            <div className="relative h-full veldra-radius-surface border border-[#E5E5E5] dark:border-[#333333] p-0.5">
+          {/*
+           * Below `sm`, this renders as a compact horizontal list row (icon + title + one-line
+           * description + chevron) instead of the sm+ card -- 14 tabs at min-h-[160px] each forced
+           * ~2500px of scroll on a 390px phone to reach e.g. "Image Studio". One adaptive markup
+           * (no duplicate JSX, no JS breakpoint check) so both layouts always stay in sync.
+           */}
+          <div className={classNames('min-h-0 sm:min-h-[160px] list-none', className || '')}>
+            <div className="relative sm:h-full veldra-radius-surface border border-[#E5E5E5] dark:border-[#333333] p-0.5">
               <GlowingEffect
                 blur={0}
                 borderWidth={1}
@@ -46,7 +52,8 @@ export const TabTile: React.FC<TabTileProps> = ({
               <div
                 onClick={onClick}
                 className={classNames(
-                  'relative flex flex-col items-center justify-center h-full p-4 veldra-radius-control veldra-motion',
+                  'relative flex items-center gap-3 p-3 sm:flex-col sm:items-center sm:justify-center sm:h-full sm:gap-0 sm:p-4',
+                  'veldra-radius-control veldra-motion',
                   'bg-white dark:bg-[#141414]',
                   'group cursor-pointer',
                   'hover:bg-accent-50 dark:hover:bg-[#1a1a1a]',
@@ -57,8 +64,8 @@ export const TabTile: React.FC<TabTileProps> = ({
                 {/* Icon */}
                 <div
                   className={classNames(
-                    'relative',
-                    'w-14 h-14',
+                    'relative shrink-0',
+                    'w-10 h-10 sm:w-14 sm:h-14',
                     'flex items-center justify-center',
                     'rounded-xl',
                     'bg-gray-100 dark:bg-gray-800',
@@ -74,7 +81,7 @@ export const TabTile: React.FC<TabTileProps> = ({
                     return (
                       <IconComponent
                         className={classNames(
-                          'w-8 h-8',
+                          'w-6 h-6 sm:w-8 sm:h-8',
                           'text-gray-600 dark:text-gray-300',
                           'group-hover:text-accent-500 dark:group-hover:text-accent-400/80',
                           'transition-colors duration-100 ease-out',
@@ -86,10 +93,10 @@ export const TabTile: React.FC<TabTileProps> = ({
                 </div>
 
                 {/* Label and Description */}
-                <div className="flex flex-col items-center mt-4 w-full">
+                <div className="flex min-w-0 flex-1 flex-col items-start sm:mt-4 sm:w-full sm:flex-none sm:items-center">
                   <h3
                     className={classNames(
-                      'text-[15px] font-medium leading-snug mb-2',
+                      'w-full truncate text-[15px] font-medium leading-snug sm:mb-2 sm:overflow-visible sm:whitespace-normal sm:text-center',
                       'text-gray-700 dark:text-gray-200',
                       'group-hover:text-accent-600 dark:group-hover:text-accent-300/90',
                       'transition-colors duration-100 ease-out',
@@ -101,10 +108,9 @@ export const TabTile: React.FC<TabTileProps> = ({
                   {description && (
                     <p
                       className={classNames(
-                        'text-[13px] leading-relaxed',
+                        'line-clamp-1 w-full text-[13px] leading-relaxed sm:line-clamp-none sm:max-w-[85%] sm:w-auto',
                         'text-gray-500 dark:text-gray-400',
-                        'max-w-[85%]',
-                        'text-center',
+                        'sm:text-center',
                         'group-hover:text-accent-500 dark:group-hover:text-accent-400/70',
                         'transition-colors duration-100 ease-out',
                         isActive ? 'text-accent-400 dark:text-accent-400/80' : '',
@@ -115,10 +121,13 @@ export const TabTile: React.FC<TabTileProps> = ({
                   )}
                 </div>
 
+                {/* Mobile-only affordance: card layout at sm+ doesn't need a chevron */}
+                <div className="i-ph:caret-right h-4 w-4 shrink-0 text-gray-400 dark:text-gray-600 sm:hidden" />
+
                 {/* Update Indicator with Tooltip */}
                 {hasUpdate && (
                   <>
-                    <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-accent-500 dark:bg-accent-400 animate-pulse" />
+                    <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-accent-500 dark:bg-accent-400 animate-pulse sm:right-4 sm:top-4" />
                     <Tooltip.Portal>
                       <Tooltip.Content
                         className={classNames(
