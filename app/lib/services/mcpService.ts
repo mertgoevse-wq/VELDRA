@@ -18,7 +18,7 @@ import {
 } from '~/utils/constants';
 import { createScopedLogger } from '~/utils/logger';
 import { SkillService } from '~/lib/services/skillService';
-import { SubagentService } from '~/lib/services/subagentService';
+import { spawnSubagentWithOrchestrator } from '~/lib/orchestrator/integration';
 
 const logger = createScopedLogger('mcp-service');
 
@@ -227,7 +227,8 @@ export class MCPService {
           initialPrompt: z.string().describe('The task or query to kick off the subagent'),
         }),
         execute: async (args: any) => {
-          return await SubagentService.getInstance().spawnSubagent(args);
+          // Use orchestrator integration (with automatic fallback to legacy if disabled)
+          return await spawnSubagentWithOrchestrator(args);
         },
       },
     };
