@@ -31,6 +31,8 @@ import { BottomNav } from '~/components/mobile/BottomNav';
 import type { MobileTab } from '~/components/mobile/BottomNav';
 import AndroidSettingsPanel from '~/components/mobile/AndroidSettingsPanel';
 
+import { startNewAndroidChat } from '~/lib/stores/androidChatSession';
+
 import 'react-toastify/dist/ReactToastify.css';
 
 // Lazy-load the heavy chat/workbench components to keep initial load fast
@@ -228,9 +230,12 @@ export default function AndroidShell() {
             })}
             aria-hidden={activeTab !== 'chat'}
           >
+            {/* New Chat button — top right */}
+            <button className="android-new-chat-btn" onClick={() => startNewAndroidChat()} aria-label="New chat">
+              <div className="i-ph:plus-bold" style={{ width: 18, height: 18 }} />
+            </button>
             <ChatErrorBoundary>
               <Suspense fallback={<LoadingScreen />}>
-                {/* Only mount chat when on chat tab or when it has been visited */}
                 <ChatLazy />
               </Suspense>
             </ChatErrorBoundary>

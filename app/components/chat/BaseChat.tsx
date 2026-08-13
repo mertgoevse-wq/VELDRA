@@ -406,12 +406,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         className={classNames(styles.BaseChat, 'relative flex h-full w-full overflow-hidden')}
         data-chat-visible={showChat}
       >
-        <ClientOnly>{() => <Menu />}</ClientOnly>
+        {!isCapacitor() && <ClientOnly>{() => <Menu />}</ClientOnly>}
         <div className="flex flex-col lg:flex-row overflow-y-auto w-full h-full">
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
-            <ClientOnly>{() => <RuntimeModeBanner />}</ClientOnly>
+            {!isCapacitor() && <ClientOnly>{() => <RuntimeModeBanner />}</ClientOnly>}
             {!chatStarted && (
-              <div id="intro" className="relative mt-[10vh] lg:mt-[14vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
+              <div id="intro" className="relative mt-[6vh] lg:mt-[14vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
                 <BreathingBackground />
                 <div
                   aria-hidden="true"

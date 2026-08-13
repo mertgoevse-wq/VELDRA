@@ -24,15 +24,24 @@
   overflow: hidden;
   background-color: var(--bolt-elements-bg-depth-1, #0c0c0c);
   color: var(--bolt-elements-textPrimary, #e4e4e7);
-  font-family:
-    'Inter',
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--veldra-font-ui, 'Inter', system-ui, -apple-system, sans-serif);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 
   /* Prevent text selection on UI elements (feels native) */
   -webkit-user-select: none;
   user-select: none;
+
+  /* Safe area insets for notched/punch-hole displays */
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* AndroidShell has no header bar — zero out the variable so child components
+   don't reserve unused space for it */
+.android-shell {
+  --header-height: 0px;
 }
 
 /* Allow text selection inside chat messages and inputs */
@@ -54,10 +63,14 @@
   flex: 1;
   overflow: hidden;
   position: relative;
-
-  /* Reserve space for bottom nav + safe area */
-  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
 }
+
+/*
+ * We no longer need padding-bottom on android-main because the bottom nav
+ * is fixed and tab content already stops above it via the absolute inset.
+ */
 
 /* =========================================================
    Tab management
@@ -65,7 +78,11 @@
 
 .android-tab-content {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Stop above the bottom navigation bar */
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -86,23 +103,17 @@
 }
 
 /*
- * The Workbench panel (Files/Preview tabs) is position:fixed, so it ignores .android-main's
- * padding-bottom -- without this it would extend to the true viewport bottom and its lowest
- * ~64px+ (bottom nav height + safe area) would render underneath the opaque, higher-z-index
- * .mobile-bottom-nav. mobile.scss's own `bottom: 0 !important` mobile override for this same
- * element assumes a full-screen Workbench with no competing bottom nav, which doesn't hold in
- * the Android tab shell, so it's overridden again here, scoped to .android-shell only.
+ * The Workbench panel (Files/Preview tabs) is position:fixed, so it ignores
+ * normal flow. Override it to fill the available space between top safe area
+ * and the bottom navigation bar.
  */
 .android-shell .fixed.top-\[calc\(var\(--header-height\)\+1\.2rem\)\] {
+  top: env(safe-area-inset-top, 0px) !important;
   bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
-
-  /*
-   * mobile.scss's own mobile override still reserves --header-height (48px) at the top for
-   * the desktop app-header bar that this rule's `+1.2rem` offset was originally meant to
-   * clear. AndroidShell renders no header above the Files/Preview Workbench panel at all, so
-   * that reservation is just empty space eating into an already narrow viewport -- remove it.
-   */
-  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
 }
 
 /* =========================================================
@@ -154,7 +165,12 @@
 
 .mobile-bottom-nav button.active,
 .mobile-bottom-nav button[aria-current='page'] {
-  color: var(--bolt-elements-textPrimary, #e4e4e7);
+  color: var(--bolt-elements-borderColorActive, #6366f1);
+}
+
+.mobile-bottom-nav button.active span,
+.mobile-bottom-nav button[aria-current='page'] span {
+  font-weight: 600;
 }
 
 .mobile-bottom-nav button div {
@@ -165,6 +181,35 @@
 
 .mobile-bottom-nav button:not(:disabled):active div {
   transform: scale(0.88);
+}
+
+/* =========================================================
+   New chat button
+   ========================================================= */
+
+.android-new-chat-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--bolt-elements-borderColor, #27272a);
+  background-color: var(--bolt-elements-bg-depth-2, #161616);
+  color: var(--bolt-elements-textPrimary, #e4e4e7);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s, transform 0.15s;
+  box-shadow: var(--veldra-shadow-sm);
+}
+
+.android-new-chat-btn:active {
+  opacity: 0.7;
+  transform: scale(0.9);
 }
 
 /* =========================================================
@@ -533,16 +578,188 @@
 }
 
 /* =========================================================
+   Android chat layout fixes
+   ========================================================= */
+
+/*
+ * Override max-w-chat on Android — phones are 360-412px wide, and
+ * --chat-max-width: 33rem (528px) is fine as a max, but combined with
+ * padding it can cause content to feel cramped. Ensure full width usage.
+ */
+.android-shell .max-w-chat {
+  max-width: 100% !important;
+}
+
+/*
+ * The intro screen uses mt-[10vh] which wastes space on small screens.
+ * Override to a smaller value.
+ */
+.android-shell #intro {
+  margin-top: 4vh !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/*
+ * Welcome hero heading — prevent overflow on narrow screens.
+ */
+.android-shell #intro h1 {
+  font-size: clamp(1.5rem, 6vw, 2rem) !important;
+  line-height: 1.2 !important;
+  word-break: break-word;
+}
+
+.android-shell #intro p {
+  font-size: clamp(0.8125rem, 3.5vw, 1rem) !important;
+}
+
+/*
+ * Chat messages area — use full width with minimal padding.
+ */
+.android-shell .max-w-2xl {
+  max-width: 100% !important;
+}
+
+/*
+ * Ensure the sticky composer doesn't get too much bottom margin.
+ */
+.android-shell .z-prompt {
+  margin-bottom: 0.5rem !important;
+}
+
+/*
+ * Make the composer textarea appropriate for mobile.
+ * font-size: 16px prevents WebView auto-zoom on focus (Android/iOS).
+ */
+.android-shell textarea {
+  font-size: 16px !important;
+  padding-left: 0.75rem !important;
+  padding-right: 3rem !important;
+  padding-top: 0.75rem !important;
+  min-height: 56px !important;
+}
+
+/*
+ * Buttons inside the chat area — ensure they don't overflow.
+ */
+.android-shell .veldra-surface {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.android-shell .veldra-control {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/*
+ * Composer toolbar — horizontal scroll for tool buttons, compact sizing.
+ */
+.android-shell .veldra-control .flex.items-center.gap-2.text-sm.p-4.pt-2 {
+  padding: 0.5rem 0.75rem !important;
+  gap: 0.25rem !important;
+}
+
+/*
+ * Icon buttons in composer toolbar — smaller on mobile.
+ */
+.android-shell .veldra-control button[title] {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
+}
+
+/*
+ * Hide the keyboard shortcut hint on Android (no physical keyboard).
+ */
+.android-shell .kdb,
+.android-shell kbd {
+  display: none !important;
+}
+
+.android-shell .flex.shrink-0.items-center.gap-2 .hidden.text-xs {
+  display: none !important;
+}
+
+/*
+ * The model selector row — ensure it wraps on narrow screens.
+ */
+.android-shell [class*='ModelSelector'] {
+  flex-wrap: wrap;
+}
+
+/*
+ * Example prompts section — full width on mobile.
+ */
+.android-shell #examples {
+  max-width: 100% !important;
+  padding: 0 0.75rem;
+}
+
+.android-shell #examples button {
+  max-width: calc(100vw - 2rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Starter templates — ensure they scroll horizontally.
+ */
+.android-shell .max-w-3xl {
+  max-width: 100% !important;
+}
+
+/*
+ * Import/clone buttons row.
+ */
+.android-shell .flex.flex-wrap.justify-center.gap-2.px-4 {
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
+/*
+ * Chat messages — full width, appropriate padding.
+ */
+.android-shell .flex.flex-col.w-full.flex-1.max-w-chat {
+  max-width: 100% !important;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+/* =========================================================
+   Message content — prevent code/tables from causing page overflow
+   ========================================================= */
+
+.android-shell pre {
+  max-width: calc(100vw - 2rem);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.android-shell table {
+  display: block;
+  max-width: calc(100vw - 2rem);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.android-shell code {
+  word-break: break-all;
+}
+
+/* Inline code should wrap */
+.android-shell :not(pre) > code {
+  word-break: break-word;
+}
+
+/* =========================================================
    Responsive: hide bottom nav on desktop
    ========================================================= */
 
 @media (min-width: 768px) {
   .mobile-only {
     display: none !important;
-  }
-
-  .android-main {
-    padding-bottom: 0;
   }
 }
 

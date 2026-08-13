@@ -82,23 +82,25 @@ export function WelcomeHero() {
       </p>
 
       {recentProjects.length > 0 && (
-        <div className="mb-2 flex w-full flex-wrap items-center justify-center gap-2">
+        <div className="mb-2 flex w-full flex-col items-center justify-center gap-2 px-2">
           <span className="text-xs uppercase tracking-wide text-bolt-elements-textTertiary">Continue</span>
-          {recentProjects.map((item) => (
-            <a
-              key={item.id}
-              href={`/chat/${item.urlId}`}
-              className="max-w-[16rem] truncate rounded-full border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-1 text-xs text-bolt-elements-textSecondary transition-theme hover:border-accent-500 hover:text-bolt-elements-textPrimary"
-              title={item.description}
-            >
-              {item.description}
-              {item.timestamp && (
-                <span className="ml-1.5 text-bolt-elements-textTertiary">
-                  · {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
-                </span>
-              )}
-            </a>
-          ))}
+          <div className="flex w-full flex-wrap items-center justify-center gap-2">
+            {recentProjects.map((item) => (
+              <a
+                key={item.id}
+                href={`/chat/${item.urlId}`}
+                className="max-w-[calc(100vw-3rem)] truncate rounded-full border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-1.5 text-xs text-bolt-elements-textSecondary transition-theme hover:border-accent-500 hover:text-bolt-elements-textPrimary"
+                title={item.description}
+              >
+                {item.description}
+                {item.timestamp && (
+                  <span className="ml-1.5 text-bolt-elements-textTertiary">
+                    · {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
         </div>
       )}
     </div>

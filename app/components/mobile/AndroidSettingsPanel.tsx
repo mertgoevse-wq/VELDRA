@@ -24,6 +24,8 @@ import {
   setRemoteWorkspaceId,
   type RuntimeMode,
 } from '~/lib/stores/runtime-mode';
+import { themeStore, toggleTheme } from '~/lib/stores/theme';
+import { skinStore, setSkin, SKINS, SKIN_LABELS } from '~/lib/stores/skin';
 import { getAndroidFallbackPersistenceStatus } from '~/lib/persistence/androidFallbackStorage';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
@@ -51,6 +53,53 @@ function loadLocalSetting(key: string): string {
   } catch {
     return '';
   }
+}
+
+function ThemeAppearanceCard() {
+  const theme = useStore(themeStore);
+  const skin = useStore(skinStore);
+
+  return (
+    <section className="android-card">
+      <h2 className="android-card-title">
+        <div className="i-ph:paint-brush-fill" />
+        Appearance
+      </h2>
+      <div className="android-card-content">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-bolt-elements-textPrimary">Theme</span>
+          <button
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-bolt-elements-borderColor text-xs font-medium text-bolt-elements-textPrimary"
+            onClick={toggleTheme}
+          >
+            <div className={theme === 'dark' ? 'i-ph:moon-fill' : 'i-ph:sun-fill'} style={{ width: 14, height: 14 }} />
+            {theme === 'dark' ? 'Dark' : 'Light'}
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-sm text-bolt-elements-textPrimary">Skin</span>
+          <div className="grid grid-cols-2 gap-1.5">
+            {SKINS.map((s) => (
+              <button
+                key={s}
+                className={classNames(
+                  'px-2.5 py-2 rounded-lg text-xs font-medium transition-all',
+                  'border',
+                  s === skin
+                    ? 'border-bolt-elements-borderColorActive bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent'
+                    : 'border-bolt-elements-borderColor text-bolt-elements-textSecondary',
+                )}
+                onClick={() => setSkin(s)}
+              >
+                {SKIN_LABELS[s]}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function AndroidSettingsPanel() {
@@ -784,6 +833,9 @@ export default function AndroidSettingsPanel() {
             )}
           </div>
         </section>
+
+        {/* Theme & Appearance Card */}
+        <ThemeAppearanceCard />
 
         {/* App Info Card */}
         <section className="android-card">

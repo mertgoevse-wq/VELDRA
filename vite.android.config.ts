@@ -59,9 +59,25 @@ export default defineConfig({
     target: 'esnext',
     outDir: 'build/client',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       input: resolve(__dirname, 'android-index.html'),
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-codemirror': [
+            '@codemirror/state',
+            '@codemirror/view',
+            '@codemirror/language',
+            '@codemirror/commands',
+          ],
+          'vendor-ai': ['ai', '@ai-sdk/react', '@ai-sdk/ui-utils'],
+          'vendor-ui': ['framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-popover'],
+        },
+      },
     },
+    sourcemap: false,
+    minify: 'esbuild',
   },
   plugins: [
     nodePolyfills({
