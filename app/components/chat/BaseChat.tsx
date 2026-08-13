@@ -535,7 +535,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               </div>
             </StickToBottom>
             <div className="flex flex-col justify-center">
-              {!chatStarted && (
+              {!chatStarted && !isCapacitor() && (
                 <div className="flex flex-wrap justify-center gap-2 px-4 lg:px-0">
                   {ImportButtons(importChat)}
                   <GitCloneButton importChat={importChat} />
@@ -551,7 +551,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
 
                     handleSendMessage?.(event, messageInput);
                   })}
-                {!chatStarted && <StarterTemplates />}
+                {!chatStarted && !isCapacitor() && <StarterTemplates />}
               </div>
             </div>
           </div>

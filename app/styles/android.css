@@ -754,6 +754,16 @@
 }
 
 /* =========================================================
+   Performance: reduce breathing background blur on Android
+   ========================================================= */
+
+.android-shell .veldra-breathing-bg {
+  filter: blur(40px);
+  opacity: 0.15;
+  animation-duration: 30s;
+}
+
+/* =========================================================
    Responsive: hide bottom nav on desktop
    ========================================================= */
 
