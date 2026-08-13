@@ -18,6 +18,7 @@ import { extractRelativePath } from '~/utils/diff';
 import { description } from '~/lib/persistence';
 import Cookies from 'js-cookie';
 import { createSampler } from '~/utils/sampler';
+import { getWorkbenchConfig } from './workbench-config';
 import type { ActionAlert, DeployAlert, SupabaseAlert } from '~/types/actions';
 import { resetAndroidFallbackStorage, updateAndroidFallbackSession } from '~/lib/persistence/androidFallbackStorage';
 import { runtimeModeStore } from './runtime-mode';
