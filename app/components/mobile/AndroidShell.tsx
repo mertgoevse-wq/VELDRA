@@ -33,6 +33,7 @@ import type { MobileTab } from '~/components/mobile/BottomNav';
 import AndroidSettingsPanel from '~/components/mobile/AndroidSettingsPanel';
 
 import { startNewAndroidChat } from '~/lib/stores/androidChatSession';
+import { ChatHistoryDrawer } from '~/components/mobile/ChatHistoryDrawer';
 
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -112,6 +113,7 @@ export default function AndroidShell() {
   const skin = useStore(skinStore);
   const runtime = useStore(runtimeModeStore);
   const [activeTab, setActiveTab] = useState<MobileTab>('chat');
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // Sync theme + skin to HTML element
   useEffect(() => {
@@ -236,9 +238,22 @@ export default function AndroidShell() {
             })}
             aria-hidden={activeTab !== 'chat'}
           >
-            {/* New Chat button — top right */}
-            <button className="android-new-chat-btn" onClick={() => startNewAndroidChat()} aria-label="New chat">
+            {/* Top action buttons */}
+            <button
+              className="android-new-chat-btn"
+              style={{ right: 12 }}
+              onClick={() => startNewAndroidChat()}
+              aria-label="New chat"
+            >
               <div className="i-ph:plus-bold" style={{ width: 18, height: 18 }} />
+            </button>
+            <button
+              className="android-new-chat-btn"
+              style={{ right: 60 }}
+              onClick={() => setHistoryOpen(true)}
+              aria-label="Chat history"
+            >
+              <div className="i-ph:clock-counter-clockwise-bold" style={{ width: 18, height: 18 }} />
             </button>
             <ChatErrorBoundary>
               <Suspense fallback={<LoadingScreen />}>
@@ -263,6 +278,9 @@ export default function AndroidShell() {
 
         {/* Bottom navigation */}
         <BottomNav activeTab={activeTab} onTabChange={setActiveTab} workbenchAvailable />
+
+        {/* Chat history drawer */}
+        <ChatHistoryDrawer open={historyOpen} onClose={() => setHistoryOpen(false)} />
 
         {/* Toasts */}
         <ToastContainer
