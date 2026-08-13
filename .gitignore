@@ -88,3 +88,9 @@ android/app/src/main/assets/public/
 package-lock.json
 android/app/capacitor.build.gradle
 android/capacitor.settings.gradle
+
+# External ecosystem repositories (not part of product)
+.veldra-ecosystem/
+
+# Unintegrated brand assets (add when actually used)
+public/assets/images/
