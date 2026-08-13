@@ -57,6 +57,7 @@ android/local.properties
 android/app/src/main/assets/public/
 
 # Allow our documentation files through the *.md ignore
+!CLAUDE.md
 !README_ANDROID.md
 !PORTING_REPORT.md
 !TODO_NEXT.md
@@ -84,6 +85,10 @@ android/app/src/main/assets/public/
 !project/research/AUTONOMOUS-MISSION-REPORT-*.md
 !project/research/AUTONOMOUS-SESSION-*.md
 !project/research/ECOSYSTEM-INVENTORY-*.md
+!project/research/ECOSYSTEM-CAPABILITY-INVENTORY-*.md
+!project/research/VELDRA-STABILIZATION-PLAN-*.md
+!project/research/CORE-FUNCTIONALITY-ANALYSIS-*.md
+!project/research/SESSION-SUMMARY-*.md
 !project/research/CLAUDE-CODE-BOOTSTRAP-HANDOFF.md
 
 # Package lock & generated gradle configs
