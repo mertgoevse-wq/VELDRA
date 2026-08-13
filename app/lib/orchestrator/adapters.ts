@@ -1,6 +1,10 @@
 import type { ApprovalRequest, ApprovalResponse, Evidence, PolicyGate } from './types';
 import type { CapabilityResolver, ModelCapabilities } from './registries';
 
+// Re-export types needed by host implementations
+export type { ApprovalRequest, ApprovalResponse, PolicyGate, Evidence } from './types';
+export type { CapabilityResolver, ModelCapabilities } from './registries';
+
 /**
  * Ports the core needs from whatever host it runs in.
  *
