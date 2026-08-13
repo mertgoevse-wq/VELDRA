@@ -1,11 +1,13 @@
 import { memo, useEffect, useState } from 'react';
-import { bundledLanguages, codeToHtml, isSpecialLang, type BundledLanguage, type SpecialLanguage } from 'shiki';
+import type { BundledLanguage, SpecialLanguage } from 'shiki';
 import { classNames } from '~/utils/classNames';
-import { createScopedLogger } from '~/utils/logger';
+import { highlightCode } from '~/utils/shiki-lazy';
 
 import styles from './CodeBlock.module.scss';
 
-const logger = createScopedLogger('CodeBlock');
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 interface CodeBlockProps {
   className?: string;
@@ -35,20 +37,17 @@ export const CodeBlock = memo(
     };
 
     useEffect(() => {
-      let effectiveLanguage = language;
+      let cancelled = false;
 
-      if (language && !isSpecialLang(language) && !(language in bundledLanguages)) {
-        logger.warn(`Unsupported language '${language}', falling back to plaintext`);
-        effectiveLanguage = 'plaintext';
-      }
+      highlightCode(code, language, theme).then((result) => {
+        if (!cancelled) {
+          setHTML(result ?? `<pre><code>${escapeHtml(code)}</code></pre>`);
+        }
+      });
 
-      logger.trace(`Language = ${effectiveLanguage}`);
-
-      const processCode = async () => {
-        setHTML(await codeToHtml(code, { lang: effectiveLanguage, theme }));
+      return () => {
+        cancelled = true;
       };
-
-      processCode();
     }, [code, language, theme]);
 
     return (
