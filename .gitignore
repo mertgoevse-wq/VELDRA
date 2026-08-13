@@ -106,3 +106,9 @@ android/capacitor.settings.gradle
 
 # Unintegrated brand assets (add when actually used)
 public/assets/images/
+
+# Build artifacts (APKs, etc.)
+artifacts/
+
+# Vite build timestamp files
+*.timestamp-*

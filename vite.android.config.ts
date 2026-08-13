@@ -95,13 +95,15 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
+    alias: [
       // Point ~ to app/ for tsconfigPaths compat
-      '~': resolve(__dirname, 'app'),
+      { find: '~', replacement: resolve(__dirname, 'app') },
       // Stub out Remix router hooks — Android SPA doesn't have a Remix server
-      '@remix-run/react': resolve(__dirname, 'src/shims/remix-react.tsx'),
+      { find: '@remix-run/react', replacement: resolve(__dirname, 'src/shims/remix-react.tsx') },
       // Stub out Cloudflare-specific imports not needed in SPA
-      '@remix-run/cloudflare': resolve(__dirname, 'src/shims/remix-cloudflare.ts'),
-    },
+      { find: '@remix-run/cloudflare', replacement: resolve(__dirname, 'src/shims/remix-cloudflare.ts') },
+      // Stub out server-only providers that use node:child_process
+      { find: /.*providers\/external-cli/, replacement: resolve(__dirname, 'src/shims/external-cli-provider.ts') },
+    ],
   },
 });
