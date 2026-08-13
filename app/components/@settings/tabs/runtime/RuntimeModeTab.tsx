@@ -186,6 +186,7 @@ export default function RuntimeModeTab() {
 
   const handleSaveAll = useCallback(() => {
     const trimmedUrl = urlInput.trim();
+
     if (
       trimmedUrl &&
       !trimmedUrl.startsWith('http://') &&
@@ -258,7 +259,10 @@ export default function RuntimeModeTab() {
     <div className="space-y-4">
       {/* Current Status */}
       <motion.div
-        className={classNames('rounded-lg p-4 space-y-3', 'bg-bolt-elements-bg-depth-2 border border-bolt-elements-borderColor')}
+        className={classNames(
+          'rounded-lg p-4 space-y-3',
+          'bg-bolt-elements-bg-depth-2 border border-bolt-elements-borderColor',
+        )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
@@ -368,7 +372,10 @@ export default function RuntimeModeTab() {
 
       {/* Mode Selection */}
       <motion.div
-        className={classNames('rounded-lg p-4 space-y-3', 'bg-bolt-elements-bg-depth-2 border border-bolt-elements-borderColor')}
+        className={classNames(
+          'rounded-lg p-4 space-y-3',
+          'bg-bolt-elements-bg-depth-2 border border-bolt-elements-borderColor',
+        )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -594,7 +601,10 @@ export default function RuntimeModeTab() {
 
       {/* Capability Summary */}
       <motion.div
-        className={classNames('rounded-lg p-4 space-y-3', 'bg-bolt-elements-bg-depth-2 border border-bolt-elements-borderColor')}
+        className={classNames(
+          'rounded-lg p-4 space-y-3',
+          'bg-bolt-elements-bg-depth-2 border border-bolt-elements-borderColor',
+        )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}

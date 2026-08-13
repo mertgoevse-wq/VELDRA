@@ -36,11 +36,7 @@ const DEFAULT_WORKDIR = '/workspace';
 function normalizeRelativePath(value: string): string {
   const normalized = value.replace(/\\/g, '/').replace(/^\/+/, '');
 
-  if (
-    normalized === '..' ||
-    normalized.startsWith('../') ||
-    normalized.includes('/../')
-  ) {
+  if (normalized === '..' || normalized.startsWith('../') || normalized.includes('/../')) {
     throw new Error(`Path '${value}' is outside the remote workspace`);
   }
 
@@ -51,10 +47,7 @@ function toRemotePath(value: string): string {
   return normalizeRelativePath(value);
 }
 
-function commandToProfile(
-  command: string,
-  args: string[],
-): RemoteCommandProfile | null {
+function commandToProfile(command: string, args: string[]): RemoteCommandProfile | null {
   const full = [command, ...args].join(' ').trim();
 
   const profiles: RemoteCommandProfile[] = [
@@ -69,10 +62,7 @@ function commandToProfile(
   return profiles.find((profile) => profile === full) ?? null;
 }
 
-function createOutputStream(
-  chunks: string[],
-  closed: { value: boolean },
-): ReadableStream<string> {
+function createOutputStream(chunks: string[], closed: { value: boolean }): ReadableStream<string> {
   return new ReadableStream<string>({
     start(controller) {
       for (const chunk of chunks) {
@@ -96,8 +86,8 @@ class RemoteSandboxProcess implements SandboxProcess {
   #killed = false;
 
   constructor(
-    private readonly client: RemoteRuntimeClient,
-    private readonly commandId: string,
+    private readonly _client: RemoteRuntimeClient,
+    private readonly _commandId: string,
   ) {
     const chunks: string[] = [];
     const closed = { value: false };
@@ -126,8 +116,8 @@ class RemoteSandboxProcess implements SandboxProcess {
       };
 
       try {
-        ws = client.connectEvents((event: RemoteRuntimeEvent) => {
-          if (event.payload.commandId !== commandId) {
+        ws = this._client.connectEvents((event: RemoteRuntimeEvent) => {
+          if (event.payload.commandId !== this._commandId) {
             return;
           }
 
@@ -146,28 +136,21 @@ class RemoteSandboxProcess implements SandboxProcess {
             return;
           }
 
-          if (
-            event.type === 'status' &&
-            (event.payload.status === 'error' ||
-              event.payload.status === 'timed-out')
-          ) {
+          if (event.type === 'status' && (event.payload.status === 'error' || event.payload.status === 'timed-out')) {
             finish(1);
           }
         });
 
-        void client
-          .getCommandStatus(commandId)
-          .then((status) => {
+        void this._client
+          .getCommandStatus(this._commandId)
+          .then((status: any) => {
             if (status.status === 'exited') {
               finish(status.exitCode ?? 0);
-            } else if (
-              status.status === 'error' ||
-              status.status === 'timed-out'
-            ) {
+            } else if (status.status === 'error' || status.status === 'timed-out') {
               finish(status.exitCode ?? 1);
             }
           })
-          .catch((error) => {
+          .catch((error: unknown) => {
             if (!finished) {
               finished = true;
               closed.value = true;
@@ -189,7 +172,7 @@ class RemoteSandboxProcess implements SandboxProcess {
 
     this.#killed = true;
 
-    void this.client.stopCommand(this.commandId).catch(() => {
+    void this._client.stopCommand(this._commandId).catch(() => {
       // Best effort.
     });
   }
@@ -208,7 +191,7 @@ class RemoteRuntimeSession implements SandboxSession {
 
   constructor(
     readonly id: string,
-    private readonly client: RemoteRuntimeClient,
+    private readonly _client: RemoteRuntimeClient,
   ) {}
 
   #ensureActive(): void {
@@ -224,9 +207,7 @@ class RemoteRuntimeSession implements SandboxSession {
 
     for (const file of files) {
       if (file.content instanceof Uint8Array) {
-        throw new Error(
-          `Remote Runtime currently supports text files only: '${file.path}'`,
-        );
+        throw new Error(`Remote Runtime currently supports text files only: '${file.path}'`);
       }
 
       payload[toRemotePath(file.path)] = file.content;
@@ -236,13 +217,13 @@ class RemoteRuntimeSession implements SandboxSession {
       return;
     }
 
-    await this.client.syncFiles(payload);
+    await this._client.syncFiles(payload);
   }
 
   async readFile(filePath: string): Promise<string> {
     this.#ensureActive();
 
-    const result = await this.client.readFile(toRemotePath(filePath));
+    const result = await this._client.readFile(toRemotePath(filePath));
 
     return result.content;
   }
@@ -250,7 +231,7 @@ class RemoteRuntimeSession implements SandboxSession {
   async readDir(directoryPath: string): Promise<SandboxDirEntry[]> {
     this.#ensureActive();
 
-    const result = await this.client.listFiles();
+    const result = await this._client.listFiles();
 
     const directory = normalizeRelativePath(directoryPath);
 
@@ -280,10 +261,7 @@ class RemoteRuntimeSession implements SandboxSession {
     return [...entries.values()];
   }
 
-  async mkdir(
-    directoryPath: string,
-    options?: { recursive?: boolean },
-  ): Promise<void> {
+  async mkdir(directoryPath: string, options?: { recursive?: boolean }): Promise<void> {
     this.#ensureActive();
 
     /*
@@ -294,23 +272,15 @@ class RemoteRuntimeSession implements SandboxSession {
     if (options?.recursive) {
       const placeholder = `${normalizeRelativePath(directoryPath)}/.veldra-directory`;
 
-      await this.client.writeFile(
-        placeholder,
-        '',
-      );
+      await this._client.writeFile(placeholder, '');
 
       return;
     }
 
-    throw new Error(
-      'Remote Runtime does not currently expose a non-recursive mkdir operation.',
-    );
+    throw new Error('Remote Runtime does not currently expose a non-recursive mkdir operation.');
   }
 
-  async remove(
-    targetPath: string,
-    options?: { recursive?: boolean; force?: boolean },
-  ): Promise<void> {
+  async remove(targetPath: string, options?: { recursive?: boolean; force?: boolean }): Promise<void> {
     this.#ensureActive();
 
     /*
@@ -318,27 +288,17 @@ class RemoteRuntimeSession implements SandboxSession {
      * Do not emulate deletion through arbitrary remote commands.
      */
     if (options?.force) {
-      throw new Error(
-        'Remote Runtime file deletion is not implemented by the current safe API.',
-      );
+      throw new Error('Remote Runtime file deletion is not implemented by the current safe API.');
     }
 
-    throw new Error(
-      `Remote Runtime cannot remove '${targetPath}' until a dedicated delete API is available.`,
-    );
+    throw new Error(`Remote Runtime cannot remove '${targetPath}' until a dedicated delete API is available.`);
   }
 
-  async spawn(
-    command: string,
-    args: string[],
-    _options?: SandboxSpawnOptions,
-  ): Promise<SandboxProcess> {
+  async spawn(command: string, args: string[], _options?: SandboxSpawnOptions): Promise<SandboxProcess> {
     this.#ensureActive();
 
     if (_options?.terminal) {
-      throw new Error(
-        'Remote Runtime does not currently provide an interactive PTY.',
-      );
+      throw new Error('Remote Runtime does not currently provide an interactive PTY.');
     }
 
     const profile = commandToProfile(command, args);
@@ -350,15 +310,15 @@ class RemoteRuntimeSession implements SandboxSession {
       );
     }
 
-    const response = await this.client.runCommand(profile);
+    const response = await this._client.runCommand(profile);
 
-    return new RemoteSandboxProcess(this.client, response.commandId);
+    return new RemoteSandboxProcess(this._client, response.commandId);
   }
 
   async previewUrl(port: number): Promise<string | null> {
     this.#ensureActive();
 
-    const preview = await this.client.getPreviewUrl();
+    const preview = await this._client.getPreviewUrl();
 
     if (preview.status !== 'running') {
       return null;
@@ -368,19 +328,10 @@ class RemoteRuntimeSession implements SandboxSession {
       return null;
     }
 
-    return (
-      preview.previewUrl ??
-      preview.proxyUrl ??
-      preview.networkUrl ??
-      preview.localUrl ??
-      null
-    );
+    return preview.previewUrl ?? preview.proxyUrl ?? preview.networkUrl ?? preview.localUrl ?? null;
   }
 
-  watch(
-    _options: SandboxWatchOptions,
-    _onChange: (changes: SandboxFileChange[]) => void,
-  ): Promise<Unsubscribe> {
+  watch(_options: SandboxWatchOptions, _onChange: (changes: SandboxFileChange[]) => void): Promise<Unsubscribe> {
     this.#ensureActive();
 
     /*
@@ -388,11 +339,7 @@ class RemoteRuntimeSession implements SandboxSession {
      * not filesystem watcher events. We therefore do not pretend that
      * fileWatch=true is available until a real file-watch protocol exists.
      */
-    return Promise.reject(
-      new Error(
-        'Remote Runtime filesystem watching is not implemented by the current event API.',
-      ),
-    );
+    return Promise.reject(new Error('Remote Runtime filesystem watching is not implemented by the current event API.'));
   }
 
   subscribe(handler: (event: SandboxEvent) => void): Unsubscribe {
@@ -462,8 +409,13 @@ export function createRemoteRuntimeProvider(): SandboxProvider {
 
     isAvailable: async () => {
       const state = runtimeModeStore.get();
-      if (!state.remoteRuntimeUrl) return false;
+
+      if (!state.remoteRuntimeUrl) {
+        return false;
+      }
+
       const client = new RemoteRuntimeClient(state.remoteRuntimeUrl, state.remoteAuthToken || '');
+
       try {
         const health = await client.checkHealth();
         return health.ok === true;
@@ -474,17 +426,30 @@ export function createRemoteRuntimeProvider(): SandboxProvider {
 
     create: async (createOptions: SandboxCreateOptions) => {
       const state = runtimeModeStore.get();
-      if (!state.remoteRuntimeUrl) throw new Error('Remote Runtime URL not configured');
+
+      if (!state.remoteRuntimeUrl) {
+        throw new Error('Remote Runtime URL not configured');
+      }
+
       const client = new RemoteRuntimeClient(state.remoteRuntimeUrl, state.remoteAuthToken || '');
       const workspace = await client.createWorkspace(createOptions.workdirName);
+
       return new RemoteRuntimeSession(workspace.workspaceId, client);
     },
 
     resume: async (sessionId: string) => {
-      if (!sessionId) return null;
+      if (!sessionId) {
+        return null;
+      }
+
       const state = runtimeModeStore.get();
-      if (!state.remoteRuntimeUrl) return null;
+
+      if (!state.remoteRuntimeUrl) {
+        return null;
+      }
+
       const client = new RemoteRuntimeClient(state.remoteRuntimeUrl, state.remoteAuthToken || '');
+
       try {
         await client.checkHealth();
         return new RemoteRuntimeSession(sessionId, client);

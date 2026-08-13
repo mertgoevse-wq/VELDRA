@@ -60,7 +60,10 @@ describe('file action runtime policy', () => {
   });
 
   it('keeps Supabase queries pending for the existing UI flow', async () => {
-    const runner = new ActionRunner(() => Promise.resolve({} as never), () => undefined as never);
+    const runner = new ActionRunner(
+      () => Promise.resolve({} as never),
+      () => undefined as never,
+    );
     const action = {
       artifactId: 'artifact',
       messageId: 'message',

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { VeldraAgentRunner } from './veldra-agent-runner';
 import type { AgentInvocation } from './adapters';
 import { subagentsStore } from '~/lib/stores/subagents';
+import { SubagentService } from '~/lib/services/subagentService';
 
 // Mock SubagentService
 vi.mock('~/lib/services/subagentService', () => ({
@@ -34,8 +35,8 @@ describe('VeldraAgentRunner', () => {
     runner = new VeldraAgentRunner({}, {});
 
     // Get mocked spawn function
-    const { SubagentService } = require('~/lib/services/subagentService');
-    mockSpawnSubagent = SubagentService.getInstance().spawnSubagent;
+    const subagentService = SubagentService.getInstance();
+    mockSpawnSubagent = subagentService.spawnSubagent;
   });
 
   afterEach(() => {
@@ -126,9 +127,7 @@ describe('VeldraAgentRunner', () => {
     });
 
     it('respects maxConcurrency limit', async () => {
-      const taskIds = ['subagent-1-a', 'subagent-2-b', 'subagent-3-c', 'subagent-4-d'];
-
-      mockSpawnSubagent.mockImplementation((opts: any) => {
+      mockSpawnSubagent.mockImplementation((_opts: any) => {
         const taskId = `subagent-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
         return Promise.resolve(`Task ID: ${taskId}`);
       });
@@ -137,8 +136,7 @@ describe('VeldraAgentRunner', () => {
       let maxConcurrent = 0;
       let currentConcurrent = 0;
 
-      const originalSpawn = mockSpawnSubagent;
-      mockSpawnSubagent.mockImplementation(async (opts: any) => {
+      mockSpawnSubagent.mockImplementation(async (_opts: any) => {
         currentConcurrent++;
         maxConcurrent = Math.max(maxConcurrent, currentConcurrent);
 
@@ -150,9 +148,9 @@ describe('VeldraAgentRunner', () => {
         // Complete immediately
         subagentsStore.setKey(taskId, {
           taskId,
-          model: opts.model,
-          systemPrompt: opts.systemPrompt,
-          task: opts.initialPrompt,
+          model: _opts.model,
+          systemPrompt: _opts.systemPrompt,
+          task: _opts.initialPrompt,
           status: 'completed',
           result: 'Done',
           createdAt: Date.now(),
@@ -160,6 +158,7 @@ describe('VeldraAgentRunner', () => {
         });
 
         currentConcurrent--;
+
         return `Task ID: ${taskId}`;
       });
 
@@ -243,11 +242,9 @@ describe('VeldraAgentRunner', () => {
 
       expect(results[0].tokensIn).toBeGreaterThan(0);
       expect(results[0].tokensOut).toBeGreaterThan(0);
+
       // Rough check: ~4 chars per token
-      expect(results[0].tokensIn).toBeCloseTo(
-        Math.ceil('Research this topic in detail'.length / 4),
-        0,
-      );
+      expect(results[0].tokensIn).toBeCloseTo(Math.ceil('Research this topic in detail'.length / 4), 0);
     });
 
     it('handles spawn failure gracefully', async () => {

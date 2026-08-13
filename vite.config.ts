@@ -18,6 +18,13 @@ export default defineConfig((config) => {
     },
     build: {
       target: 'esnext',
+      minify: 'esbuild',
+      rollupOptions: {
+        output: {
+          manualChunks: undefined, // Disable manual chunking to reduce memory
+        },
+      },
+      chunkSizeWarningLimit: 1000,
     },
     plugins: [
       nodePolyfills({

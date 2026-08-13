@@ -116,7 +116,10 @@ function getDndBackend() {
   }
 
   const hasTouch =
-    'ontouchstart' in window || (navigator.maxTouchPoints ?? 0) > 0 || window.matchMedia('(pointer: coarse)').matches || isCapacitor();
+    'ontouchstart' in window ||
+    (navigator.maxTouchPoints ?? 0) > 0 ||
+    window.matchMedia('(pointer: coarse)').matches ||
+    isCapacitor();
 
   return hasTouch ? TouchBackend : HTML5Backend;
 }

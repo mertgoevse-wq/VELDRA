@@ -516,9 +516,11 @@ export class WorkbenchStore {
 
     for (const artifact of Object.values(artifacts)) {
       if (artifact?.runner) {
-        // ActionRunner doesn't have an abort() method yet
-        // This is a placeholder for future abort functionality
-        // For now, we just clear the action state
+        /*
+         * ActionRunner doesn't have an abort() method yet
+         * This is a placeholder for future abort functionality
+         * For now, we just clear the action state
+         */
         try {
           // TODO: Implement ActionRunner.abort() when action cancellation is needed
           console.warn(`Action abort requested for artifact ${artifact.id} but not yet implemented`);
@@ -685,9 +687,12 @@ export class WorkbenchStore {
     }
   }
 
-  actionStreamSampler = createSampler(async (data: ActionCallbackData, isStreaming: boolean = false) => {
-    return await this._runAction(data, isStreaming);
-  }, () => getWorkbenchConfig().actionStreamSampleIntervalMs);
+  actionStreamSampler = createSampler(
+    async (data: ActionCallbackData, isStreaming: boolean = false) => {
+      return await this._runAction(data, isStreaming);
+    },
+    () => getWorkbenchConfig().actionStreamSampleIntervalMs,
+  );
 
   #getArtifact(id: string) {
     const artifacts = this.artifacts.get();

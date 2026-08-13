@@ -83,6 +83,7 @@ android/app/src/main/assets/public/
 !project/research/VELDRA-AUTONOMOUS-IMPLEMENTATION-PLAN.md
 !project/research/AUTONOMOUS-MISSION-REPORT-*.md
 !project/research/AUTONOMOUS-SESSION-*.md
+!project/research/ECOSYSTEM-INVENTORY-*.md
 !project/research/CLAUDE-CODE-BOOTSTRAP-HANDOFF.md
 
 # Package lock & generated gradle configs

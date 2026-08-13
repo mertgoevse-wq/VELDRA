@@ -162,11 +162,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const showWorkbench = useStore(workbenchStore.showWorkbench);
     const selectedView = useStore(workbenchStore.currentView);
 
-    const activeTab: MobileTab = showWorkbench
-      ? selectedView === 'preview'
-        ? 'preview'
-        : 'files'
-      : 'chat';
+    const activeTab: MobileTab = showWorkbench ? (selectedView === 'preview' ? 'preview' : 'files') : 'chat';
 
     const handleTabChange = (tab: MobileTab) => {
       if (tab === 'chat') {
@@ -423,7 +419,10 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
             <ClientOnly>{() => <RuntimeModeBanner />}</ClientOnly>
             {!chatStarted && (
-              <div id="intro" className="relative mt-[8vh] lg:mt-[16vh] max-w-3xl mx-auto text-center px-4 lg:px-0 flex flex-col items-center">
+              <div
+                id="intro"
+                className="relative mt-[8vh] lg:mt-[16vh] max-w-3xl mx-auto text-center px-4 lg:px-0 flex flex-col items-center"
+              >
                 {/* Minimalist VELDRA Icon/Logo */}
                 <div className="mb-6 flex justify-center animate-fade-in">
                   <div className="w-20 h-20 rounded-xl bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor flex items-center justify-center shadow-lg relative overflow-hidden group">
@@ -431,7 +430,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     <div className="i-ph:cube-duotone text-4xl text-accent-500" />
                   </div>
                 </div>
-                
+
                 {/* Main Heading */}
                 <h1
                   className="text-4xl lg:text-5xl font-semibold text-bolt-elements-textPrimary mb-3 animate-fade-in tracking-tight"
@@ -439,12 +438,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 >
                   VELDRA <span className="font-light text-bolt-elements-textTertiary">Workspace</span>
                 </h1>
-                
+
                 {/* Subheading / Description */}
                 <p className="text-md lg:text-lg mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200 max-w-xl mx-auto font-mono">
                   Autonomous AI Engineering Environment
                 </p>
-                
+
                 {/* Project Guided Build / Quick Actions Container */}
                 <div className="w-full mb-4 animate-fade-in animation-delay-300">
                   <ClientOnly>{() => <ProjectGuidedBuild />}</ClientOnly>

@@ -1,5 +1,5 @@
-import { BaseProvider } from '../base-provider';
-import type { ModelInfo } from '../types';
+import { BaseProvider } from '~/lib/modules/llm/base-provider';
+import type { ModelInfo } from '~/lib/modules/llm/types';
 import type { IProviderSetting } from '~/types/model';
 import type { LanguageModelV1 } from 'ai';
 import { spawn } from 'node:child_process';
@@ -31,9 +31,9 @@ export default class ExternalCLIProvider extends BaseProvider {
   ];
 
   async getDynamicModels(
-    apiKeys?: Record<string, string>,
-    settings?: IProviderSetting,
-    serverEnv?: Record<string, string>,
+    _apiKeys?: Record<string, string>,
+    _settings?: IProviderSetting,
+    _serverEnv?: Record<string, string>,
   ): Promise<ModelInfo[]> {
     return this.staticModels;
   }
@@ -49,13 +49,14 @@ export default class ExternalCLIProvider extends BaseProvider {
       provider: this.name,
       modelId: options.model,
       defaultObjectGenerationMode: 'json',
-      async doGenerate(callOptions: any) {
+      async doGenerate(_callOptions: any) {
         throw new Error('doGenerate: Not implemented. Use doStream.');
       },
       async doStream(callOptions: any) {
         // Construct full chat history
         const promptLines = callOptions.prompt.map((msg: any) => {
           let content = '';
+
           if (typeof msg.content === 'string') {
             content = msg.content;
           } else if (Array.isArray(msg.content)) {
@@ -64,13 +65,15 @@ export default class ExternalCLIProvider extends BaseProvider {
               .map((part: any) => (part as any).text)
               .join('\n');
           }
+
           return `${msg.role.toUpperCase()}:\n${content}`;
         });
         const promptText = promptLines.join('\n\n');
 
-        const executable = options.model === 'antigravity-cli' 
-          ? '/data/data/com.termux/files/home/.local/bin/agy' 
-          : '/data/data/com.termux/files/usr/bin/gemini';
+        const executable =
+          options.model === 'antigravity-cli'
+            ? '/data/data/com.termux/files/home/.local/bin/agy'
+            : '/data/data/com.termux/files/usr/bin/gemini';
 
         let childProcess: ReturnType<typeof spawn> | null = null;
 
@@ -78,6 +81,7 @@ export default class ExternalCLIProvider extends BaseProvider {
           stream: new ReadableStream({
             start(controller) {
               const env = { ...process.env };
+
               if (options.apiKeys?.EXTERNAL_CLI_API_KEY) {
                 env.GEMINI_API_KEY = options.apiKeys.EXTERNAL_CLI_API_KEY;
                 env.AGY_API_KEY = options.apiKeys.EXTERNAL_CLI_API_KEY;
@@ -86,7 +90,7 @@ export default class ExternalCLIProvider extends BaseProvider {
               const child = spawn(executable, ['--yolo'], {
                 cwd: WORK_DIR,
                 env,
-                stdio: ['pipe', 'pipe', 'pipe']
+                stdio: ['pipe', 'pipe', 'pipe'],
               });
               childProcess = child;
 
@@ -104,7 +108,7 @@ export default class ExternalCLIProvider extends BaseProvider {
                 const text = stripAnsi(chunk.toString('utf8'));
                 controller.enqueue({
                   type: 'text-delta',
-                  textDelta: text
+                  textDelta: text,
                 });
               });
 
@@ -119,7 +123,7 @@ export default class ExternalCLIProvider extends BaseProvider {
                   controller.enqueue({
                     type: 'finish',
                     finishReason: 'stop',
-                    usage: { promptTokens: 0, completionTokens: 0 }
+                    usage: { promptTokens: 0, completionTokens: 0 },
                   });
                   controller.close();
                 }
@@ -133,9 +137,9 @@ export default class ExternalCLIProvider extends BaseProvider {
               if (childProcess) {
                 childProcess.kill('SIGTERM');
               }
-            }
+            },
           }),
-          warnings: []
+          warnings: [],
         };
       },
     } as unknown as LanguageModelV1;

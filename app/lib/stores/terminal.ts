@@ -51,7 +51,11 @@ export class TerminalStore {
 
     try {
       const session = await this.#getSession();
-      if (!session) throw new Error('No active sandbox session');
+
+      if (!session) {
+        throw new Error('No active sandbox session');
+      }
+
       await this.#boltTerminal.init(session, terminal);
     } catch (error: any) {
       terminal.write(coloredText.red('Failed to spawn bolt shell\n\n') + error.message);
@@ -69,7 +73,11 @@ export class TerminalStore {
 
     try {
       const session = await this.#getSession();
-      if (!session) throw new Error('No active sandbox session');
+
+      if (!session) {
+        throw new Error('No active sandbox session');
+      }
+
       const shellProcess = await newShellProcess(session, terminal);
       this.#terminals.push({ terminal, process: shellProcess });
     } catch (error: any) {

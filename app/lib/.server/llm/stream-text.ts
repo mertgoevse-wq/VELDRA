@@ -182,9 +182,10 @@ export async function streamText(props: {
   );
 
   const availableSkills = await SkillService.getInstance().discoverSkills();
-  const skillPromptExt = availableSkills.length > 0 
-    ? `\n\nYou have access to the following skills via the 'load_skill' tool: ${availableSkills.join(', ')}.\nLoad a skill if its name seems highly relevant to the task at hand.` 
-    : '';
+  const skillPromptExt =
+    availableSkills.length > 0
+      ? `\n\nYou have access to the following skills via the 'load_skill' tool: ${availableSkills.join(', ')}.\nLoad a skill if its name seems highly relevant to the task at hand.`
+      : '';
 
   let systemPrompt =
     PromptLibrary.getPropmtFromLibrary(promptId || 'default', {

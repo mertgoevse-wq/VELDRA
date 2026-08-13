@@ -143,23 +143,32 @@ export function clearActiveSandboxSession(): void {
 
 export async function getActiveSandboxSession(): Promise<SandboxSession | null> {
   const mode = runtimeModeStore.get().mode;
+
   if (lastMode !== mode) {
     clearActiveSandboxSession();
     lastMode = mode;
   }
 
-  if (activeSession) return activeSession;
-  if (activeSessionPromise) return activeSessionPromise;
+  if (activeSession) {
+    return activeSession;
+  }
+
+  if (activeSessionPromise) {
+    return activeSessionPromise;
+  }
 
   activeSessionPromise = (async () => {
     const status = await getExecutionProviderStatus(mode);
+
     if (status.state === 'available' && status.providerId) {
       const provider = getSandboxProvider(status.providerId);
+
       if (provider) {
         activeSession = await provider.create({ workdirName: WORK_DIR_NAME });
         return activeSession;
       }
     }
+
     return null;
   })();
 

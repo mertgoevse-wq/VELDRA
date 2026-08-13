@@ -24,7 +24,9 @@ function statusLabel(status: SubagentTask['status']) {
 
 function statusIcon(status: SubagentTask['status']) {
   if (status === 'running') {
-    return <span className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-sm" aria-hidden="true" />;
+    return (
+      <span className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-sm" aria-hidden="true" />
+    );
   }
 
   if (status === 'completed') {
@@ -83,7 +85,10 @@ export function SubagentActivityWidget() {
       >
         <span className="flex min-w-0 items-center gap-2">
           {runningCount > 0 ? (
-            <span className="i-svg-spinners:pulse-rings-2 text-bolt-elements-loader-progress text-lg" aria-hidden="true" />
+            <span
+              className="i-svg-spinners:pulse-rings-2 text-bolt-elements-loader-progress text-lg"
+              aria-hidden="true"
+            />
           ) : (
             <span className="i-ph:check-circle text-bolt-elements-icon-success text-lg" aria-hidden="true" />
           )}
@@ -94,9 +99,12 @@ export function SubagentActivityWidget() {
           </span>
         </span>
         <span
-          className={classNames('i-ph:caret-down shrink-0 text-bolt-elements-textTertiary transition-transform duration-200', {
-            'rotate-180': expanded,
-          })}
+          className={classNames(
+            'i-ph:caret-down shrink-0 text-bolt-elements-textTertiary transition-transform duration-200',
+            {
+              'rotate-180': expanded,
+            },
+          )}
           aria-hidden="true"
         />
       </button>
@@ -113,7 +121,8 @@ export function SubagentActivityWidget() {
           >
             {tasks.length > visibleTasks.length && (
               <p className="px-1 text-[11px] text-bolt-elements-textTertiary">
-                Showing the {visibleTasks.length} most recent tasks; {tasks.length - visibleTasks.length} older tasks are kept in session state.
+                Showing the {visibleTasks.length} most recent tasks; {tasks.length - visibleTasks.length} older tasks
+                are kept in session state.
               </p>
             )}
             {visibleTasks.map((task) => {
@@ -139,7 +148,12 @@ export function SubagentActivityWidget() {
                         <span className="truncate font-mono text-xs font-semibold text-bolt-elements-textPrimary">
                           {task.taskId}
                         </span>
-                        <span className={classNames('rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider', statusClasses(task.status))}>
+                        <span
+                          className={classNames(
+                            'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                            statusClasses(task.status),
+                          )}
+                        >
                           {statusLabel(task.status)}
                         </span>
                       </span>
@@ -151,9 +165,12 @@ export function SubagentActivityWidget() {
                       </span>
                     </span>
                     <span
-                      className={classNames('i-ph:caret-down mt-0.5 shrink-0 text-bolt-elements-textTertiary transition-transform duration-200', {
-                        'rotate-180': isDetailsOpen,
-                      })}
+                      className={classNames(
+                        'i-ph:caret-down mt-0.5 shrink-0 text-bolt-elements-textTertiary transition-transform duration-200',
+                        {
+                          'rotate-180': isDetailsOpen,
+                        },
+                      )}
                       aria-hidden="true"
                     />
                   </button>
@@ -184,7 +201,9 @@ export function SubagentActivityWidget() {
                           {task.error && (
                             <div>
                               <div className="mb-1 font-medium text-bolt-elements-icon-error">Error</div>
-                              <p className="whitespace-pre-wrap break-words text-bolt-elements-icon-error">{task.error}</p>
+                              <p className="whitespace-pre-wrap break-words text-bolt-elements-icon-error">
+                                {task.error}
+                              </p>
                             </div>
                           )}
                           {task.result && (

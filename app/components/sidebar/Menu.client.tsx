@@ -90,8 +90,11 @@ export const Menu = () => {
         .then(setList)
         .catch((error) => {
           toast.error(error.message);
-          // UX Audit: missing inline error state. Since we are just setting list to empty, we rely on toast for now,
-          // but we can at least stop loading.
+
+          /*
+           * UX Audit: missing inline error state. Since we are just setting list to empty, we rely on toast for now,
+           * but we can at least stop loading.
+           */
         })
         .finally(() => setIsLoading(false));
     }
@@ -433,7 +436,11 @@ export const Menu = () => {
           <div className="flex-1 overflow-auto px-3 pb-3">
             {isLoading && list.length === 0 ? (
               <div className="px-4 py-6 flex justify-center">
-                <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-2xl animate-spin" aria-label="Loading chat history" role="status"></div>
+                <div
+                  className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-2xl animate-spin"
+                  aria-label="Loading chat history"
+                  role="status"
+                ></div>
               </div>
             ) : filteredList.length === 0 ? (
               <div className="px-4 text-gray-500 dark:text-gray-400 text-sm">

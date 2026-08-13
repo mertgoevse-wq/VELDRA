@@ -148,51 +148,34 @@ export const TerminalTabs = memo(() => {
         <div className="bg-bolt-elements-terminals-background h-full flex flex-col">
           <div className="flex items-center bg-bolt-elements-background-depth-2 border-y border-bolt-elements-borderColor min-h-[34px] p-1">
             <div className="flex-1 flex items-center gap-1.5 overflow-x-auto modern-scrollbar px-1 no-scrollbar-buttons">
-            {/*
-             * Tab switching / add-terminal / reset only make sense for the real xterm terminals
-             * rendered in the branch below -- RemoteCommandPanel ignores terminalCount/
-             * activeTerminal entirely, so showing those controls here would be dead UI: tapping
-             * "+" adds a tab with no visible effect, "Reset Terminal" looks up a terminalRefs
-             * entry that's never populated in this mode and silently no-ops. Just label what's
-             * actually shown.
-             */}
-            {showTerminalFallback ? (
-              <span className="flex items-center gap-1.5 text-sm text-bolt-elements-textSecondary px-1 whitespace-nowrap">
-                <div className="i-ph:terminal-window-duotone text-lg shrink-0" />
-                Remote Runtime Commands
-              </span>
-            ) : (
-              <>
-                {Array.from({ length: terminalCount + 1 }, (_, index) => {
-                  const isActive = activeTerminal === index;
+              {/*
+               * Tab switching / add-terminal / reset only make sense for the real xterm terminals
+               * rendered in the branch below -- RemoteCommandPanel ignores terminalCount/
+               * activeTerminal entirely, so showing those controls here would be dead UI: tapping
+               * "+" adds a tab with no visible effect, "Reset Terminal" looks up a terminalRefs
+               * entry that's never populated in this mode and silently no-ops. Just label what's
+               * actually shown.
+               */}
+              {showTerminalFallback ? (
+                <span className="flex items-center gap-1.5 text-sm text-bolt-elements-textSecondary px-1 whitespace-nowrap">
+                  <div className="i-ph:terminal-window-duotone text-lg shrink-0" />
+                  Remote Runtime Commands
+                </span>
+              ) : (
+                <>
+                  {Array.from({ length: terminalCount + 1 }, (_, index) => {
+                    const isActive = activeTerminal === index;
 
-                  return (
-                    <React.Fragment key={index}>
-                      {index == 0 ? (
-                        <button
-                          key={index}
-                          className={classNames(
-                            'flex items-center text-sm cursor-pointer gap-1.5 px-3 py-2 h-full whitespace-nowrap rounded-full',
-                            {
-                              'bg-bolt-elements-terminals-buttonBackground text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary':
-                                isActive,
-                              'bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary hover:bg-bolt-elements-terminals-buttonBackground':
-                                !isActive,
-                            },
-                          )}
-                          onClick={() => setActiveTerminal(index)}
-                        >
-                          <div className="i-ph:terminal-window-duotone text-lg" />
-                          VELDRA Terminal
-                        </button>
-                      ) : (
-                        <React.Fragment>
+                    return (
+                      <React.Fragment key={index}>
+                        {index == 0 ? (
                           <button
                             key={index}
                             className={classNames(
                               'flex items-center text-sm cursor-pointer gap-1.5 px-3 py-2 h-full whitespace-nowrap rounded-full',
                               {
-                                'bg-bolt-elements-terminals-buttonBackground text-bolt-elements-textPrimary': isActive,
+                                'bg-bolt-elements-terminals-buttonBackground text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary':
+                                  isActive,
                                 'bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary hover:bg-bolt-elements-terminals-buttonBackground':
                                   !isActive,
                               },
@@ -200,45 +183,63 @@ export const TerminalTabs = memo(() => {
                             onClick={() => setActiveTerminal(index)}
                           >
                             <div className="i-ph:terminal-window-duotone text-lg" />
-                            Terminal {terminalCount > 1 && index}
-                            <button
-                              className="bg-transparent text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary hover:bg-transparent rounded"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                closeTerminal(index);
-                              }}
-                            >
-                              <div className="i-ph:x text-xs" />
-                            </button>
+                            VELDRA Terminal
                           </button>
-                        </React.Fragment>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-                {terminalCount < MAX_TERMINALS && <IconButton icon="i-ph:plus" size="md" onClick={addTerminal} />}
-                <IconButton
-                  icon="i-ph:arrow-clockwise"
-                  title="Reset Terminal"
-                  size="md"
-                  onClick={() => {
-                    const ref = terminalRefs.current.get(activeTerminal);
+                        ) : (
+                          <React.Fragment>
+                            <button
+                              key={index}
+                              className={classNames(
+                                'flex items-center text-sm cursor-pointer gap-1.5 px-3 py-2 h-full whitespace-nowrap rounded-full',
+                                {
+                                  'bg-bolt-elements-terminals-buttonBackground text-bolt-elements-textPrimary':
+                                    isActive,
+                                  'bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary hover:bg-bolt-elements-terminals-buttonBackground':
+                                    !isActive,
+                                },
+                              )}
+                              onClick={() => setActiveTerminal(index)}
+                            >
+                              <div className="i-ph:terminal-window-duotone text-lg" />
+                              Terminal {terminalCount > 1 && index}
+                              <button
+                                className="bg-transparent text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary hover:bg-transparent rounded"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  closeTerminal(index);
+                                }}
+                              >
+                                <div className="i-ph:x text-xs" />
+                              </button>
+                            </button>
+                          </React.Fragment>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                  {terminalCount < MAX_TERMINALS && <IconButton icon="i-ph:plus" size="md" onClick={addTerminal} />}
+                  <IconButton
+                    icon="i-ph:arrow-clockwise"
+                    title="Reset Terminal"
+                    size="md"
+                    onClick={() => {
+                      const ref = terminalRefs.current.get(activeTerminal);
 
-                    if (ref?.getTerminal()) {
-                      const terminal = ref.getTerminal()!;
-                      terminal.clear();
-                      terminal.focus();
+                      if (ref?.getTerminal()) {
+                        const terminal = ref.getTerminal()!;
+                        terminal.clear();
+                        terminal.focus();
 
-                      if (activeTerminal === 0) {
-                        workbenchStore.attachBoltTerminal(terminal);
-                      } else {
-                        workbenchStore.attachTerminal(terminal);
+                        if (activeTerminal === 0) {
+                          workbenchStore.attachBoltTerminal(terminal);
+                        } else {
+                          workbenchStore.attachTerminal(terminal);
+                        }
                       }
-                    }
-                  }}
-                />
-              </>
-            )}
+                    }}
+                  />
+                </>
+              )}
             </div>
             <div className="flex items-center pl-2 ml-auto shrink-0 bg-bolt-elements-background-depth-2 border-l border-bolt-elements-borderColor/30">
               <IconButton

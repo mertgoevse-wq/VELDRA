@@ -591,7 +591,10 @@ export class FilesStore {
     }
 
     const session = await this.#getSession();
-    if (!session) throw new Error('No active sandbox session');
+
+    if (!session) {
+      throw new Error('No active sandbox session');
+    }
 
     try {
       const relativePath = path.relative(session.workdir, filePath);
@@ -755,7 +758,10 @@ export class FilesStore {
 
     try {
       session = await this.#getSession();
-      if (!session) throw new Error('No active sandbox session');
+
+      if (!session) {
+        throw new Error('No active sandbox session');
+      }
     } catch (error) {
       console.warn('[FilesStore] WebContainer/Sandbox unavailable, entering fallback mode:', error);
       this.#isFallbackMode = true;
@@ -873,7 +879,10 @@ export class FilesStore {
   async #processEventBuffer(events: Array<[SandboxFileChange[]]>) {
     const watchEvents = events.flat(2);
     const session = await this.#getSession();
-    if (!session) return;
+
+    if (!session) {
+      return;
+    }
 
     for (const { type, path } of watchEvents) {
       // remove any trailing slashes
@@ -885,10 +894,14 @@ export class FilesStore {
           try {
             // First check if it's a directory
             let isDir = false;
+
             try {
               const entries = await session.readDir(sanitizedPath);
-              if (entries) isDir = true;
-            } catch (e) {
+
+              if (entries) {
+                isDir = true;
+              }
+            } catch {
               // It's a file
             }
 
@@ -900,12 +913,12 @@ export class FilesStore {
               }
 
               let content = '';
-              let isBinary = false;
-              
+              const isBinary = false;
+
               try {
                 // readFile currently returns string, so binary files might not be fully supported here yet.
                 content = await session.readFile(sanitizedPath);
-              } catch (e) {
+              } catch {
                 console.warn('Failed to read file from sandbox', sanitizedPath);
               }
 
@@ -918,9 +931,11 @@ export class FilesStore {
         }
         case 'remove': {
           const existing = this.files.get()[sanitizedPath];
+
           if (existing?.type === 'file') {
-             this.#size--;
+            this.#size--;
           }
+
           this.files.setKey(sanitizedPath, undefined);
 
           for (const [direntPath] of Object.entries(this.files.get())) {
@@ -972,7 +987,10 @@ export class FilesStore {
     }
 
     const session = await this.#getSession();
-    if (!session) throw new Error('No active sandbox session');
+
+    if (!session) {
+      throw new Error('No active sandbox session');
+    }
 
     try {
       const relativePath = path.relative(session.workdir, filePath);
@@ -1033,7 +1051,10 @@ export class FilesStore {
     }
 
     const session = await this.#getSession();
-    if (!session) throw new Error('No active sandbox session');
+
+    if (!session) {
+      throw new Error('No active sandbox session');
+    }
 
     try {
       const relativePath = path.relative(session.workdir, folderPath);
@@ -1071,7 +1092,10 @@ export class FilesStore {
     }
 
     const session = await this.#getSession();
-    if (!session) throw new Error('No active sandbox session');
+
+    if (!session) {
+      throw new Error('No active sandbox session');
+    }
 
     try {
       const relativePath = path.relative(session.workdir, filePath);
@@ -1130,7 +1154,10 @@ export class FilesStore {
     }
 
     const session = await this.#getSession();
-    if (!session) throw new Error('No active sandbox session');
+
+    if (!session) {
+      throw new Error('No active sandbox session');
+    }
 
     try {
       const relativePath = path.relative(session.workdir, folderPath);
@@ -1195,7 +1222,8 @@ export class FilesStore {
   }
 }
 
-function isBinaryFile(buffer: Uint8Array | undefined) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _isBinaryFile(buffer: Uint8Array | undefined) {
   if (buffer === undefined) {
     return false;
   }

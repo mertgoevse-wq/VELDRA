@@ -80,7 +80,9 @@ export default function SettingsTab() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="i-ph:translate-fill w-4 h-4 text-bolt-elements-textSecondary" />
-            <label htmlFor="settings-language" className="block text-sm text-bolt-elements-textSecondary">Language</label>
+            <label htmlFor="settings-language" className="block text-sm text-bolt-elements-textSecondary">
+              Language
+            </label>
           </div>
           <select
             id="settings-language"
@@ -111,7 +113,9 @@ export default function SettingsTab() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="i-ph:palette-fill w-4 h-4 text-bolt-elements-textSecondary" />
-            <label htmlFor="settings-skin" className="block text-sm text-bolt-elements-textSecondary">Skin</label>
+            <label htmlFor="settings-skin" className="block text-sm text-bolt-elements-textSecondary">
+              Skin
+            </label>
           </div>
           <select
             id="settings-skin"
@@ -120,6 +124,7 @@ export default function SettingsTab() {
             onChange={(e) => {
               const next = e.target.value as Skin;
               setSkin(next);
+
               const label = SKIN_OPTIONS.find((option) => option.value === next)?.label ?? next;
               toast.success(`Skin set to ${label}`);
             }}
@@ -146,7 +151,9 @@ export default function SettingsTab() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="i-ph:bell-fill w-4 h-4 text-bolt-elements-textSecondary" />
-            <span id="settings-notifications-label" className="block text-sm text-bolt-elements-textSecondary">Notifications</span>
+            <span id="settings-notifications-label" className="block text-sm text-bolt-elements-textSecondary">
+              Notifications
+            </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-bolt-elements-textSecondary">
@@ -197,7 +204,9 @@ export default function SettingsTab() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="i-ph:globe-fill w-4 h-4 text-bolt-elements-textSecondary" />
-            <label htmlFor="settings-timezone" className="block text-sm text-bolt-elements-textSecondary">Timezone</label>
+            <label htmlFor="settings-timezone" className="block text-sm text-bolt-elements-textSecondary">
+              Timezone
+            </label>
           </div>
           <select
             id="settings-timezone"

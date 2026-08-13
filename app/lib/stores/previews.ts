@@ -168,7 +168,10 @@ export class PreviewsStore {
 
   async #init() {
     const session = await this.#getSession();
-    if (!session) return;
+
+    if (!session) {
+      return;
+    }
 
     session.subscribe((event) => {
       if (event.type === 'port-open') {

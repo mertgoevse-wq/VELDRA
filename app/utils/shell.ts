@@ -20,7 +20,11 @@ export async function newShellProcess(session: SandboxSession, terminal: ITermin
   });
 
   const input = process.input?.getWriter();
-  if (!input) throw new Error('Process input is not writable');
+
+  if (!input) {
+    throw new Error('Process input is not writable');
+  }
+
   const output = process.output;
 
   const jshReady = withResolvers<void>();
@@ -39,8 +43,8 @@ export async function newShellProcess(session: SandboxSession, terminal: ITermin
             jshReady.resolve();
           }
         } else if (!isInteractive && !isWebContainer) {
-           isInteractive = true;
-           jshReady.resolve();
+          isInteractive = true;
+          jshReady.resolve();
         }
 
         terminal.write(data);
@@ -136,7 +140,7 @@ export class BoltShell {
     if (session.id === 'webcontainer:default') {
       await this.waitTillOscCode('interactive');
     }
-    
+
     this.#initialized?.();
   }
 
@@ -154,7 +158,11 @@ export class BoltShell {
     });
 
     const input = process.input?.getWriter();
-    if (!input) throw new Error('Process input is not writable');
+
+    if (!input) {
+      throw new Error('Process input is not writable');
+    }
+
     this.#shellInputStream = input;
 
     // Tee the output so we can have three independent readers
@@ -174,8 +182,8 @@ export class BoltShell {
               jshReady.resolve();
             }
           } else if (!isInteractive && !isWebContainer) {
-             isInteractive = true;
-             jshReady.resolve();
+            isInteractive = true;
+            jshReady.resolve();
           }
 
           terminal.write(data);

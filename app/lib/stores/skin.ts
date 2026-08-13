@@ -4,16 +4,7 @@ import { atom } from 'nanostores';
  * Skins are a named visual layer over the independent light/dark theme. Keeping the values in one
  * registry prevents Settings, persistence, and CSS from drifting apart as new skins are added.
  */
-export const SKINS = [
-  'core',
-  'dark',
-  'light',
-  'midnight',
-  'matrix',
-  'aurora',
-  'industrial',
-  'minimal',
-] as const;
+export const SKINS = ['core', 'dark', 'light', 'midnight', 'matrix', 'aurora', 'industrial', 'minimal'] as const;
 
 export type Skin = (typeof SKINS)[number];
 
@@ -47,8 +38,10 @@ function migratePersistedSkin(value: string | null): Skin | undefined {
     return value;
   }
 
-  // Older builds called the default skin "veldra" and briefly exposed "obsidian". Keep those
-  // installations usable while converging on the eight-value contract used by the current UI.
+  /*
+   * Older builds called the default skin "veldra" and briefly exposed "obsidian". Keep those
+   * installations usable while converging on the eight-value contract used by the current UI.
+   */
   if (value === 'veldra' || value === 'obsidian') {
     return DEFAULT_SKIN;
   }

@@ -328,7 +328,10 @@ export class ActionRunner {
     }
 
     const session = await this.#getSession();
-    if (!session) throw new Error('No active sandbox session');
+
+    if (!session) {
+      throw new Error('No active sandbox session');
+    }
 
     const shell = this.#shellTerminal();
     await shell.ready();
@@ -348,8 +351,12 @@ export class ActionRunner {
       logger.debug(`${action.type} Shell Response: [exit code:${resp?.exitCode}]`);
 
       if (resp?.exitCode != 0) {
-        throw new ActionCommandError('Shell Command Failed', resp?.output || `Command exited with code ${resp?.exitCode}`);
+        throw new ActionCommandError(
+          'Shell Command Failed',
+          resp?.output || `Command exited with code ${resp?.exitCode}`,
+        );
       }
+
       return;
     }
 
@@ -367,7 +374,9 @@ export class ActionRunner {
     );
 
     action.abortSignal.addEventListener('abort', () => {
-      if (typeof process.kill === 'function') process.kill();
+      if (typeof process.kill === 'function') {
+        process.kill();
+      }
     });
 
     const exitCode = await process.exit;
@@ -384,7 +393,10 @@ export class ActionRunner {
     }
 
     const session = await this.#getSession();
-    if (!session) throw new Error('No active sandbox session');
+
+    if (!session) {
+      throw new Error('No active sandbox session');
+    }
 
     if (!this.#shellTerminal) {
       unreachable('Shell terminal not found');
@@ -409,6 +421,7 @@ export class ActionRunner {
       if (resp?.exitCode != 0) {
         throw new ActionCommandError('Failed To Start Application', resp?.output || 'No Output Available');
       }
+
       return resp;
     }
 
@@ -425,7 +438,9 @@ export class ActionRunner {
     );
 
     action.abortSignal.addEventListener('abort', () => {
-      if (typeof process.kill === 'function') process.kill();
+      if (typeof process.kill === 'function') {
+        process.kill();
+      }
     });
 
     const exitCode = await process.exit;
@@ -434,6 +449,7 @@ export class ActionRunner {
     if (exitCode !== 0) {
       throw new ActionCommandError('Failed To Start Application', output || `Command exited with code ${exitCode}`);
     }
+
     return { output, exitCode };
   }
 
@@ -456,7 +472,11 @@ export class ActionRunner {
     }
 
     const session = await this.#getSession();
-    if (!session) throw new Error('No active sandbox session');
+
+    if (!session) {
+      throw new Error('No active sandbox session');
+    }
+
     const relativePath = nodePath.relative(session.workdir, action.filePath);
 
     let folder = nodePath.dirname(relativePath);
@@ -503,7 +523,11 @@ export class ActionRunner {
       }
 
       const session = await this.#getSession();
-      if (!session) return null;
+
+      if (!session) {
+        return null;
+      }
+
       const content = await session.readFile(historyPath);
 
       return JSON.parse(content);
@@ -546,7 +570,10 @@ export class ActionRunner {
     });
 
     const session = await this.#getSession();
-    if (!session) throw new Error('No active sandbox session');
+
+    if (!session) {
+      throw new Error('No active sandbox session');
+    }
 
     // Create a new terminal specifically for the build
     const buildProcess = await session.spawn('npm', ['run', 'build']);
@@ -730,6 +757,4 @@ export class ActionRunner {
       source: details?.source || 'netlify',
     });
   }
-
-
 }

@@ -318,7 +318,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                   onStop={props.stopListening}
                   disabled={props.isStreaming}
                 />
-            )}
+              )}
             {props.chatStarted && (
               <IconButton
                 title="Discuss"

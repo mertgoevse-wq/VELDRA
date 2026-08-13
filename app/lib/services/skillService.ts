@@ -13,20 +13,24 @@ export class SkillService {
     if (!SkillService._instance) {
       SkillService._instance = new SkillService();
     }
+
     return SkillService._instance;
   }
 
   async loadSkill(skillName: string): Promise<string> {
     const session = await getActiveSandboxSession();
+
     if (!session) {
       throw new Error('No active sandbox session to load skills from.');
     }
 
     // Try reading the skill from a .skills/ directory in the workspace or similar
     const skillPath = `.skills/${skillName}/SKILL.md`;
+
     try {
       const content = await session.readFile(skillPath);
       this._skills.set(skillName, content);
+
       return content;
     } catch (error) {
       logger.error(`Failed to load skill: ${skillName}`, error);
@@ -36,18 +40,20 @@ export class SkillService {
 
   async discoverSkills(): Promise<string[]> {
     const session = await getActiveSandboxSession();
+
     if (!session) {
       return [];
     }
 
     try {
       const entries = await session.readDir('.skills');
-      if (!entries) return [];
-      
-      return entries
-        .filter((entry) => entry.isDirectory)
-        .map((entry) => entry.name);
-    } catch (error) {
+
+      if (!entries) {
+        return [];
+      }
+
+      return entries.filter((entry) => entry.isDirectory).map((entry) => entry.name);
+    } catch {
       // .skills folder might not exist, which is fine.
       return [];
     }

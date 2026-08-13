@@ -219,10 +219,11 @@ export class MCPService {
         },
       },
       spawn_subagent: {
-        description: 'Spawn an isolated subagent to perform background research or planning without polluting the main context.',
+        description:
+          'Spawn an isolated subagent to perform background research or planning without polluting the main context.',
         parameters: z.object({
           model: z.string().describe('The model name to use for the subagent, e.g. gemini-1.5-pro'),
-          systemPrompt: z.string().describe('The system prompt describing the subagent\'s specific role and tools'),
+          systemPrompt: z.string().describe("The system prompt describing the subagent's specific role and tools"),
           initialPrompt: z.string().describe('The task or query to kick off the subagent'),
         }),
         execute: async (args: any) => {
@@ -240,7 +241,9 @@ export class MCPService {
         const existingServerName = this._toolNamesToServerNames.get(toolName);
 
         if (existingServerName === '__builtin__' && serverName !== '__builtin__') {
-          logger.warn(`Tool conflict: External server "${serverName}" attempted to override builtin tool "${toolName}". Ignoring.`);
+          logger.warn(
+            `Tool conflict: External server "${serverName}" attempted to override builtin tool "${toolName}". Ignoring.`,
+          );
           continue;
         }
 
@@ -314,7 +317,7 @@ export class MCPService {
     this._toolNamesToServerNames.clear();
     this._tools = {};
     this._toolsWithoutExecute = {};
-    
+
     this._registerBuiltinTools();
 
     const checkPromises = Object.entries(this._mcpToolsPerServer).map(async ([serverName, server]) => {
