@@ -504,8 +504,29 @@ export class WorkbenchStore {
     }
   }
 
+  /**
+   * Aborts all running actions across all artifacts.
+   *
+   * Stops ongoing file operations, command executions, and clears action queues.
+   * Used when user cancels a build or resets the workspace state.
+   */
   abortAllActions() {
-    // TODO: what do we wanna do and how do we wanna recover from this?
+    const artifacts = this.artifacts.get();
+
+    for (const artifact of Object.values(artifacts)) {
+      if (artifact?.runner) {
+        // Abort any pending actions in the runner's queue
+        try {
+          artifact.runner.abort?.();
+        } catch (error) {
+          console.warn(`Failed to abort actions for artifact ${artifact.id}:`, error);
+        }
+      }
+    }
+
+    // Clear any pending action alerts
+    this.actionAlert.set(undefined);
+    this.supabaseAlert.set(undefined);
   }
 
   setReloadedMessages(messages: string[]) {
@@ -662,7 +683,7 @@ export class WorkbenchStore {
 
   actionStreamSampler = createSampler(async (data: ActionCallbackData, isStreaming: boolean = false) => {
     return await this._runAction(data, isStreaming);
-  }, 100); // TODO: remove this magic number to have it configurable
+  }, () => getWorkbenchConfig().actionStreamSampleIntervalMs);
 
   #getArtifact(id: string) {
     const artifacts = this.artifacts.get();
