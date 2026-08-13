@@ -1,7 +1,6 @@
 import type { ToolInvocationUIPart } from '@ai-sdk/ui-utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useMemo, useState, useEffect } from 'react';
-import { createHighlighter, type BundledLanguage, type BundledTheme, type HighlighterGeneric } from 'shiki';
 import { classNames } from '~/utils/classNames';
 import {
   TOOL_EXECUTION_APPROVAL,
@@ -14,18 +13,7 @@ import { logger } from '~/utils/logger';
 import { themeStore, type Theme } from '~/lib/stores/theme';
 import { useStore } from '@nanostores/react';
 import type { ToolCallAnnotation } from '~/types/context';
-
-const highlighterOptions = {
-  langs: ['json'],
-  themes: ['light-plus', 'dark-plus'],
-};
-
-const jsonHighlighter: HighlighterGeneric<BundledLanguage, BundledTheme> =
-  import.meta.hot?.data.jsonHighlighter ?? (await createHighlighter(highlighterOptions));
-
-if (import.meta.hot) {
-  import.meta.hot.data.jsonHighlighter = jsonHighlighter;
-}
+import { highlightCode } from '~/utils/shiki-lazy';
 
 interface JsonCodeBlockProps {
   className?: string;
@@ -34,13 +22,14 @@ interface JsonCodeBlockProps {
 }
 
 function JsonCodeBlock({ className, code, theme }: JsonCodeBlockProps) {
+  const [html, setHtml] = useState<string | null>(null);
+
   let formattedCode = code;
 
   try {
     if (typeof formattedCode === 'object') {
       formattedCode = JSON.stringify(formattedCode, null, 2);
     } else if (typeof formattedCode === 'string') {
-      // Attempt to parse and re-stringify for formatting
       try {
         const parsed = JSON.parse(formattedCode);
         formattedCode = JSON.stringify(parsed, null, 2);
@@ -49,23 +38,41 @@ function JsonCodeBlock({ className, code, theme }: JsonCodeBlockProps) {
       }
     }
   } catch (e) {
-    // If parsing fails, keep original code
     logger.error('Failed to parse JSON', { error: e });
+  }
+
+  const finalCode = formattedCode;
+
+  useEffect(() => {
+    let cancelled = false;
+    const shikiTheme = theme === 'dark' ? 'dark-plus' : 'light-plus';
+
+    highlightCode(finalCode, 'json', shikiTheme).then((result) => {
+      if (!cancelled) {
+        setHtml(result);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [finalCode, theme]);
+
+  if (!html) {
+    return (
+      <div className={classNames('text-xs rounded-md overflow-hidden mcp-tool-invocation-code', className)}>
+        <pre>
+          <code>{finalCode}</code>
+        </pre>
+      </div>
+    );
   }
 
   return (
     <div
       className={classNames('text-xs rounded-md overflow-hidden mcp-tool-invocation-code', className)}
-      dangerouslySetInnerHTML={{
-        __html: jsonHighlighter.codeToHtml(formattedCode, {
-          lang: 'json',
-          theme: theme === 'dark' ? 'dark-plus' : 'light-plus',
-        }),
-      }}
-      style={{
-        padding: '0',
-        margin: '0',
-      }}
+      dangerouslySetInnerHTML={{ __html: html }}
+      style={{ padding: '0', margin: '0' }}
     ></div>
   );
 }
