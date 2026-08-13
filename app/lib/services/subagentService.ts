@@ -53,7 +53,7 @@ export class SubagentService {
 
       const modelInstance = provider.getModelInstance({
         model: modelId,
-        serverEnv: llmManager.env,
+        serverEnv: (llmManager.env || {}) as any,
         apiKeys: options.apiKeys,
         providerSettings: options.providerSettings,
       });

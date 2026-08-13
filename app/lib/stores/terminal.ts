@@ -84,7 +84,7 @@ export class TerminalStore {
     }
 
     for (const { process } of this.#terminals) {
-      process.resize({ cols, rows });
+      process.resize?.({ cols, rows });
     }
   }
 

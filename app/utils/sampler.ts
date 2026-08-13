@@ -5,10 +5,13 @@
  * - Captures the last call if no call was made during the interval
  *
  * @param fn The function to sample
- * @param sampleInterval How often to sample calls (in ms)
+ * @param sampleInterval How often to sample calls (in ms), or a function that returns the interval
  * @returns The sampled function
  */
-export function createSampler<T extends (...args: any[]) => any>(fn: T, sampleInterval: number): T {
+export function createSampler<T extends (...args: any[]) => any>(
+  fn: T,
+  sampleInterval: number | (() => number),
+): T {
   let lastArgs: Parameters<T> | null = null;
   let lastTime = 0;
   let timeout: NodeJS.Timeout | null = null;
@@ -18,8 +21,11 @@ export function createSampler<T extends (...args: any[]) => any>(fn: T, sampleIn
     const now = Date.now();
     lastArgs = args;
 
+    // Resolve interval value
+    const intervalMs = typeof sampleInterval === 'function' ? sampleInterval() : sampleInterval;
+
     // If we're within the sample interval, just store the args
-    if (now - lastTime < sampleInterval) {
+    if (now - lastTime < intervalMs) {
       // Set up trailing call if not already set
       if (!timeout) {
         timeout = setTimeout(
@@ -32,7 +38,7 @@ export function createSampler<T extends (...args: any[]) => any>(fn: T, sampleIn
               lastArgs = null;
             }
           },
-          sampleInterval - (now - lastTime),
+          intervalMs - (now - lastTime),
         );
       }
 

@@ -42,8 +42,7 @@ describe('file action runtime policy', () => {
 
   it('writes a direct Android file action through the local writer', async () => {
     const writeFile = vi.fn(async () => undefined);
-    const webcontainer = Promise.reject(new Error('WebContainer unavailable'));
-    void webcontainer.catch(() => undefined);
+    const webcontainer = () => Promise.reject(new Error('WebContainer unavailable'));
 
     const runner = new ActionRunner(webcontainer, () => undefined as never, undefined, undefined, undefined, writeFile);
 
@@ -61,7 +60,7 @@ describe('file action runtime policy', () => {
   });
 
   it('keeps Supabase queries pending for the existing UI flow', async () => {
-    const runner = new ActionRunner(Promise.resolve({} as never), () => undefined as never);
+    const runner = new ActionRunner(() => Promise.resolve({} as never), () => undefined as never);
     const action = {
       artifactId: 'artifact',
       messageId: 'message',
@@ -82,8 +81,7 @@ describe('file action runtime policy', () => {
 
   it('feeds a blocked shell action into onAlert so the model can learn it never ran', async () => {
     const onAlert = vi.fn();
-    const webcontainer = Promise.reject(new Error('WebContainer unavailable'));
-    void webcontainer.catch(() => undefined);
+    const webcontainer = () => Promise.reject(new Error('WebContainer unavailable'));
 
     const runner = new ActionRunner(webcontainer, () => undefined as never, onAlert);
 
@@ -126,8 +124,7 @@ describe('file action runtime policy', () => {
 
       return JSON.stringify(history);
     });
-    const webcontainer = Promise.reject(new Error('WebContainer unavailable'));
-    void webcontainer.catch(() => undefined);
+    const webcontainer = () => Promise.reject(new Error('WebContainer unavailable'));
 
     const runner = new ActionRunner(
       webcontainer,
@@ -146,7 +143,7 @@ describe('file action runtime policy', () => {
   it('rejects a local file action at the workspace root', async () => {
     const writeFile = vi.fn(async () => undefined);
     const runner = new ActionRunner(
-      Promise.resolve({} as never),
+      () => Promise.resolve({} as never),
       () => undefined as never,
       undefined,
       undefined,
@@ -170,7 +167,7 @@ describe('file action runtime policy', () => {
   it('rejects a local file action outside the workspace', async () => {
     const writeFile = vi.fn(async () => undefined);
     const runner = new ActionRunner(
-      Promise.resolve({} as never),
+      () => Promise.resolve({} as never),
       () => undefined as never,
       undefined,
       undefined,

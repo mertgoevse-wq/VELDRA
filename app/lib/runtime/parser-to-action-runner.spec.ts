@@ -47,8 +47,7 @@ function wireParserToRunner(runner: ActionRunner) {
 function createAndroidFallbackRunner(
   writeFile: ReturnType<typeof vi.fn<(filePath: string, content: string) => Promise<void>>>,
 ) {
-  const webcontainer = Promise.reject(new Error('WebContainer unavailable in Android fallback mode'));
-  void webcontainer.catch(() => undefined);
+  const webcontainer = () => Promise.reject(new Error('WebContainer unavailable in Android fallback mode'));
 
   return new ActionRunner(webcontainer, () => undefined as never, undefined, undefined, undefined, writeFile);
 }

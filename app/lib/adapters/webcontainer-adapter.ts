@@ -131,17 +131,20 @@ export class WebContainerAdapter implements PlatformAdapter {
       throw new Error('WebContainer not booted');
     }
 
-    const process = await newShellProcess(this._instance, terminal);
+    // TODO: Architectural mismatch - newShellProcess expects SandboxSession but receives WebContainer.
+    // This should be refactored to use WebContainerSession from lib/execution/webcontainer.ts
+    const process = await newShellProcess(this._instance as any, terminal);
 
     return {
       get input() {
-        return process.input.getWriter();
+        // process.input is guaranteed to exist for interactive shells
+        return process.input!.getWriter();
       },
       get output() {
         return process.output;
       },
       resize(cols: number, rows: number) {
-        process.resize({ cols, rows });
+        process.resize?.({ cols, rows });
       },
       kill() {
         process.kill();

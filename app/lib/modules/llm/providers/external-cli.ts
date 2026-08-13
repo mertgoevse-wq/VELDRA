@@ -49,19 +49,19 @@ export default class ExternalCLIProvider extends BaseProvider {
       provider: this.name,
       modelId: options.model,
       defaultObjectGenerationMode: 'json',
-      async doGenerate(callOptions) {
+      async doGenerate(callOptions: any) {
         throw new Error('doGenerate: Not implemented. Use doStream.');
       },
-      async doStream(callOptions) {
+      async doStream(callOptions: any) {
         // Construct full chat history
-        const promptLines = callOptions.prompt.map(msg => {
+        const promptLines = callOptions.prompt.map((msg: any) => {
           let content = '';
           if (typeof msg.content === 'string') {
             content = msg.content;
           } else if (Array.isArray(msg.content)) {
             content = msg.content
-              .filter(part => part.type === 'text')
-              .map(part => (part as any).text)
+              .filter((part: any) => part.type === 'text')
+              .map((part: any) => (part as any).text)
               .join('\n');
           }
           return `${msg.role.toUpperCase()}:\n${content}`;

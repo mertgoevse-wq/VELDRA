@@ -211,19 +211,22 @@ export class WebContainerRuntimeAdapter implements RuntimeAdapter {
   async spawnShell(terminal: IRuntimeTerminal): Promise<ITerminalProcess> {
     const wc = this.requireInstance();
 
+    // TODO: Architectural mismatch - newShellProcess expects SandboxSession but receives WebContainer.
+    // This should be refactored to use WebContainerSession from lib/execution/webcontainer.ts
     // Cast: our IRuntimeTerminal is compatible with the ITerminal that
     // newShellProcess expects (it only uses cols, rows, write, onData).
-    const process = await newShellProcess(wc, terminal as any);
+    const process = await newShellProcess(wc as any, terminal as any);
 
     return {
       get input() {
-        return process.input.getWriter();
+        // process.input is guaranteed to exist for interactive shells
+        return process.input!.getWriter();
       },
       get output() {
         return process.output;
       },
       resize(cols: number, rows: number) {
-        process.resize({ cols, rows });
+        process.resize?.({ cols, rows });
       },
       kill() {
         process.kill();
