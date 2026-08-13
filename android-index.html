@@ -19,7 +19,7 @@
       rel="stylesheet"
     />
     <script>
-      // Apply theme before React mounts to avoid FOUC
+      // Apply theme + skin before React mounts to avoid FOUC
       (function () {
         try {
           var theme = localStorage.getItem('bolt_theme');
@@ -27,6 +27,8 @@
             theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
           }
           document.documentElement.setAttribute('data-theme', theme);
+          var skin = localStorage.getItem('bolt_skin') || 'veldra';
+          document.documentElement.setAttribute('data-skin', skin);
         } catch (e) {}
       })();
     </script>

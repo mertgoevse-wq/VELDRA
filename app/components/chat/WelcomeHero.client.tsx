@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { db, getAll, type ChatHistoryItem } from '~/lib/persistence';
 import { profileStore } from '~/lib/stores/profile';
 import { BUILD_PROMPTS, composeGreeting } from '~/lib/utils/greeting';
+import { isCapacitor } from '~/lib/adapters/platform';
 
 const ROTATE_INTERVAL_MS = 7000;
 const MAX_RECENT_PROJECTS = 3;
@@ -81,7 +82,7 @@ export function WelcomeHero() {
         {rotatingLine}
       </p>
 
-      {recentProjects.length > 0 && (
+      {recentProjects.length > 0 && !isCapacitor() && (
         <div className="mb-2 flex w-full flex-col items-center justify-center gap-2 px-2">
           <span className="text-xs uppercase tracking-wide text-bolt-elements-textTertiary">Continue</span>
           <div className="flex w-full flex-wrap items-center justify-center gap-2">

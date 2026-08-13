@@ -754,6 +754,27 @@
 }
 
 /* =========================================================
+   Terminal drawer: account for safe area on Android
+   ========================================================= */
+
+.android-shell .mobile-terminal-drawer {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.android-shell .mobile-terminal-drawer .h-\[calc\(100\%-40px\)\] {
+  height: calc(100% - 40px - env(safe-area-inset-bottom, 0px));
+}
+
+/* =========================================================
+   File tree drawer: start below safe area on Android
+   ========================================================= */
+
+.android-shell .mobile-filetree-drawer {
+  top: env(safe-area-inset-top, 0px);
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+}
+
+/* =========================================================
    Performance: reduce breathing background blur on Android
    ========================================================= */
 

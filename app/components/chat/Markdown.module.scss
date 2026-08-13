@@ -10,6 +10,9 @@ $code-font-size: 13px;
 .MarkdownContent {
   line-height: 1.6;
   color: var(--bolt-elements-textPrimary);
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 
   > *:not(:last-child) {
     margin-block-end: 16px;
@@ -158,14 +161,16 @@ $code-font-size: 13px;
     border-collapse: collapse;
     width: 100%;
     margin-block-end: 16px;
+    display: block;
+    overflow-x: auto;
 
     :is(th, td) {
       padding: 6px 13px;
-      border: 1px solid #dfe2e5;
+      border: 1px solid var(--bolt-elements-borderColor, #dfe2e5);
     }
 
     tr:nth-child(2n) {
-      background-color: #f6f8fa;
+      background-color: var(--bolt-elements-bg-depth-2, #f6f8fa);
     }
   }
 }

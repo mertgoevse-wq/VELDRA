@@ -22,6 +22,7 @@ import { TouchBackend } from 'react-dnd-touch-backend';
 import { cssTransition, ToastContainer } from 'react-toastify';
 import { App as CapacitorApp } from '@capacitor/app';
 import { themeStore } from '~/lib/stores/theme';
+import { skinStore } from '~/lib/stores/skin';
 import { runtimeModeStore } from '~/lib/stores/runtime-mode';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { streamingState } from '~/lib/stores/streaming';
@@ -108,13 +109,18 @@ function SettingsTab() {
 
 export default function AndroidShell() {
   const theme = useStore(themeStore);
+  const skin = useStore(skinStore);
   const runtime = useStore(runtimeModeStore);
   const [activeTab, setActiveTab] = useState<MobileTab>('chat');
 
-  // Sync theme to HTML element
+  // Sync theme + skin to HTML element
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-skin', skin);
+  }, [skin]);
 
   // Handle programmatic tab changes (e.g. from fallback buttons)
   useEffect(() => {
