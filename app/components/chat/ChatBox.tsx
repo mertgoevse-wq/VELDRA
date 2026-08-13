@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { classNames } from '~/utils/classNames';
 import { PROVIDER_LIST } from '~/utils/constants';
 import { ModelSelector } from '~/components/chat/ModelSelector';
-import { APIKeyManager } from './APIKeyManager';
 import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
 import FilePreview from './FilePreview';
 import { ScreenshotStateManager } from './ScreenshotStateManager';
@@ -21,6 +20,7 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import { WebSearch } from './WebSearch.client';
 import { isCapacitor } from '~/lib/adapters/platform';
+import { getImageFiles, processImageFiles } from './composer';
 
 /*
  * Provider API keys live server-side on Android (see docs/ANDROID_LLM_API_BRIDGE.md) --
@@ -32,6 +32,29 @@ const AndroidApiKeyNotice: React.FC = () => (
   <div className="text-xs text-bolt-elements-textSecondary px-1 py-2">
     Provider API keys are configured on the Android API Backend server, not in this app. Set the backend URL and token
     in Settings → Android API Backend.
+  </div>
+);
+
+/*
+ * Key entry itself now lives in Settings -> Providers (CloudProvidersTab), not on the
+ * chat composer -- this is just a connection-status readout. Only checks the client-side
+ * cookie key, not a server-side env var (that check is async and lives in APIKeyManager),
+ * so this can under-report ("not connected" when an env key actually works) but never
+ * over-claims a connection that doesn't exist -- the safer direction for a status readout.
+ */
+const ProviderConnectionStatus: React.FC<{ provider: ProviderInfo; hasKey: boolean }> = ({ provider, hasKey }) => (
+  <div className="flex items-center gap-1.5 px-1 py-2 text-xs">
+    {hasKey ? (
+      <>
+        <div className="i-ph:check-circle-fill h-3.5 w-3.5 text-green-500" />
+        <span className="text-bolt-elements-textSecondary">{provider.name} connected</span>
+      </>
+    ) : (
+      <>
+        <div className="i-ph:circle-dashed h-3.5 w-3.5 text-bolt-elements-textTertiary" />
+        <span className="text-bolt-elements-textSecondary">Configure {provider.name} in Settings → Providers</span>
+      </>
+    )}
   </div>
 );
 
@@ -80,10 +103,18 @@ interface ChatBoxProps {
 }
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const uploadedFilesRef = useRef(props.uploadedFiles);
+  const imageDataListRef = useRef(props.imageDataList);
+  const dropQueueRef = useRef(Promise.resolve());
+
+  uploadedFilesRef.current = props.uploadedFiles;
+  imageDataListRef.current = props.imageDataList;
+
   return (
     <div
       className={classNames(
-        'relative bg-bolt-elements-background-depth-2 backdrop-blur p-3 rounded-lg border border-bolt-elements-borderColor relative w-full max-w-chat mx-auto z-prompt',
+        'relative veldra-surface p-3 w-full max-w-chat mx-auto z-prompt',
 
         /*
          * {
@@ -103,15 +134,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             gradientUnits="userSpaceOnUse"
             gradientTransform="rotate(-45)"
           >
-            <stop offset="0%" stopColor="#50ADE2" stopOpacity="0%"></stop>
-            <stop offset="40%" stopColor="#50ADE2" stopOpacity="80%"></stop>
-            <stop offset="50%" stopColor="#50ADE2" stopOpacity="80%"></stop>
-            <stop offset="100%" stopColor="#50ADE2" stopOpacity="0%"></stop>
-          </linearGradient>
-          <linearGradient id="line-gradient-light">
-            <stop offset="0%" stopColor="rgba(80, 173, 226,0)"></stop>
-            <stop offset="50%" stopColor="rgba(80, 173, 226,1)"></stop>
-            <stop offset="100%" stopColor="rgba(80, 173, 226,0)"></stop>
+            <stop offset="0%" stopColor="var(--veldra-composer-glow-start)" stopOpacity="0%"></stop>
+            <stop offset="40%" stopColor="var(--veldra-composer-glow-mid)" stopOpacity="80%"></stop>
+            <stop offset="50%" stopColor="var(--veldra-composer-glow-mid)" stopOpacity="80%"></stop>
+            <stop offset="100%" stopColor="var(--veldra-composer-glow-end)" stopOpacity="0%"></stop>
           </linearGradient>
           <linearGradient id="shine-gradient">
             <stop offset="0%" stopColor="white" stopOpacity="0%"></stop>
@@ -144,13 +170,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                 (isCapacitor() ? (
                   <AndroidApiKeyNotice />
                 ) : (
-                  <APIKeyManager
-                    provider={props.provider}
-                    apiKey={props.apiKeys[props.provider.name] || ''}
-                    setApiKey={(key) => {
-                      props.onApiKeysChange(props.provider.name, key);
-                    }}
-                  />
+                  <ProviderConnectionStatus provider={props.provider} hasKey={!!props.apiKeys[props.provider.name]} />
                 ))}
             </div>
           )}
@@ -191,48 +211,65 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         </div>
       )}
       <div
-        className={classNames('relative shadow-xs border border-bolt-elements-borderColor backdrop-blur rounded-lg')}
+        className={classNames('relative veldra-control', styles.ComposerControl)}
+        data-dragging={isDraggingFiles ? 'true' : undefined}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setIsDraggingFiles(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setIsDraggingFiles(false);
+          }
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setIsDraggingFiles(false);
+
+          const droppedFiles = Array.from(event.dataTransfer.files);
+
+          if (getImageFiles(droppedFiles).length === 0) {
+            return;
+          }
+
+          dropQueueRef.current = dropQueueRef.current
+            .then(async () => {
+              const { successfulFiles, imageData, failedCount } = await processImageFiles(droppedFiles);
+
+              if (successfulFiles.length === 0) {
+                toast.error('Could not read the dropped image.');
+                return;
+              }
+
+              if (failedCount > 0) {
+                toast.error('Some dropped images could not be read.');
+              }
+
+              const nextFiles = [...uploadedFilesRef.current, ...successfulFiles];
+              const nextImageData = [...imageDataListRef.current, ...imageData];
+
+              uploadedFilesRef.current = nextFiles;
+              imageDataListRef.current = nextImageData;
+              props.setUploadedFiles?.(nextFiles);
+              props.setImageDataList?.(nextImageData);
+            })
+            .catch(() => {
+              toast.error('Could not read the dropped image.');
+            });
+        }}
       >
         <textarea
           ref={props.textareaRef}
-          aria-label="Chat input"
           className={classNames(
             'w-full pl-4 pt-4 pr-16 outline-none resize-none text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary bg-transparent text-sm',
             'transition-all duration-200',
             'hover:border-bolt-elements-focus',
           )}
-          onDragEnter={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '2px solid #1488fc';
-          }}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '2px solid #1488fc';
-          }}
-          onDragLeave={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '1px solid var(--bolt-elements-borderColor)';
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '1px solid var(--bolt-elements-borderColor)';
-
-            const files = Array.from(e.dataTransfer.files);
-            files.forEach((file) => {
-              if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-
-                reader.onload = (e) => {
-                  const base64Image = e.target?.result as string;
-                  props.setUploadedFiles?.([...props.uploadedFiles, file]);
-                  props.setImageDataList?.([...props.imageDataList, base64Image]);
-                };
-                reader.readAsDataURL(file);
-              } else {
-                toast.error('Unsupported file type. Only images are allowed.');
-              }
-            });
-          }}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               if (event.shiftKey) {
@@ -287,8 +324,8 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             />
           )}
         </ClientOnly>
-        <div className="flex justify-between items-center text-sm p-4 pt-2">
-          <div className="flex gap-1 items-center">
+        <div className="flex items-center gap-2 text-sm p-4 pt-2">
+          <div className="custom-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
             <ColorSchemeDialog designScheme={props.designScheme} setDesignScheme={props.setDesignScheme} />
             <McpTools />
             <IconButton title="Upload file" className="transition-all" onClick={() => props.handleFileUpload()}>
@@ -301,6 +338,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               className={classNames('transition-all', props.enhancingPrompt ? 'opacity-100' : '')}
               onClick={() => {
                 props.enhancePrompt?.();
+                toast.success('Prompt enhanced!');
               }}
             >
               {props.enhancingPrompt ? (
@@ -310,15 +348,12 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               )}
             </IconButton>
 
-            {typeof window !== 'undefined' &&
-              ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) && (
-                <SpeechRecognitionButton
-                  isListening={props.isListening}
-                  onStart={props.startListening}
-                  onStop={props.stopListening}
-                  disabled={props.isStreaming}
-                />
-              )}
+            <SpeechRecognitionButton
+              isListening={props.isListening}
+              onStart={props.startListening}
+              onStop={props.stopListening}
+              disabled={props.isStreaming}
+            />
             {props.chatStarted && (
               <IconButton
                 title="Discuss"
@@ -351,14 +386,16 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               {props.isModelSettingsCollapsed ? <span className="text-xs">{props.model}</span> : <span />}
             </IconButton>
           </div>
-          {props.input.length > 3 ? (
-            <div className="text-xs text-bolt-elements-textTertiary">
-              Use <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Shift</kbd> +{' '}
-              <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Return</kbd> a new line
-            </div>
-          ) : null}
-          <SupabaseConnection />
-          <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
+          <div className="flex shrink-0 items-center gap-2">
+            {props.input.length > 3 ? (
+              <div className="hidden text-xs text-bolt-elements-textTertiary sm:block">
+                Use <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Shift</kbd> +{' '}
+                <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Return</kbd> a new line
+              </div>
+            ) : null}
+            <SupabaseConnection />
+            <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
+          </div>
         </div>
       </div>
     </div>

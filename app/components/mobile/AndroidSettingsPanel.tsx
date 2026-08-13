@@ -358,7 +358,7 @@ export default function AndroidSettingsPanel() {
               <button
                 onClick={() => handleModeChange('android-fallback')}
                 className={classNames('flex-1 py-2 rounded-lg text-xs font-semibold border transition-all', {
-                  'bg-purple-600/15 border-purple-500/50 text-purple-400': runtime.mode === 'android-fallback',
+                  'bg-accent-600/15 border-accent-500/50 text-accent-400': runtime.mode === 'android-fallback',
                   'bg-transparent border-bolt-elements-borderColor text-bolt-elements-textSecondary':
                     runtime.mode !== 'android-fallback',
                 })}
@@ -368,7 +368,7 @@ export default function AndroidSettingsPanel() {
               <button
                 onClick={() => handleModeChange('remote')}
                 className={classNames('flex-1 py-2 rounded-lg text-xs font-semibold border transition-all', {
-                  'bg-purple-600/15 border-purple-500/50 text-purple-400': runtime.mode === 'remote',
+                  'bg-accent-600/15 border-accent-500/50 text-accent-400': runtime.mode === 'remote',
                   'bg-transparent border-bolt-elements-borderColor text-bolt-elements-textSecondary':
                     runtime.mode !== 'remote',
                 })}
@@ -432,7 +432,7 @@ export default function AndroidSettingsPanel() {
                   setApiBackendState('not-configured');
                 }}
                 placeholder="https://api.example.com/android"
-                className="px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder:text-bolt-elements-textTertiary"
+                className="px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary"
               />
             </div>
 
@@ -445,7 +445,7 @@ export default function AndroidSettingsPanel() {
                 value={apiBackendTokenInput}
                 onChange={(event) => setApiBackendTokenInput(event.target.value)}
                 placeholder="Backend token, not provider API key"
-                className="px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder:text-bolt-elements-textTertiary"
+                className="px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary"
               />
             </div>
 
@@ -465,7 +465,7 @@ export default function AndroidSettingsPanel() {
               <span
                 className={classNames('font-semibold uppercase text-[10px] px-2.5 py-0.5 rounded-full border', {
                   'bg-gray-500/10 border-gray-500/30 text-gray-400': apiBackendState === 'not-configured',
-                  'bg-purple-500/10 border-purple-500/30 text-purple-400': apiBackendState === 'checking',
+                  'bg-accent-500/10 border-accent-500/30 text-accent-400': apiBackendState === 'checking',
                   'bg-green-500/10 border-green-500/30 text-green-400': apiBackendState === 'connected',
                   'bg-red-500/10 border-red-500/30 text-red-400': apiBackendState === 'failed',
                 })}
@@ -475,7 +475,7 @@ export default function AndroidSettingsPanel() {
               <div className="flex gap-2">
                 <button
                   onClick={handleApiBackendSave}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-accent-600 hover:bg-accent-700 text-white transition-colors"
                 >
                   Save
                 </button>
@@ -517,12 +517,12 @@ export default function AndroidSettingsPanel() {
                   onChange={(e) => setUrlInput(e.target.value)}
                   placeholder="https://runtime.example.com"
                   disabled={runtime.mode !== 'remote'}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   onClick={handleUrlSave}
                   disabled={runtime.mode !== 'remote'}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-accent-600 hover:bg-accent-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Save
                 </button>
@@ -547,12 +547,12 @@ export default function AndroidSettingsPanel() {
                   onChange={(e) => setTokenInput(e.target.value)}
                   placeholder="Bearer Auth Token"
                   disabled={runtime.mode !== 'remote'}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   onClick={handleTokenSave}
                   disabled={runtime.mode !== 'remote'}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-accent-600 hover:bg-accent-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Save
                 </button>
@@ -577,12 +577,12 @@ export default function AndroidSettingsPanel() {
                   onChange={(e) => setWorkspaceInput(e.target.value)}
                   placeholder="ws_xyz123"
                   disabled={runtime.mode !== 'remote'}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   onClick={handleWorkspaceSave}
                   disabled={runtime.mode !== 'remote'}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-accent-600 hover:bg-accent-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Save
                 </button>
@@ -602,7 +602,7 @@ export default function AndroidSettingsPanel() {
                 <span
                   className={classNames('font-semibold uppercase text-[10px] px-2.5 py-0.5 rounded-full border', {
                     'bg-gray-500/10 border-gray-500/30 text-gray-400': connectionState === 'disconnected',
-                    'bg-purple-500/10 border-purple-500/30 text-purple-400': connectionState === 'checking',
+                    'bg-accent-500/10 border-accent-500/30 text-accent-400': connectionState === 'checking',
                     'bg-green-500/10 border-green-500/30 text-green-400': connectionState === 'connected',
                     'bg-red-500/10 border-red-500/30 text-red-400': connectionState === 'failed',
                   })}
@@ -640,7 +640,7 @@ export default function AndroidSettingsPanel() {
               <button
                 onClick={handleCreateWorkspace}
                 disabled={runtime.mode !== 'remote' || creatingWorkspace || !urlInput.trim()}
-                className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-accent-600 hover:bg-accent-700 text-white flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creatingWorkspace ? (
                   <>
@@ -663,7 +663,7 @@ export default function AndroidSettingsPanel() {
                 <span
                   className={classNames('text-[10px] uppercase px-2 py-0.5 rounded-full border', {
                     'bg-gray-500/10 border-gray-500/30 text-gray-400': syncStatus.state === 'idle',
-                    'bg-purple-500/10 border-purple-500/30 text-purple-400': syncStatus.state === 'syncing',
+                    'bg-accent-500/10 border-accent-500/30 text-accent-400': syncStatus.state === 'syncing',
                     'bg-green-500/10 border-green-500/30 text-green-400': syncStatus.state === 'success',
                     'bg-red-500/10 border-red-500/30 text-red-400': syncStatus.state === 'error',
                   })}

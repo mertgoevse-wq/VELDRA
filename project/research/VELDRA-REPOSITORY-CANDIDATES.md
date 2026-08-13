@@ -174,6 +174,24 @@ Comparatively few actively-maintained, clearly-licensed pure test-generation too
 
 ---
 
+## 19. Claude-Code-development-pattern references (not VELDRA product dependencies)
+
+Loop 22 mandate specifically named these; researched via a light background agent pass, distinct in kind from everything above — these are tools/patterns for how *this session* builds VELDRA, not candidates for VELDRA's own dependency tree. Per this doc's own top-line caveat, none independently re-verified beyond the agent's single pass; re-check before any deeper use.
+
+| Repo/item | License | What it is | Verdict |
+|---|---|---|---|
+| [jqueryscript/awesome-claude-code](https://github.com/jqueryscript/awesome-claude-code) | CC0-1.0 | Curated index of Claude Code tools/skills/plugins | Reference/discovery only |
+| [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) | MIT | 24 engineering skills across define→plan→build→verify→review→ship, specialist personas (code reviewer, test engineer, security auditor) | Reference for VELDRA's own orchestration/workflow design, not a code dependency |
+| [ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) | Apache-2.0 | 1000+ curated skills across Claude/Cursor/Gemini CLI | Reference/discovery only |
+| [khoj-ai/khoj](https://github.com/khoj-ai/khoj) | **AGPL-3.0** | Personal AI "second brain" (chat + retrieval + custom agents) | **Not relevant to VELDRA** — a personal-productivity app, not a dev tool, and AGPL would be a real problem for a closed-source product regardless |
+| OmniRoute (`pitbaden/omniroute`) | unverified beyond agent pass | AI gateway, 268+ providers, task-based routing/fallback/prompt compression | Interesting parallel to VELDRA's own 24-provider abstraction; not adopted, flagged only as a pattern worth a closer look if provider-routing ever needs more than what `app/lib/modules/llm/providers/` already does |
+| claude-mem (`thedotmack/claude-mem`) | unverified beyond agent pass | Cross-session Claude Code memory (SQLite + vector DB, session summaries) | Same territory as VELDRA's own future Context Engine (`VELDRA-ARCHITECTURE-RESEARCH.md` §4) — a pattern reference, not a dependency, since VELDRA's memory needs to live in-product (IndexedDB), not in this session's own tooling |
+| Headroom (`headroomlabs-ai/headroom`) | unverified beyond agent pass | macOS menu-bar proxy compressing tool output before it reaches Claude Code, 15-25% token savings | Dev-tooling only (macOS-specific, not embeddable) — the token-compression *idea* is relevant to VELDRA's own future context-compaction work, not the tool itself |
+| "Claude Code Setup" (several community repos, e.g. `mrgoonie/claude-code-setup`) | varies by repo | Opinionated `.claude/` project-config templates (agents/commands/hooks) | Reference only — per `project/DECISIONS.md` D-008, VELDRA does not adopt a `.claude/agents`/`.claude/skills` tree speculatively |
+| "Task Observer" | n/a (a skill pattern, not a single repo) | Meta-skill that logs skill-creation/improvement opportunities during a session | Reference pattern for iterating on how this session works, not a VELDRA artifact |
+
+**Net effect on VELDRA's own dependency tree: none.** These inform how this session works, consistent with D-008's "apply the methodology, don't import the library" framing already established for `claude-code-best-practice`.
+
 ## Sources
 
 All repository URLs above were opened directly on GitHub; license claims marked "search-corroborated" or "not independently re-verified" reflect cases where the primary LICENSE file was not independently re-fetched in this pass and should be re-checked before any actual integration decision, per this document's own top-line caveat.

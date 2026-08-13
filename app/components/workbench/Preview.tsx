@@ -956,7 +956,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                         <span className="text-xs text-bolt-elements-textTertiary">Show Device Frame</span>
                         <button
                           className={`w-10 h-5 rounded-full transition-colors duration-200 ${
-                            showDeviceFrame ? 'bg-[#6D28D9]' : 'bg-gray-300 dark:bg-gray-700'
+                            showDeviceFrame ? 'bg-accent-500' : 'bg-gray-300 dark:bg-gray-700'
                           } relative`}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -974,7 +974,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                         <span className="text-xs text-bolt-elements-textTertiary">Landscape Mode</span>
                         <button
                           className={`w-10 h-5 rounded-full transition-colors duration-200 ${
-                            isLandscape ? 'bg-[#6D28D9]' : 'bg-gray-300 dark:bg-gray-700'
+                            isLandscape ? 'bg-accent-500' : 'bg-gray-300 dark:bg-gray-700'
                           } relative`}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -993,7 +993,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                   {WINDOW_SIZES.map((size) => (
                     <button
                       key={size.name}
-                      className="w-full px-4 py-3.5 text-left text-[#111827] dark:text-gray-300 text-sm whitespace-nowrap flex items-center gap-3 group hover:bg-[#F5EEFF] dark:hover:bg-gray-900 bg-white dark:bg-black"
+                      className="w-full px-4 py-3.5 text-left text-[#111827] dark:text-gray-300 text-sm whitespace-nowrap flex items-center gap-3 group hover:bg-accent-500/10 dark:hover:bg-gray-900 bg-white dark:bg-black"
                       onClick={() => {
                         setSelectedWindowSize(size);
                         setIsWindowSizeDropdownOpen(false);
@@ -1001,13 +1001,13 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                       }}
                     >
                       <div
-                        className={`${size.icon} w-5 h-5 text-[#6B7280] dark:text-gray-400 group-hover:text-[#6D28D9] dark:group-hover:text-[#6D28D9] transition-colors duration-200`}
+                        className={`${size.icon} w-5 h-5 text-[#6B7280] dark:text-gray-400 group-hover:text-accent-500 dark:group-hover:text-accent-500 transition-colors duration-200`}
                       />
                       <div className="flex-grow flex flex-col">
-                        <span className="font-medium group-hover:text-[#6D28D9] dark:group-hover:text-[#6D28D9] transition-colors duration-200">
+                        <span className="font-medium group-hover:text-accent-500 dark:group-hover:text-accent-500 transition-colors duration-200">
                           {size.name}
                         </span>
-                        <span className="text-xs text-[#6B7280] dark:text-gray-400 group-hover:text-[#6D28D9] dark:group-hover:text-[#6D28D9] transition-colors duration-200">
+                        <span className="text-xs text-[#6B7280] dark:text-gray-400 group-hover:text-accent-500 dark:group-hover:text-accent-500 transition-colors duration-200">
                           {isLandscape && (size.frameType === 'mobile' || size.frameType === 'tablet')
                             ? `${size.height} × ${size.width}`
                             : `${size.width} × ${size.height}`}
@@ -1015,7 +1015,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                         </span>
                       </div>
                       {selectedWindowSize.name === size.name && (
-                        <div className="text-[#6D28D9] dark:text-[#6D28D9]">
+                        <div className="text-accent-500 dark:text-accent-500">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="16"
@@ -1157,7 +1157,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
             </>
           ) : remotePreview?.status === 'running' && remotePreview.previewUrl ? (
             <div className="flex flex-col w-full h-full relative">
-              <div className="bg-purple-500/10 border-b border-purple-500/20 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-purple-400">
+              <div className="bg-accent-500/10 border-b border-accent-500/20 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-accent-400">
                 <span className="flex items-center gap-1.5 font-medium min-w-0">
                   <span className="i-ph:broadcast-fill text-sm shrink-0" />
                   <span className="truncate">Remote Preview: {remotePreview.previewUrl}</span>
@@ -1166,13 +1166,13 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                   <button
                     onClick={() => refreshRemotePreview()}
                     disabled={remotePreviewLoading}
-                    className="px-2 py-0.5 border border-purple-500/30 hover:bg-purple-500/10 rounded transition-colors disabled:opacity-50"
+                    className="px-2 py-0.5 border border-accent-500/30 hover:bg-accent-500/10 rounded transition-colors disabled:opacity-50"
                   >
                     Refresh Preview
                   </button>
                   <button
                     onClick={openRemotePreviewExternally}
-                    className="px-2 py-0.5 border border-purple-500/30 hover:bg-purple-500/10 rounded transition-colors"
+                    className="px-2 py-0.5 border border-accent-500/30 hover:bg-accent-500/10 rounded transition-colors"
                   >
                     Open External Preview
                   </button>
@@ -1225,7 +1225,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                       className={classNames('text-[10px] uppercase px-2 py-0.5 rounded-full border', {
                         'bg-gray-500/10 border-gray-500/30 text-gray-400':
                           !remotePreview || remotePreview.status === 'none',
-                        'bg-purple-500/10 border-purple-500/30 text-purple-400': remotePreview?.status === 'starting',
+                        'bg-accent-500/10 border-accent-500/30 text-accent-400': remotePreview?.status === 'starting',
                         'bg-green-500/10 border-green-500/30 text-green-400': remotePreview?.status === 'running',
                         'bg-red-500/10 border-red-500/30 text-red-400': remotePreview?.status === 'failed',
                       })}
@@ -1256,7 +1256,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                       <button
                         onClick={() => refreshRemotePreview()}
                         disabled={remotePreviewLoading}
-                        className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                        className="w-full px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
                       >
                         <span
                           className={remotePreviewLoading ? 'i-ph:spinner-gap animate-spin' : 'i-ph:arrow-clockwise'}
@@ -1275,7 +1275,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                   </p>
                   <button
                     onClick={handleStartStaticPreview}
-                    className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    className="w-full px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
                   >
                     <span className="i-ph:play-fill" />
                     Run Basic Static Preview

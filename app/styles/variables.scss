@@ -3,6 +3,7 @@
 :root[data-theme='light'] {
   --bolt-elements-borderColor: theme('colors.alpha.gray.10');
   --bolt-elements-borderColorActive: theme('colors.accent.600');
+  --bolt-elements-focus: theme('colors.accent.600');
 
   --bolt-elements-bg-depth-1: theme('colors.white');
   --bolt-elements-bg-depth-2: theme('colors.gray.50');
@@ -111,6 +112,7 @@
 :root[data-theme='dark'] {
   --bolt-elements-borderColor: theme('colors.alpha.white.10');
   --bolt-elements-borderColorActive: theme('colors.accent.500');
+  --bolt-elements-focus: theme('colors.accent.500');
 
   --bolt-elements-bg-depth-1: theme('colors.gray.950');
   --bolt-elements-bg-depth-2: theme('colors.gray.900');
@@ -215,309 +217,6 @@
 }
 
 /*
- * Skins layer on top of a theme (light/dark) via a separate `data-skin` attribute (see
- * app/lib/stores/skin.ts) instead of replacing it. The eight supported values are kept in one
- * TypeScript registry and this stylesheet supplies the visual overrides that exist today; values
- * that do not override a token intentionally inherit the base theme rather than creating a second
- * cascade or a misleading fallback palette.
- */
-:root[data-theme='dark'][data-skin='core'] {
-  /* VELDRA Core - The default tech-focused aesthetic */
-  --bolt-elements-bg-depth-1: #0a0f1c;
-  --bolt-elements-bg-depth-2: #0d1326;
-  --bolt-elements-bg-depth-3: #111a33;
-  --bolt-elements-bg-depth-4: rgba(80, 173, 226, 0.05);
-
-  --bolt-elements-borderColor: rgba(80, 173, 226, 0.15);
-  --bolt-elements-borderColorActive: #50ade2;
-
-  --bolt-elements-artifacts-background: #0d1326;
-  --bolt-elements-actions-background: #0d1326;
-  --bolt-elements-messages-background: #0a0f1c;
-  --bolt-elements-prompt-background: rgba(10, 15, 28, 0.85);
-  --bolt-elements-terminals-background: #060913;
-}
-
-:root[data-theme='light'][data-skin='core'] {
-  /* VELDRA Core light - the same technical blue language on a bright canvas */
-  --bolt-elements-bg-depth-1: #f7fbfe;
-  --bolt-elements-bg-depth-2: #eef6fb;
-  --bolt-elements-bg-depth-3: #dcecf5;
-  --bolt-elements-bg-depth-4: rgba(20, 136, 252, 0.06);
-
-  --bolt-elements-borderColor: rgba(20, 96, 140, 0.16);
-  --bolt-elements-borderColorActive: #1488fc;
-  --bolt-elements-artifacts-background: #eef6fb;
-  --bolt-elements-actions-background: #eef6fb;
-  --bolt-elements-messages-background: #f7fbfe;
-  --bolt-elements-prompt-background: rgba(247, 251, 254, 0.9);
-  --bolt-elements-terminals-background: #f1f8fc;
-}
-
-:root[data-theme='dark'][data-skin='dark'] {
-  /* VELDRA Dark - balanced slate surfaces without the Core blue tint */
-  --bolt-elements-bg-depth-1: #111318;
-  --bolt-elements-bg-depth-2: #181b21;
-  --bolt-elements-bg-depth-3: #232832;
-  --bolt-elements-bg-depth-4: rgba(255, 255, 255, 0.05);
-  --bolt-elements-borderColor: rgba(255, 255, 255, 0.12);
-  --bolt-elements-borderColorActive: #60a5fa;
-  --bolt-elements-artifacts-background: #181b21;
-  --bolt-elements-actions-background: #181b21;
-  --bolt-elements-messages-background: #111318;
-  --bolt-elements-prompt-background: rgba(17, 19, 24, 0.9);
-  --bolt-elements-terminals-background: #0b0d11;
-}
-
-:root[data-theme='dark'][data-skin='midnight'] {
-  /* Ultra dark navy/black */
-  --bolt-elements-bg-depth-1: #030712;
-  --bolt-elements-bg-depth-2: #0b0f19;
-  --bolt-elements-bg-depth-3: #111827;
-  --bolt-elements-bg-depth-4: rgba(255, 255, 255, 0.03);
-
-  --bolt-elements-borderColor: rgba(255, 255, 255, 0.1);
-  --bolt-elements-borderColorActive: #38bdf8;
-
-  --bolt-elements-artifacts-background: #0b0f19;
-  --bolt-elements-actions-background: #0b0f19;
-  --bolt-elements-messages-background: #030712;
-  --bolt-elements-prompt-background: rgba(3, 7, 18, 0.9);
-  --bolt-elements-terminals-background: #000000;
-}
-
-:root[data-theme='dark'][data-skin='matrix'] {
-  /* Retro hacker green on black */
-  --bolt-elements-bg-depth-1: #000500;
-  --bolt-elements-bg-depth-2: #000f00;
-  --bolt-elements-bg-depth-3: #001a00;
-  --bolt-elements-bg-depth-4: rgba(0, 255, 65, 0.05);
-
-  --bolt-elements-borderColor: rgba(0, 255, 65, 0.2);
-  --bolt-elements-borderColorActive: #00ff41;
-
-  --bolt-elements-textPrimary: #00ff41;
-  --bolt-elements-textSecondary: #008f11;
-
-  --bolt-elements-item-contentAccent: #00ff41;
-  --bolt-elements-button-primary-text: #000000;
-  --bolt-elements-button-primary-background: #00ff41;
-  --bolt-elements-button-primary-backgroundHover: #00cc33;
-
-  --bolt-elements-artifacts-background: #000f00;
-  --bolt-elements-actions-background: #000f00;
-  --bolt-elements-messages-background: #000500;
-  --bolt-elements-prompt-background: rgba(0, 5, 0, 0.9);
-  --bolt-elements-terminals-background: #000000;
-}
-
-:root[data-theme='dark'][data-skin='aurora'] {
-  /* Vibrant purple/pink nebulas */
-  --bolt-elements-bg-depth-1: #0a0b16;
-  --bolt-elements-bg-depth-2: #101223;
-  --bolt-elements-bg-depth-3: #1a1d36;
-  --bolt-elements-bg-depth-4: rgba(138, 43, 226, 0.1);
-
-  --bolt-elements-borderColor: rgba(138, 43, 226, 0.3);
-  --bolt-elements-borderColorActive: #8a2be2;
-
-  --bolt-elements-textPrimary: #e6e6fa;
-  --bolt-elements-textSecondary: #b0c4de;
-
-  --bolt-elements-item-contentAccent: #9370db;
-  --bolt-elements-button-primary-text: #ffffff;
-  --bolt-elements-button-primary-background: rgba(147, 112, 219, 0.2);
-  --bolt-elements-button-primary-backgroundHover: rgba(147, 112, 219, 0.3);
-
-  --bolt-elements-artifacts-background: #101223;
-  --bolt-elements-actions-background: #101223;
-  --bolt-elements-messages-background: #14172a;
-  --bolt-elements-prompt-background: rgba(10, 11, 22, 0.85);
-  --bolt-elements-terminals-background: #0a0b16;
-}
-
-:root[data-theme='dark'][data-skin='industrial'] {
-  /* High contrast, greyscale, orange accent */
-  --bolt-elements-bg-depth-1: #121212;
-  --bolt-elements-bg-depth-2: #1a1a1a;
-  --bolt-elements-bg-depth-3: #222222;
-  --bolt-elements-bg-depth-4: rgba(255, 107, 0, 0.05);
-
-  --bolt-elements-borderColor: #333333;
-  --bolt-elements-borderColorActive: #ff6b00;
-
-  --bolt-elements-textPrimary: #e0e0e0;
-  --bolt-elements-textSecondary: #888888;
-
-  --bolt-elements-item-contentAccent: #ff6b00;
-  --bolt-elements-button-primary-text: #000000;
-  --bolt-elements-button-primary-background: #ff6b00;
-  --bolt-elements-button-primary-backgroundHover: #cc5500;
-
-  --bolt-elements-artifacts-background: #1a1a1a;
-  --bolt-elements-actions-background: #1a1a1a;
-  --bolt-elements-messages-background: #121212;
-  --bolt-elements-prompt-background: rgba(18, 18, 18, 0.9);
-  --bolt-elements-terminals-background: #0a0a0a;
-}
-
-:root[data-theme='dark'][data-skin='minimal'] {
-  /* True black and white */
-  --bolt-elements-bg-depth-1: #000000;
-  --bolt-elements-bg-depth-2: #050505;
-  --bolt-elements-bg-depth-3: #111111;
-  --bolt-elements-bg-depth-4: rgba(255, 255, 255, 0.05);
-
-  --bolt-elements-borderColor: #222222;
-  --bolt-elements-borderColorActive: #ffffff;
-
-  --bolt-elements-textPrimary: #ffffff;
-  --bolt-elements-textSecondary: #888888;
-
-  --bolt-elements-item-contentAccent: #ffffff;
-  --bolt-elements-button-primary-text: #000000;
-  --bolt-elements-button-primary-background: #ffffff;
-  --bolt-elements-button-primary-backgroundHover: #cccccc;
-
-  --bolt-elements-artifacts-background: #050505;
-  --bolt-elements-actions-background: #050505;
-  --bolt-elements-messages-background: #000000;
-  --bolt-elements-prompt-background: rgba(0, 0, 0, 0.9);
-  --bolt-elements-terminals-background: #000000;
-}
-
-:root[data-theme='light'][data-skin='light'] {
-  /* Crisp, bright UI */
-  --bolt-elements-bg-depth-1: #ffffff;
-  --bolt-elements-bg-depth-2: #f8f9fa;
-  --bolt-elements-bg-depth-3: #e9ecef;
-  --bolt-elements-bg-depth-4: rgba(0, 0, 0, 0.05);
-
-  --bolt-elements-borderColor: rgba(0, 0, 0, 0.1);
-  --bolt-elements-borderColorActive: #000000;
-
-  --bolt-elements-textPrimary: #111827;
-  --bolt-elements-textSecondary: #4b5563;
-  --bolt-elements-textTertiary: #9ca3af;
-
-  --bolt-elements-item-contentAccent: #000000;
-  --bolt-elements-button-primary-text: #ffffff;
-  --bolt-elements-button-primary-background: #111827;
-  --bolt-elements-button-primary-backgroundHover: #374151;
-
-  --bolt-elements-artifacts-background: #ffffff;
-  --bolt-elements-actions-background: #ffffff;
-  --bolt-elements-messages-background: #f3f4f6;
-  --bolt-elements-prompt-background: rgba(255, 255, 255, 0.9);
-  --bolt-elements-terminals-background: #ffffff;
-}
-
-/* Light-theme companions for the mood skins. These preserve the selected theme while giving
- * every advertised skin a deliberate, contrast-aware personality instead of silently inheriting
- * the generic light palette. */
-:root[data-theme='light'][data-skin='midnight'] {
-  --bolt-elements-bg-depth-1: #eef2f7;
-  --bolt-elements-bg-depth-2: #e2e8f0;
-  --bolt-elements-bg-depth-3: #cbd5e1;
-  --bolt-elements-bg-depth-4: rgba(15, 23, 42, 0.06);
-  --bolt-elements-borderColor: rgba(15, 23, 42, 0.14);
-  --bolt-elements-borderColorActive: #334155;
-  --bolt-elements-textPrimary: #0f172a;
-  --bolt-elements-textSecondary: #475569;
-  --bolt-elements-textTertiary: #64748b;
-  --bolt-elements-item-contentAccent: #334155;
-  --bolt-elements-artifacts-background: #e2e8f0;
-  --bolt-elements-actions-background: #e2e8f0;
-  --bolt-elements-messages-background: #eef2f7;
-  --bolt-elements-prompt-background: rgba(238, 242, 247, 0.9);
-  --bolt-elements-terminals-background: #e8edf3;
-}
-
-:root[data-theme='light'][data-skin='matrix'] {
-  --bolt-elements-bg-depth-1: #f2fbf4;
-  --bolt-elements-bg-depth-2: #e6f4e9;
-  --bolt-elements-bg-depth-3: #c8e6cf;
-  --bolt-elements-bg-depth-4: rgba(19, 115, 51, 0.06);
-  --bolt-elements-borderColor: rgba(19, 115, 51, 0.18);
-  --bolt-elements-borderColorActive: #137333;
-  --bolt-elements-textPrimary: #0b3d1b;
-  --bolt-elements-textSecondary: #356a42;
-  --bolt-elements-textTertiary: #5d8667;
-  --bolt-elements-item-contentAccent: #137333;
-  --bolt-elements-button-primary-text: #ffffff;
-  --bolt-elements-button-primary-background: #1b8a3a;
-  --bolt-elements-button-primary-backgroundHover: #137333;
-  --bolt-elements-artifacts-background: #e6f4e9;
-  --bolt-elements-actions-background: #e6f4e9;
-  --bolt-elements-messages-background: #f2fbf4;
-  --bolt-elements-prompt-background: rgba(242, 251, 244, 0.92);
-  --bolt-elements-terminals-background: #edf8ef;
-}
-
-:root[data-theme='light'][data-skin='aurora'] {
-  --bolt-elements-bg-depth-1: #fbf9ff;
-  --bolt-elements-bg-depth-2: #f3efff;
-  --bolt-elements-bg-depth-3: #e7dcff;
-  --bolt-elements-bg-depth-4: rgba(109, 40, 217, 0.07);
-  --bolt-elements-borderColor: rgba(109, 40, 217, 0.18);
-  --bolt-elements-borderColorActive: #7c3aed;
-  --bolt-elements-textPrimary: #25134d;
-  --bolt-elements-textSecondary: #665a83;
-  --bolt-elements-textTertiary: #81789b;
-  --bolt-elements-item-contentAccent: #6d28d9;
-  --bolt-elements-button-primary-text: #6d28d9;
-  --bolt-elements-button-primary-background: rgba(109, 40, 217, 0.12);
-  --bolt-elements-button-primary-backgroundHover: rgba(109, 40, 217, 0.2);
-  --bolt-elements-artifacts-background: #f3efff;
-  --bolt-elements-actions-background: #f3efff;
-  --bolt-elements-messages-background: #fbf9ff;
-  --bolt-elements-prompt-background: rgba(251, 249, 255, 0.92);
-  --bolt-elements-terminals-background: #f6f2ff;
-}
-
-:root[data-theme='light'][data-skin='industrial'] {
-  --bolt-elements-bg-depth-1: #f7f7f6;
-  --bolt-elements-bg-depth-2: #efefed;
-  --bolt-elements-bg-depth-3: #deded9;
-  --bolt-elements-bg-depth-4: rgba(68, 64, 60, 0.06);
-  --bolt-elements-borderColor: #c8c8c0;
-  --bolt-elements-borderColorActive: #c2410c;
-  --bolt-elements-textPrimary: #1c1917;
-  --bolt-elements-textSecondary: #57534e;
-  --bolt-elements-textTertiary: #78716c;
-  --bolt-elements-item-contentAccent: #c2410c;
-  --bolt-elements-button-primary-text: #ffffff;
-  --bolt-elements-button-primary-background: #ea580c;
-  --bolt-elements-button-primary-backgroundHover: #c2410c;
-  --bolt-elements-artifacts-background: #efefed;
-  --bolt-elements-actions-background: #efefed;
-  --bolt-elements-messages-background: #f7f7f6;
-  --bolt-elements-prompt-background: rgba(247, 247, 246, 0.92);
-  --bolt-elements-terminals-background: #f1f1ee;
-}
-
-:root[data-theme='light'][data-skin='minimal'] {
-  --bolt-elements-bg-depth-1: #ffffff;
-  --bolt-elements-bg-depth-2: #fafafa;
-  --bolt-elements-bg-depth-3: #f0f0f0;
-  --bolt-elements-bg-depth-4: rgba(0, 0, 0, 0.04);
-  --bolt-elements-borderColor: #d4d4d4;
-  --bolt-elements-borderColorActive: #111111;
-  --bolt-elements-textPrimary: #111111;
-  --bolt-elements-textSecondary: #525252;
-  --bolt-elements-textTertiary: #737373;
-  --bolt-elements-item-contentAccent: #111111;
-  --bolt-elements-button-primary-text: #ffffff;
-  --bolt-elements-button-primary-background: #111111;
-  --bolt-elements-button-primary-backgroundHover: #333333;
-  --bolt-elements-artifacts-background: #fafafa;
-  --bolt-elements-actions-background: #fafafa;
-  --bolt-elements-messages-background: #ffffff;
-  --bolt-elements-prompt-background: rgba(255, 255, 255, 0.94);
-  --bolt-elements-terminals-background: #f7f7f7;
-}
-
-/*
  * Element Tokens
  *
  * Hierarchy: Element Token -> (Element Token | Color Tokens) -> Primitives
@@ -599,6 +298,16 @@
   /* Matches the duration transition-theme already used before this token existed -- this slice
      makes that duration respect prefers-reduced-motion, it does not change its default value. */
   --veldra-motion-duration-theme: 150ms;
+
+  /* Ambient "breathing" background (mandate section 14): deliberately a different, much longer
+     scale than the UI-transition tokens above -- this animates a full cycle, not a state change. */
+  --veldra-breathe-duration: 26s;
+
+  /* Composer focus/drag treatment. Skins can tune the glow without changing component markup. */
+  --veldra-composer-glow-start: var(--bolt-elements-focus);
+  --veldra-composer-glow-mid: var(--bolt-elements-borderColorActive);
+  --veldra-composer-glow-end: var(--bolt-elements-focus);
+  --veldra-composer-border-duration: 12s;
 }
 
 /*
@@ -612,7 +321,268 @@
     --veldra-motion-duration-base: 0ms;
     --veldra-motion-duration-slow: 0ms;
     --veldra-motion-duration-theme: 0ms;
+    --veldra-composer-border-duration: 0ms;
   }
+}
+
+/*
+ * Skins layer on top of a theme (light/dark) via a separate `data-skin` attribute (see
+ * app/lib/stores/skin.ts) instead of replacing it, so a skin never has to redefine text/accent
+ * colors it isn't actually changing. 'obsidian' is the first of several planned named skins
+ * (see BRANDING.md) — proof that the token architecture supports more than one skin; the rest
+ * are a scoped follow-up, not fabricated here.
+ */
+[data-theme='dark'][data-skin='obsidian'] {
+  --bolt-elements-bg-depth-1: #08090d;
+  --bolt-elements-bg-depth-2: #0d0f16;
+  --bolt-elements-bg-depth-3: #161925;
+  --bolt-elements-bg-depth-4: rgba(255, 255, 255, 0.04);
+
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.08);
+
+  --bolt-elements-artifacts-background: #0d0f16;
+  --bolt-elements-actions-background: #0d0f16;
+  --bolt-elements-messages-background: #12141d;
+  --bolt-elements-prompt-background: rgba(8, 9, 13, 0.85);
+  --bolt-elements-terminals-background: #08090d;
+}
+
+/*
+ * VELDRA skin-structural layer (Loop 22 Slice 4 -- design-style skin system)
+ *
+ * These tokens drive the shared UI primitives' surface/control treatment via the
+ * `veldra-surface`/`veldra-control` shortcuts in uno.config.ts, applied to Button, Dialog,
+ * Checkbox, Card, the Settings TabTile, and the chat composer. The values declared here at
+ * :root ARE the VELDRA default skin: deliberately opaque and blur-free for mobile performance
+ * (no always-on backdrop-filter cost on the default), soft restrained shadows, comfortable
+ * radius -- "soft, premium, calm, slightly spatial" per the design mandate, not a loud glass
+ * overlay. Each [data-skin] block below overrides only what actually changes for that design
+ * language; every other token (radius scale, colors, spacing) falls through to these defaults
+ * or the light/dark color tokens above -- one shared token system, not nine independent ones.
+ */
+:root {
+  --veldra-backdrop-blur: 0px;
+  --veldra-backdrop-saturate: 100%;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+  --veldra-motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glassmorphism -- frosted translucent panels, visible blur, thin light border, soft diffuse elevation */
+[data-theme='light'][data-skin='glass'] {
+  --veldra-radius-sm: 10px;
+  --veldra-radius-md: 14px;
+  --veldra-radius-lg: 20px;
+  --veldra-radius-xl: 28px;
+  --veldra-shadow-sm: 0 2px 8px rgba(31, 38, 135, 0.08);
+  --veldra-shadow-md: 0 8px 24px rgba(31, 38, 135, 0.12);
+  --veldra-shadow-lg: 0 16px 40px rgba(31, 38, 135, 0.16);
+  --veldra-backdrop-blur: 16px;
+  --veldra-backdrop-saturate: 160%;
+  --veldra-surface-bg: rgba(255, 255, 255, 0.55);
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.4);
+}
+[data-theme='dark'][data-skin='glass'] {
+  --veldra-radius-sm: 10px;
+  --veldra-radius-md: 14px;
+  --veldra-radius-lg: 20px;
+  --veldra-radius-xl: 28px;
+  --veldra-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --veldra-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --veldra-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --veldra-backdrop-blur: 16px;
+  --veldra-backdrop-saturate: 160%;
+  --veldra-surface-bg: rgba(24, 26, 36, 0.55);
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.1);
+}
+
+/* Liquid Glass -- stronger blur+saturation, larger concentric radii, luminous rim border */
+[data-theme='light'][data-skin='liquidglass'] {
+  --veldra-radius-sm: 14px;
+  --veldra-radius-md: 20px;
+  --veldra-radius-lg: 28px;
+  --veldra-radius-xl: 36px;
+  --veldra-shadow-sm: 0 4px 16px rgba(20, 30, 60, 0.1);
+  --veldra-shadow-md: 0 12px 32px rgba(20, 30, 60, 0.14);
+  --veldra-shadow-lg: 0 24px 56px rgba(20, 30, 60, 0.18);
+  --veldra-backdrop-blur: 28px;
+  --veldra-backdrop-saturate: 200%;
+  --veldra-surface-bg: rgba(255, 255, 255, 0.45);
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.55);
+}
+[data-theme='dark'][data-skin='liquidglass'] {
+  --veldra-radius-sm: 14px;
+  --veldra-radius-md: 20px;
+  --veldra-radius-lg: 28px;
+  --veldra-radius-xl: 36px;
+  --veldra-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --veldra-shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --veldra-shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.55);
+  --veldra-backdrop-blur: 28px;
+  --veldra-backdrop-saturate: 200%;
+  --veldra-surface-bg: rgba(18, 20, 30, 0.45);
+  --bolt-elements-borderColor: rgba(255, 255, 255, 0.16);
+}
+
+/* Spatial UI -- layered depth via larger soft shadows, semi-opaque (not sheer) surfaces, moderate blur */
+[data-theme='light'][data-skin='spatial'] {
+  --veldra-radius-sm: 12px;
+  --veldra-radius-md: 16px;
+  --veldra-radius-lg: 24px;
+  --veldra-radius-xl: 32px;
+  --veldra-shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.06);
+  --veldra-shadow-md: 0 10px 28px rgba(15, 23, 42, 0.1);
+  --veldra-shadow-lg: 0 22px 48px rgba(15, 23, 42, 0.14);
+  --veldra-backdrop-blur: 10px;
+  --veldra-backdrop-saturate: 130%;
+  --veldra-surface-bg: rgba(255, 255, 255, 0.82);
+}
+[data-theme='dark'][data-skin='spatial'] {
+  --veldra-radius-sm: 12px;
+  --veldra-radius-md: 16px;
+  --veldra-radius-lg: 24px;
+  --veldra-radius-xl: 32px;
+  --veldra-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.25);
+  --veldra-shadow-md: 0 10px 28px rgba(0, 0, 0, 0.35);
+  --veldra-shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.45);
+  --veldra-backdrop-blur: 10px;
+  --veldra-backdrop-saturate: 130%;
+  --veldra-surface-bg: rgba(22, 24, 33, 0.82);
+}
+
+/* Neomorphism -- borderless, flat matching-tone surfaces, soft dual light/dark extrusion shadow */
+[data-theme='light'][data-skin='neomorphism'] {
+  --veldra-radius-sm: 14px;
+  --veldra-radius-md: 20px;
+  --veldra-radius-lg: 28px;
+  --veldra-radius-xl: 36px;
+  --veldra-border-width: 0px;
+  --veldra-shadow-sm: 3px 3px 6px rgba(163, 177, 198, 0.5), -3px -3px 6px rgba(255, 255, 255, 0.85);
+  --veldra-shadow-md: 6px 6px 14px rgba(163, 177, 198, 0.55), -6px -6px 14px rgba(255, 255, 255, 0.9);
+  --veldra-shadow-lg: 10px 10px 24px rgba(163, 177, 198, 0.6), -10px -10px 24px rgba(255, 255, 255, 0.95);
+  --bolt-elements-bg-depth-1: #e8ecf3;
+  --bolt-elements-bg-depth-2: #e8ecf3;
+  --bolt-elements-bg-depth-3: #dee3ec;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+[data-theme='dark'][data-skin='neomorphism'] {
+  --veldra-radius-sm: 14px;
+  --veldra-radius-md: 20px;
+  --veldra-radius-lg: 28px;
+  --veldra-radius-xl: 36px;
+  --veldra-border-width: 0px;
+  --veldra-shadow-sm: 3px 3px 6px rgba(0, 0, 0, 0.45), -3px -3px 6px rgba(58, 62, 74, 0.4);
+  --veldra-shadow-md: 6px 6px 14px rgba(0, 0, 0, 0.5), -6px -6px 14px rgba(58, 62, 74, 0.45);
+  --veldra-shadow-lg: 10px 10px 24px rgba(0, 0, 0, 0.55), -10px -10px 24px rgba(58, 62, 74, 0.5);
+  --bolt-elements-bg-depth-1: #2a2d38;
+  --bolt-elements-bg-depth-2: #2a2d38;
+  --bolt-elements-bg-depth-3: #23252e;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+
+/* Claymorphism -- pillowy, oversized radii, tinted pastel surface, puffy outer+inner shadow pair */
+[data-theme='light'][data-skin='claymorphism'] {
+  --veldra-radius-sm: 18px;
+  --veldra-radius-md: 24px;
+  --veldra-radius-lg: 32px;
+  --veldra-radius-xl: 40px;
+  --veldra-border-width: 0px;
+  --veldra-shadow-sm: 0 4px 10px rgba(80, 90, 140, 0.14), inset 0 2px 3px rgba(255, 255, 255, 0.7);
+  --veldra-shadow-md: 0 10px 22px rgba(80, 90, 140, 0.18), inset 0 3px 4px rgba(255, 255, 255, 0.75);
+  --veldra-shadow-lg: 0 18px 36px rgba(80, 90, 140, 0.22), inset 0 4px 6px rgba(255, 255, 255, 0.8);
+  --bolt-elements-bg-depth-2: #eef0fc;
+  --bolt-elements-bg-depth-3: #e4e7fa;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+[data-theme='dark'][data-skin='claymorphism'] {
+  --veldra-radius-sm: 18px;
+  --veldra-radius-md: 24px;
+  --veldra-radius-lg: 32px;
+  --veldra-radius-xl: 40px;
+  --veldra-border-width: 0px;
+  --veldra-shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.35), inset 0 2px 3px rgba(255, 255, 255, 0.06);
+  --veldra-shadow-md: 0 10px 22px rgba(0, 0, 0, 0.4), inset 0 3px 4px rgba(255, 255, 255, 0.07);
+  --veldra-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.45), inset 0 4px 6px rgba(255, 255, 255, 0.08);
+  --bolt-elements-bg-depth-2: #2b2a3d;
+  --bolt-elements-bg-depth-3: #322f47;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+
+/* Skeuomorphism -- warm rich surface, distinct border, raised drop shadow + inner top highlight */
+[data-theme='light'][data-skin='skeuomorphism'] {
+  --veldra-radius-sm: 6px;
+  --veldra-radius-md: 8px;
+  --veldra-radius-lg: 12px;
+  --veldra-radius-xl: 16px;
+  --veldra-border-width: 1px;
+  --bolt-elements-borderColor: rgba(120, 100, 70, 0.25);
+  --veldra-shadow-sm: 0 1px 2px rgba(80, 60, 20, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --veldra-shadow-md: 0 4px 8px rgba(80, 60, 20, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --veldra-shadow-lg: 0 10px 20px rgba(80, 60, 20, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --bolt-elements-bg-depth-2: #f5efe2;
+  --bolt-elements-bg-depth-3: #ebe2cd;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+[data-theme='dark'][data-skin='skeuomorphism'] {
+  --veldra-radius-sm: 6px;
+  --veldra-radius-md: 8px;
+  --veldra-radius-lg: 12px;
+  --veldra-radius-xl: 16px;
+  --veldra-border-width: 1px;
+  --bolt-elements-borderColor: rgba(200, 175, 120, 0.2);
+  --veldra-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --veldra-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --veldra-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --bolt-elements-bg-depth-2: #2e2820;
+  --bolt-elements-bg-depth-3: #251f19;
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+}
+
+/* Minimalism -- flat, borderline shadowless, small consistent radius, near-instant motion */
+[data-skin='minimalism'] {
+  --veldra-radius-sm: 4px;
+  --veldra-radius-md: 6px;
+  --veldra-radius-lg: 8px;
+  --veldra-radius-xl: 10px;
+  --veldra-border-width: 1px;
+  --veldra-shadow-sm: none;
+  --veldra-shadow-md: none;
+  --veldra-shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --veldra-motion-duration-fast: 80ms;
+  --veldra-motion-duration-base: 120ms;
+  --veldra-motion-duration-slow: 160ms;
+}
+
+/* Maximalism -- bold thick accent border, saturated elevated shadow, big radius, expressive motion */
+[data-skin='maximalism'] {
+  --veldra-radius-sm: 14px;
+  --veldra-radius-md: 20px;
+  --veldra-radius-lg: 28px;
+  --veldra-radius-xl: 36px;
+  --veldra-border-width: 2px;
+  --bolt-elements-borderColor: var(--bolt-elements-borderColorActive);
+  --veldra-shadow-sm: 0 3px 10px rgba(80, 173, 226, 0.2);
+  --veldra-shadow-md: 0 10px 26px rgba(80, 173, 226, 0.3);
+  --veldra-shadow-lg: 0 20px 44px rgba(80, 173, 226, 0.4);
+  --veldra-motion-duration-fast: 150ms;
+  --veldra-motion-duration-base: 260ms;
+  --veldra-motion-duration-slow: 380ms;
+}
+
+/* Brutalism -- zero radius, thick solid border, hard offset shadow with no blur, instant motion */
+[data-skin='brutalism'] {
+  --veldra-radius-sm: 0px;
+  --veldra-radius-md: 0px;
+  --veldra-radius-lg: 0px;
+  --veldra-radius-xl: 0px;
+  --veldra-border-width: 2px;
+  --veldra-border-width-thick: 3px;
+  --bolt-elements-borderColor: var(--bolt-elements-textPrimary);
+  --veldra-shadow-sm: 3px 3px 0 var(--bolt-elements-borderColorActive);
+  --veldra-shadow-md: 5px 5px 0 var(--bolt-elements-borderColorActive);
+  --veldra-shadow-lg: 8px 8px 0 var(--bolt-elements-borderColorActive);
+  --veldra-motion-duration-fast: 60ms;
+  --veldra-motion-duration-base: 90ms;
+  --veldra-motion-duration-slow: 120ms;
 }
 
 /*
@@ -645,8 +615,7 @@
   :root,
   :root[data-theme='light'],
   :root[data-theme='dark'] {
-    --header-height: 56px;
-    --mobile-bottom-nav-height: 56px;
+    --header-height: 48px;
     --chat-min-width: 100%;
     --workbench-width: 100%;
     --workbench-inner-width: 100%;

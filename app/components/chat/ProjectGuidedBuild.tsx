@@ -21,6 +21,10 @@ const PLATFORM_OPTIONS: Array<{ value: ProjectPlatform; label: string; icon: str
  * is unaffected -- the panel only changes anything once the user actually opens and fills it in.
  * Wiring: BaseChat.tsx's handleSendMessage reads projectBriefStore and folds it into the outgoing
  * message via composeMessageWithProjectBrief() only for the very first message of a chat.
+ *
+ * Rendered as a real `veldra-control`/`veldra-surface` affordance (not a bare text link) so it
+ * reads as a first-class VELDRA entry point and actually changes appearance per skin, same as
+ * Button/Dialog/Checkbox.
  */
 export function ProjectGuidedBuild() {
   const brief = useStore(projectBriefStore);
@@ -32,16 +36,28 @@ export function ProjectGuidedBuild() {
       <button
         type="button"
         onClick={() => setExpanded((current) => !current)}
-        className="flex items-center gap-1.5 text-sm text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary mx-auto transition-colors"
+        className="veldra-control flex w-full items-center gap-3 bg-bolt-elements-background-depth-1 px-4 py-3 text-left hover:border-accent-500/40"
         aria-expanded={expanded}
       >
-        <div className={expanded ? 'i-ph:caret-down' : 'i-ph:caret-right'} />
-        Guided Build
-        {hasDetails && !expanded && <span className="text-accent-500">· details added</span>}
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-500/10 text-accent-500">
+          <div className="i-ph:compass h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-medium text-bolt-elements-textPrimary">Guided Build</div>
+          <div className="truncate text-xs text-bolt-elements-textTertiary">
+            {hasDetails ? 'Details added — ready when you are' : 'Answer a few quick questions before you start'}
+          </div>
+        </div>
+        <div
+          className={classNames(
+            'h-4 w-4 shrink-0 text-bolt-elements-textTertiary',
+            expanded ? 'i-ph:caret-up' : 'i-ph:caret-down',
+          )}
+        />
       </button>
 
       {expanded && (
-        <div className="mt-3 p-4 rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 text-left space-y-3">
+        <div className="veldra-surface mt-2 space-y-3 p-4 text-left">
           <div>
             <div className="text-xs font-medium text-bolt-elements-textSecondary mb-1.5">Platform</div>
             <div className="flex gap-2">
@@ -53,10 +69,10 @@ export function ProjectGuidedBuild() {
                     setProjectBriefField('platform', brief.platform === option.value ? undefined : option.value)
                   }
                   className={classNames(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors',
+                    'veldra-control flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium',
                     brief.platform === option.value
                       ? 'bg-accent-500 text-white border-accent-500'
-                      : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textSecondary border-bolt-elements-borderColor hover:border-accent-500/50',
+                      : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textSecondary hover:border-accent-500/50',
                   )}
                 >
                   <div className={option.icon} />
@@ -79,7 +95,7 @@ export function ProjectGuidedBuild() {
               value={brief.visualStyle ?? ''}
               onChange={(event) => setProjectBriefField('visualStyle', event.target.value)}
               placeholder="e.g. minimal, dark mode, playful"
-              className="w-full px-3 py-1.5 rounded-md text-sm bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor focus:outline-none focus:ring-2 focus:ring-accent-500/50"
+              className="veldra-control w-full bg-bolt-elements-background-depth-1 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50"
             />
           </div>
 
@@ -96,7 +112,7 @@ export function ProjectGuidedBuild() {
               value={brief.integrations ?? ''}
               onChange={(event) => setProjectBriefField('integrations', event.target.value)}
               placeholder="e.g. local notifications, a calendar view"
-              className="w-full px-3 py-1.5 rounded-md text-sm bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor focus:outline-none focus:ring-2 focus:ring-accent-500/50"
+              className="veldra-control w-full bg-bolt-elements-background-depth-1 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50"
             />
           </div>
 

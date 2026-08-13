@@ -1,17 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { isSkin, SKIN_OPTIONS, SKINS } from './skin';
+import { SKINS, SKIN_LABELS, SKIN_DESCRIPTIONS, DEFAULT_SKIN } from './skin';
 
 describe('skin registry', () => {
-  it('keeps the user-facing options aligned with the eight supported skin values', () => {
-    expect(SKIN_OPTIONS.map((option) => option.value)).toEqual([...SKINS]);
-    expect(new Set(SKIN_OPTIONS.map((option) => option.label)).size).toBe(SKINS.length);
+  it('keeps labels and descriptions aligned with the supported skin values', () => {
+    const labelKeys = Object.keys(SKIN_LABELS);
+    const descKeys = Object.keys(SKIN_DESCRIPTIONS);
+    expect(labelKeys).toEqual([...SKINS]);
+    expect(descKeys).toEqual([...SKINS]);
   });
 
-  it('rejects unknown or legacy values at the runtime boundary', () => {
-    expect(isSkin('core')).toBe(true);
-    expect(isSkin('minimal')).toBe(true);
-    expect(isSkin('veldra')).toBe(false);
-    expect(isSkin('obsidian')).toBe(false);
-    expect(isSkin(null)).toBe(false);
+  it('has a valid default skin', () => {
+    expect((SKINS as readonly string[]).includes(DEFAULT_SKIN)).toBe(true);
+  });
+
+  it('contains the expected number of skins', () => {
+    expect(SKINS.length).toBe(11);
   });
 });

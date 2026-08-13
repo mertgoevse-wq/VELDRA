@@ -11,3 +11,4 @@
 | Global ESLint backlog remains | Medium | Repair small rule-based slices without broad rule suppression or unrelated reformatting |
 | No verified image provider or local image runtime | Medium | Keep Image Studio unavailable; do not fabricate assets/results |
 | Static/provider metadata can become stale | Medium | Use provenance, freshness, validation, and rollback before dynamic catalog promotion |
+| GitHub Actions never assigns a runner to any workflow job in this repo (confirmed across ~317 historical runs, only one ever succeeded; reproduces identically on plain pushes to `main`, not PR-specific) | High | Not fixable from repo code — needs the repo owner to check Actions/runner availability, billing, or org policy in GitHub settings; do not mistake it for a code regression in any given PR |

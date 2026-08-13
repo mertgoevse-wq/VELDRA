@@ -13,6 +13,10 @@
   background-size: 40px 40px;
   background-position: center center;
 
+  &.rayContainerContained {
+    position: absolute;
+  }
+
   :global(html[data-theme='dark']) & {
     background-image:
       linear-gradient(to right, rgba(80, 173, 226, 0.05) 1px, transparent 1px),

@@ -634,6 +634,29 @@ export const ChatImpl = memo(
       if (storedApiKeys) {
         setApiKeys(JSON.parse(storedApiKeys));
       }
+
+      /*
+       * API keys are now configured in Settings -> Providers (CloudProvidersTab), a modal
+       * mounted alongside this component rather than inside it -- a plain cookie write there
+       * is invisible to this already-mounted state. Re-sync from the synthetic StorageEvent
+       * APIKeyManager.tsx's handleSave dispatches after every save, so a key set mid-session
+       * is reflected here without requiring a full page reload.
+       */
+      const syncApiKeysFromEvent = (event: StorageEvent) => {
+        if (event.key !== 'apiKeys' || !event.newValue) {
+          return;
+        }
+
+        try {
+          setApiKeys(JSON.parse(event.newValue));
+        } catch {
+          // Malformed cookie payload -- ignore, keep the last-known-good state.
+        }
+      };
+
+      window.addEventListener('storage', syncApiKeysFromEvent);
+
+      return () => window.removeEventListener('storage', syncApiKeysFromEvent);
     }, []);
 
     const handleModelChange = (newModel: string) => {

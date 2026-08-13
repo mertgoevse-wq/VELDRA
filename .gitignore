@@ -28,6 +28,9 @@ dist-ssr
 functions/build/
 .env.local
 .env
+
+# Local dev-tool output (graphify code-graph analysis, regenerate with `graphify update .`)
+/graphify-out
 .dev.vars
 *.vars
 .wrangler
@@ -77,6 +80,8 @@ android/app/src/main/assets/public/
 !VELDRA-RESEARCH/*.md
 !project/SESSION-HANDOFF.md
 !project/SOURCE-CONSOLIDATION-2026-08-09.md
+!CLAUDE.md
+!project/ARCHITECTURE-ORCHESTRATOR.md
 
 # Allow Claude Code agent and skill definitions
 !.claude/agents/*.md

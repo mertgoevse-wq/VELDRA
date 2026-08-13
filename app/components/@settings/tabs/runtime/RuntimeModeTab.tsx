@@ -184,25 +184,33 @@ export default function RuntimeModeTab() {
     [urlInput],
   );
 
-  const handleSaveAll = useCallback(() => {
-    const trimmedUrl = urlInput.trim();
+  const handleUrlSave = useCallback(() => {
+    const trimmed = urlInput.trim();
 
     if (
-      trimmedUrl &&
-      !trimmedUrl.startsWith('http://') &&
-      !trimmedUrl.startsWith('https://') &&
-      !trimmedUrl.startsWith('ws://') &&
-      !trimmedUrl.startsWith('wss://')
+      trimmed &&
+      !trimmed.startsWith('http://') &&
+      !trimmed.startsWith('https://') &&
+      !trimmed.startsWith('ws://') &&
+      !trimmed.startsWith('wss://')
     ) {
       toast.error('URL must start with http://, https://, ws://, or wss://');
       return;
     }
 
-    setRemoteRuntimeUrl(trimmedUrl);
+    setRemoteRuntimeUrl(trimmed);
+    toast.success(trimmed ? 'Remote runtime URL saved' : 'Remote runtime URL cleared');
+  }, [urlInput]);
+
+  const handleTokenSave = useCallback(() => {
     setRemoteAuthToken(tokenInput.trim());
+    toast.success('Remote runtime auth token saved');
+  }, [tokenInput]);
+
+  const handleWorkspaceSave = useCallback(() => {
     setRemoteWorkspaceId(workspaceInput.trim());
-    toast.success('Remote runtime configuration saved and applied');
-  }, [urlInput, tokenInput, workspaceInput]);
+    toast.success('Remote runtime workspace ID saved');
+  }, [workspaceInput]);
 
   const runSyncAction = useCallback(async (action: 'push' | 'pull' | 'current-file') => {
     setSyncingAction(action);
@@ -259,10 +267,7 @@ export default function RuntimeModeTab() {
     <div className="space-y-4">
       {/* Current Status */}
       <motion.div
-        className={classNames(
-          'rounded-lg p-4 space-y-3',
-          'bg-bolt-elements-bg-depth-2 border border-bolt-elements-borderColor',
-        )}
+        className={classNames('rounded-lg shadow-sm dark:shadow-none p-4 space-y-3', 'bg-white dark:bg-[#0A0A0A]')}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
@@ -292,7 +297,7 @@ export default function RuntimeModeTab() {
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Current Runtime</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <span className="text-bolt-elements-textSecondary">Mode:</span>{' '}
             <span className="font-medium text-bolt-elements-textPrimary">
@@ -372,16 +377,13 @@ export default function RuntimeModeTab() {
 
       {/* Mode Selection */}
       <motion.div
-        className={classNames(
-          'rounded-lg p-4 space-y-3',
-          'bg-bolt-elements-bg-depth-2 border border-bolt-elements-borderColor',
-        )}
+        className={classNames('rounded-lg shadow-sm dark:shadow-none p-4 space-y-3', 'bg-white dark:bg-[#0A0A0A]')}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <div className="i-ph:cpu-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:cpu-fill w-4 h-4 text-accent-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Runtime Mode</span>
         </div>
 
@@ -395,8 +397,8 @@ export default function RuntimeModeTab() {
                 className={classNames(
                   'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all',
                   isSelected
-                    ? 'border-bolt-elements-borderColorActive bg-bolt-elements-item-backgroundActive'
-                    : 'border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive',
+                    ? 'border-accent-500 bg-accent-50 dark:bg-accent-950/20'
+                    : 'border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-accent-300 dark:hover:border-accent-700',
                   !option.available && 'opacity-50 cursor-not-allowed',
                 )}
                 onClick={(e) => {
@@ -412,7 +414,7 @@ export default function RuntimeModeTab() {
                 <div
                   className={classNames(
                     'flex-shrink-0 mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center',
-                    isSelected ? 'border-accent-500' : 'border-bolt-elements-borderColor',
+                    isSelected ? 'border-accent-500' : 'border-gray-300 dark:border-gray-600',
                   )}
                 >
                   {isSelected && <div className="w-2 h-2 rounded-full bg-accent-500" />}
@@ -446,8 +448,8 @@ export default function RuntimeModeTab() {
       {/* Remote Runtime */}
       <motion.div
         className={classNames(
-          'rounded-lg p-4 space-y-3',
-          'bg-bolt-elements-bg-depth-2 border border-bolt-elements-borderColor',
+          'rounded-lg shadow-sm dark:shadow-none p-4 space-y-3',
+          'bg-white dark:bg-[#0A0A0A]',
           runtime.mode !== 'remote' && 'opacity-60',
         )}
         initial={{ opacity: 0, y: 20 }}
@@ -455,7 +457,7 @@ export default function RuntimeModeTab() {
         transition={{ delay: 0.15 }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <div className="i-ph:link-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:link-fill w-4 h-4 text-accent-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Remote Runtime</span>
         </div>
 
@@ -465,17 +467,17 @@ export default function RuntimeModeTab() {
           http://192.168.x.x:8787. For live preview, run project dev servers with --host 0.0.0.0 or equivalent.
         </p>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex gap-2">
           <input
             type="text"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
-            placeholder="Endpoint URL (e.g. http://192.168.x.x:8787)"
+            placeholder="http://192.168.x.x:8787"
             disabled={runtime.mode !== 'remote'}
             className={classNames(
-              'w-full px-3 py-2 rounded-lg text-sm',
-              'bg-bolt-elements-bg-depth-1',
-              'border border-bolt-elements-borderColor',
+              'flex-1 px-3 py-2 rounded-lg text-sm',
+              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
+              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
               'text-bolt-elements-textPrimary',
               'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
               'transition-all duration-200',
@@ -483,57 +485,81 @@ export default function RuntimeModeTab() {
               'disabled:cursor-not-allowed',
             )}
           />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              type="password"
-              value={tokenInput}
-              onChange={(e) => setTokenInput(e.target.value)}
-              placeholder="Auth Token (optional)"
-              disabled={runtime.mode !== 'remote'}
-              className={classNames(
-                'w-full px-3 py-2 rounded-lg text-sm',
-                'bg-bolt-elements-bg-depth-1',
-                'border border-bolt-elements-borderColor',
-                'text-bolt-elements-textPrimary',
-                'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
-                'transition-all duration-200',
-                'placeholder:text-bolt-elements-textTertiary',
-                'disabled:cursor-not-allowed',
-              )}
-            />
-            <input
-              type="text"
-              value={workspaceInput}
-              onChange={(e) => setWorkspaceInput(e.target.value)}
-              placeholder="Workspace ID (optional)"
-              disabled={runtime.mode !== 'remote'}
-              className={classNames(
-                'w-full px-3 py-2 rounded-lg text-sm',
-                'bg-bolt-elements-bg-depth-1',
-                'border border-bolt-elements-borderColor',
-                'text-bolt-elements-textPrimary',
-                'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
-                'transition-all duration-200',
-                'placeholder:text-bolt-elements-textTertiary',
-                'disabled:cursor-not-allowed',
-              )}
-            />
-          </div>
-
           <button
-            onClick={handleSaveAll}
+            onClick={handleUrlSave}
             disabled={runtime.mode !== 'remote'}
             className={classNames(
-              'w-full px-4 py-2 rounded-lg text-sm font-medium',
+              'px-4 py-2 rounded-lg text-sm font-medium',
               'bg-accent-500 text-white',
               'hover:bg-accent-600',
               'transition-all duration-200',
               'disabled:cursor-not-allowed disabled:opacity-50',
             )}
           >
-            Save Configuration
+            Save
           </button>
+        </div>
+
+        {runtime.remoteRuntimeUrl && (
+          <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+            <div className="i-ph:check-circle-fill w-3 h-3" />
+            <span>Saved: {runtime.remoteRuntimeUrl}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="flex gap-2">
+            <input
+              type="password"
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+              placeholder="Auth token"
+              disabled={runtime.mode !== 'remote'}
+              className={classNames(
+                'flex-1 px-3 py-2 rounded-lg text-sm',
+                'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
+                'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+                'text-bolt-elements-textPrimary',
+                'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
+                'transition-all duration-200',
+                'placeholder:text-bolt-elements-textTertiary',
+                'disabled:cursor-not-allowed',
+              )}
+            />
+            <button
+              onClick={handleTokenSave}
+              disabled={runtime.mode !== 'remote'}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={workspaceInput}
+              onChange={(e) => setWorkspaceInput(e.target.value)}
+              placeholder="Workspace ID"
+              disabled={runtime.mode !== 'remote'}
+              className={classNames(
+                'flex-1 px-3 py-2 rounded-lg text-sm',
+                'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
+                'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+                'text-bolt-elements-textPrimary',
+                'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
+                'transition-all duration-200',
+                'placeholder:text-bolt-elements-textTertiary',
+                'disabled:cursor-not-allowed',
+              )}
+            />
+            <button
+              onClick={handleWorkspaceSave}
+              disabled={runtime.mode !== 'remote'}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
         </div>
 
         {missingRemoteConfig.length > 0 && (
@@ -547,7 +573,7 @@ export default function RuntimeModeTab() {
           <button
             onClick={() => runSyncAction('push')}
             disabled={!canUseRemoteSync || syncingAction !== null}
-            className="px-3 py-2 rounded-lg text-xs font-medium border border-bolt-elements-borderColor text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="px-3 py-2 rounded-lg text-xs font-medium border border-[#E5E5E5] dark:border-[#1A1A1A] text-bolt-elements-textPrimary hover:bg-gray-50 dark:hover:bg-[#1A1A1A] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             <div className={syncingAction === 'push' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:upload-simple-fill'} />
             <span>Sync workspace to Remote Runtime</span>
@@ -555,7 +581,7 @@ export default function RuntimeModeTab() {
           <button
             onClick={() => runSyncAction('pull')}
             disabled={!canUseRemoteSync || syncingAction !== null}
-            className="px-3 py-2 rounded-lg text-xs font-medium border border-bolt-elements-borderColor text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="px-3 py-2 rounded-lg text-xs font-medium border border-[#E5E5E5] dark:border-[#1A1A1A] text-bolt-elements-textPrimary hover:bg-gray-50 dark:hover:bg-[#1A1A1A] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             <div className={syncingAction === 'pull' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:download-simple-fill'} />
             <span>Pull remote files</span>
@@ -563,7 +589,7 @@ export default function RuntimeModeTab() {
           <button
             onClick={() => runSyncAction('current-file')}
             disabled={!canUseRemoteSync || syncingAction !== null}
-            className="px-3 py-2 rounded-lg text-xs font-medium border border-bolt-elements-borderColor text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="px-3 py-2 rounded-lg text-xs font-medium border border-[#E5E5E5] dark:border-[#1A1A1A] text-bolt-elements-textPrimary hover:bg-gray-50 dark:hover:bg-[#1A1A1A] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             <div
               className={syncingAction === 'current-file' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:file-arrow-up-fill'}
@@ -601,16 +627,13 @@ export default function RuntimeModeTab() {
 
       {/* Capability Summary */}
       <motion.div
-        className={classNames(
-          'rounded-lg p-4 space-y-3',
-          'bg-bolt-elements-bg-depth-2 border border-bolt-elements-borderColor',
-        )}
+        className={classNames('rounded-lg shadow-sm dark:shadow-none p-4 space-y-3', 'bg-white dark:bg-[#0A0A0A]')}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <div className="i-ph:list-checks-fill w-4 h-4 text-purple-500" />
+          <div className="i-ph:list-checks-fill w-4 h-4 text-accent-500" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Capabilities</span>
         </div>
 
@@ -658,9 +681,9 @@ export default function RuntimeModeTab() {
           onClick={handleReset}
           className={classNames(
             'w-full px-4 py-2 rounded-lg text-sm font-medium',
-            'border border-bolt-elements-borderColor',
+            'border border-[#E5E5E5] dark:border-[#1A1A1A]',
             'text-bolt-elements-textSecondary',
-            'hover:bg-bolt-elements-item-backgroundActive',
+            'hover:bg-gray-50 dark:hover:bg-[#1A1A1A]',
             'transition-all duration-200',
           )}
         >

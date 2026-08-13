@@ -10,6 +10,7 @@ import { tabConfigurationStore, resetTabConfiguration } from '~/lib/stores/setti
 import { profileStore } from '~/lib/stores/profile';
 import type { TabType, Profile } from './types';
 import { TAB_LABELS, DEFAULT_TAB_CONFIG, TAB_DESCRIPTIONS } from './constants';
+import { buildMobileTabGroups, MOBILE_TAB_DESCRIPTIONS } from '~/components/@settings/utils/mobile-tab-groups';
 import { DialogTitle } from '~/components/ui/Dialog';
 import { AvatarDropdown } from './AvatarDropdown';
 import BackgroundRays from '~/components/ui/BackgroundRays';
@@ -41,8 +42,8 @@ interface ControlPanelProps {
 const BETA_TABS = new Set<TabType>(['local-providers', 'mcp']);
 
 const BetaLabel = () => (
-  <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-purple-500/10 dark:bg-purple-500/20">
-    <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400">BETA</span>
+  <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-accent-500/10 dark:bg-accent-500/20">
+    <span className="text-[10px] font-medium text-accent-600 dark:text-accent-400">BETA</span>
   </div>
 );
 
@@ -92,6 +93,8 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
       })
       .sort((a, b) => a.order - b.order);
   }, [tabConfiguration, profile?.preferences?.notifications, baseTabConfig]);
+
+  const mobileTabGroups = useMemo(() => buildMobileTabGroups(visibleTabs), [visibleTabs]);
 
   // Reset to default view when modal opens/closes
   useEffect(() => {
@@ -241,7 +244,8 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
           >
             <div
               className={classNames(
-                'w-full max-w-[1200px] h-full md:h-[90vh]',
+                'settings-dialog-surface',
+                'w-full max-w-[1200px] h-[90vh]',
                 'bg-bolt-elements-background-depth-1',
                 'rounded-2xl shadow-2xl',
                 'border border-bolt-elements-borderColor',
@@ -252,18 +256,20 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
               )}
             >
               <div className="absolute inset-0 overflow-hidden rounded-2xl">
-                <BackgroundRays />
+                <BackgroundRays variant="contained" />
               </div>
               <div className="relative z-10 flex flex-col h-full">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="settings-dialog-header flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center space-x-4">
                     {(activeTab || showTabManagement) && (
                       <button
+                        type="button"
                         onClick={handleBack}
-                        className="flex items-center justify-center w-8 h-8 rounded-full bg-transparent hover:bg-purple-500/10 dark:hover:bg-purple-500/20 group transition-colors duration-150"
+                        aria-label="Back to settings sections"
+                        className="flex items-center justify-center w-8 h-8 rounded-full bg-transparent hover:bg-accent-500/10 dark:hover:bg-accent-500/20 group transition-colors duration-150"
                       >
-                        <div className="i-ph:arrow-left w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
+                        <div className="i-ph:arrow-left w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-accent-500 transition-colors" />
                       </button>
                     )}
                     <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -279,10 +285,12 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
 
                     {/* Close Button */}
                     <button
+                      type="button"
                       onClick={handleClose}
-                      className="flex items-center justify-center w-8 h-8 rounded-full bg-transparent hover:bg-purple-500/10 dark:hover:bg-purple-500/20 group transition-all duration-200"
+                      aria-label="Close settings"
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-transparent hover:bg-accent-500/10 dark:hover:bg-accent-500/20 group transition-all duration-200"
                     >
-                      <div className="i-ph:x w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
+                      <div className="i-ph:x w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-accent-500 transition-colors" />
                     </button>
                   </div>
                 </div>
@@ -290,6 +298,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
                 {/* Content */}
                 <div
                   className={classNames(
+                    'settings-dialog-body',
                     'flex-1',
                     'overflow-y-auto',
                     'hover:overflow-y-auto',
@@ -303,6 +312,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
                 >
                   <div
                     className={classNames(
+                      'settings-dialog-content',
                       'p-6 transition-opacity duration-150',
                       activeTab || showTabManagement ? 'opacity-100' : 'opacity-100',
                     )}
@@ -310,34 +320,73 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
                     {activeTab ? (
                       getTabComponent(activeTab)
                     ) : (
-                      <div className="flex overflow-x-auto snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 relative pb-4 sm:pb-0 hide-scrollbar">
-                        {visibleTabs.map((tab, index) => (
-                          <div
-                            key={tab.id}
-                            className={classNames(
-                              'w-[85vw] sm:w-auto flex-shrink-0 snap-center aspect-[1.5/1] transition-transform duration-100 ease-out',
-                              'hover:scale-[1.01]',
-                            )}
-                            style={{
-                              animationDelay: `${index * 30}ms`,
-                              animation: open ? 'fadeInUp 200ms ease-out forwards' : 'none',
-                            }}
-                          >
-                            <TabTile
-                              tab={tab}
-                              onClick={() => handleTabClick(tab.id as TabType)}
-                              isActive={activeTab === tab.id}
-                              hasUpdate={getTabUpdateStatus(tab.id)}
-                              statusMessage={getStatusMessage(tab.id)}
-                              description={TAB_DESCRIPTIONS[tab.id]}
-                              isLoading={loadingTab === tab.id}
-                              className="h-full relative"
+                      <>
+                        <div className="settings-desktop-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative">
+                          {visibleTabs.map((tab, index) => (
+                            <div
+                              key={tab.id}
+                              className={classNames(
+                                'aspect-[1.5/1] transition-transform duration-100 ease-out',
+                                'hover:scale-[1.01]',
+                              )}
+                              style={{
+                                animationDelay: `${index * 30}ms`,
+                                animation: open ? 'fadeInUp 200ms ease-out forwards' : 'none',
+                              }}
                             >
-                              {BETA_TABS.has(tab.id) && <BetaLabel />}
-                            </TabTile>
-                          </div>
-                        ))}
-                      </div>
+                              <TabTile
+                                tab={tab}
+                                onClick={() => handleTabClick(tab.id)}
+                                isActive={activeTab === tab.id}
+                                hasUpdate={getTabUpdateStatus(tab.id)}
+                                statusMessage={getStatusMessage(tab.id)}
+                                description={TAB_DESCRIPTIONS[tab.id]}
+                                isLoading={loadingTab === tab.id}
+                                className="h-full relative"
+                              >
+                                {BETA_TABS.has(tab.id) && <BetaLabel />}
+                              </TabTile>
+                            </div>
+                          ))}
+                        </div>
+
+                        <nav className="settings-mobile-list" aria-label="Settings sections">
+                          <p className="settings-mobile-intro">
+                            Keep VELDRA focused. Choose a section to manage one part of your workspace.
+                          </p>
+                          {mobileTabGroups.map((group) => (
+                            <section
+                              key={group.label}
+                              className="settings-mobile-group"
+                              aria-labelledby={`settings-group-${group.label.replace(/\s+/g, '-').toLowerCase()}`}
+                            >
+                              <div className="settings-mobile-group-heading">
+                                <h2 id={`settings-group-${group.label.replace(/\s+/g, '-').toLowerCase()}`}>
+                                  {group.label}
+                                </h2>
+                                <p>{group.description}</p>
+                              </div>
+                              <div className="settings-mobile-group-items">
+                                {group.tabs.map((tab) => (
+                                  <TabTile
+                                    key={tab.id}
+                                    tab={tab}
+                                    compact
+                                    onClick={() => handleTabClick(tab.id)}
+                                    isActive={activeTab === tab.id}
+                                    hasUpdate={getTabUpdateStatus(tab.id)}
+                                    statusMessage={getStatusMessage(tab.id)}
+                                    description={MOBILE_TAB_DESCRIPTIONS[tab.id] ?? TAB_DESCRIPTIONS[tab.id]}
+                                    isLoading={loadingTab === tab.id}
+                                  >
+                                    {BETA_TABS.has(tab.id) && <BetaLabel />}
+                                  </TabTile>
+                                ))}
+                              </div>
+                            </section>
+                          ))}
+                        </nav>
+                      </>
                     )}
                   </div>
                 </div>

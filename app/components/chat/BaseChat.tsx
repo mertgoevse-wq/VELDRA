@@ -34,12 +34,13 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
 import { RuntimeModeBanner } from '~/components/mobile/RuntimeModeBanner';
-import { SubagentActivityWidget } from './SubagentActivityWidget';
 import { isCapacitor } from '~/lib/adapters/platform';
-import { workbenchStore } from '~/lib/stores/workbench';
-import { BottomNav, type MobileTab } from '~/components/mobile/BottomNav';
 import { getAndroidModelsRequest } from '~/lib/android-api/backend-config';
 import { ProjectGuidedBuild } from '~/components/chat/ProjectGuidedBuild';
+import { WelcomeHero } from '~/components/chat/WelcomeHero.client';
+import { BreathingBackground } from '~/components/ui/BreathingBackground';
+import { processImageFiles } from './composer';
+import { toast } from 'react-toastify';
 import {
   composeMessageWithProjectBrief,
   hasProjectBriefDetails,
@@ -159,24 +160,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
     const expoUrl = useStore(expoUrlAtom);
     const [qrModalOpen, setQrModalOpen] = useState(false);
-    const showWorkbench = useStore(workbenchStore.showWorkbench);
-    const selectedView = useStore(workbenchStore.currentView);
-
-    const activeTab: MobileTab = showWorkbench ? (selectedView === 'preview' ? 'preview' : 'files') : 'chat';
-
-    const handleTabChange = (tab: MobileTab) => {
-      if (tab === 'chat') {
-        workbenchStore.showWorkbench.set(false);
-      } else if (tab === 'files') {
-        workbenchStore.showWorkbench.set(true);
-        workbenchStore.currentView.set('code');
-      } else if (tab === 'preview') {
-        workbenchStore.showWorkbench.set(true);
-        workbenchStore.currentView.set('preview');
-      } else if (tab === 'settings') {
-        window.dispatchEvent(new CustomEvent('open-mobile-tab', { detail: 'settings' }));
-      }
-    };
 
     useEffect(() => {
       if (expoUrl) {
@@ -356,23 +339,43 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       }
     };
 
+    /*
+     * Shares composer.ts's processImageFiles pipeline with ChatBox.tsx's drag-and-drop handler
+     * (parallel reads, per-file error isolation) instead of the previous bare single-file
+     * FileReader with no error handling at all -- also picks up multi-file selection, which the
+     * old single-file `input.files?.[0]` silently dropped even when the OS file picker allowed
+     * selecting more than one.
+     */
+    const addUploadedImages = async (files: File[]) => {
+      const { successfulFiles, imageData, failedCount } = await processImageFiles(files);
+
+      if (successfulFiles.length === 0) {
+        if (failedCount > 0) {
+          toast.error('Could not read the selected image.');
+        }
+
+        return;
+      }
+
+      if (failedCount > 0) {
+        toast.error('Some selected images could not be read.');
+      }
+
+      setUploadedFiles?.([...uploadedFiles, ...successfulFiles]);
+      setImageDataList?.([...imageDataList, ...imageData]);
+    };
+
     const handleFileUpload = () => {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
+      input.multiple = true;
 
       input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
+        const files = Array.from((e.target as HTMLInputElement).files ?? []);
 
-        if (file) {
-          const reader = new FileReader();
-
-          reader.onload = (e) => {
-            const base64Image = e.target?.result as string;
-            setUploadedFiles?.([...uploadedFiles, file]);
-            setImageDataList?.([...imageDataList, base64Image]);
-          };
-          reader.readAsDataURL(file);
+        if (files.length > 0) {
+          await addUploadedImages(files);
         }
       };
 
@@ -386,25 +389,14 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         return;
       }
 
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          e.preventDefault();
+      const pastedImages = Array.from(items)
+        .filter((item) => item.type.startsWith('image/'))
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => file !== null);
 
-          const file = item.getAsFile();
-
-          if (file) {
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-              const base64Image = e.target?.result as string;
-              setUploadedFiles?.([...uploadedFiles, file]);
-              setImageDataList?.([...imageDataList, base64Image]);
-            };
-            reader.readAsDataURL(file);
-          }
-
-          break;
-        }
+      if (pastedImages.length > 0) {
+        e.preventDefault();
+        await addUploadedImages(pastedImages);
       }
     };
 
@@ -419,33 +411,14 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
             <ClientOnly>{() => <RuntimeModeBanner />}</ClientOnly>
             {!chatStarted && (
-              <div
-                id="intro"
-                className="relative mt-[8vh] lg:mt-[16vh] max-w-3xl mx-auto text-center px-4 lg:px-0 flex flex-col items-center"
-              >
-                {/* Minimalist VELDRA Icon/Logo */}
-                <div className="mb-6 flex justify-center animate-fade-in">
-                  <div className="w-20 h-20 rounded-xl bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor flex items-center justify-center shadow-lg relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-accent-500/10 group-hover:bg-accent-500/20 transition-colors" />
-                    <div className="i-ph:cube-duotone text-4xl text-accent-500" />
-                  </div>
-                </div>
-
-                {/* Main Heading */}
-                <h1
-                  className="text-4xl lg:text-5xl font-semibold text-bolt-elements-textPrimary mb-3 animate-fade-in tracking-tight"
-                  style={{ fontFamily: 'var(--veldra-font-brand, system-ui)' }}
-                >
-                  VELDRA <span className="font-light text-bolt-elements-textTertiary">Workspace</span>
-                </h1>
-
-                {/* Subheading / Description */}
-                <p className="text-md lg:text-lg mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200 max-w-xl mx-auto font-mono">
-                  Autonomous AI Engineering Environment
-                </p>
-
-                {/* Project Guided Build / Quick Actions Container */}
-                <div className="w-full mb-4 animate-fade-in animation-delay-300">
+              <div id="intro" className="relative mt-[10vh] lg:mt-[14vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
+                <BreathingBackground />
+                <div
+                  aria-hidden="true"
+                  className="hidden dark:lg:block absolute -inset-x-24 -top-16 -z-10 h-64 opacity-[0.08] bg-repeat bg-[length:220px_220px] [background-image:url('/veldra-brand-background.webp')] [mask-image:radial-gradient(ellipse_60%_100%_at_50%_0%,black,transparent)] pointer-events-none"
+                />
+                <ClientOnly>{() => <WelcomeHero />}</ClientOnly>
+                <div className="mb-4 mt-4">
                   <ClientOnly>{() => <ProjectGuidedBuild />}</ClientOnly>
                 </div>
               </div>
@@ -515,7 +488,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   )}
                   {llmErrorAlert && <LlmErrorAlert alert={llmErrorAlert} clearAlert={() => clearLlmErrorAlert?.()} />}
                 </div>
-                <SubagentActivityWidget />
                 {progressAnnotations && <ProgressCompilation data={progressAnnotations} />}
                 <ChatBox
                   isModelSettingsCollapsed={isModelSettingsCollapsed}
@@ -588,7 +560,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               <Workbench chatStarted={chatStarted} isStreaming={isStreaming} setSelectedElement={setSelectedElement} />
             )}
           </ClientOnly>
-          <BottomNav activeTab={activeTab} onTabChange={handleTabChange} workbenchAvailable={chatStarted} />
         </div>
       </div>
     );

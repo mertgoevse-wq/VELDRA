@@ -11,7 +11,7 @@ import type { VerificationRequirement } from './types';
 /**
  * How a pattern may be used, decided by its licence. Anything without a clear,
  * permissive licence stays research-only: its shape may inform our own writing,
- * its text may never enter the product (project/DECISIONS.md D-5).
+ * its text may never enter the product (project/DECISIONS.md D-9).
  */
 export type PatternUsage = 'product' | 'research-only';
 

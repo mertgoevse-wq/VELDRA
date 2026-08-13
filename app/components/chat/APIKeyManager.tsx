@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { IconButton } from '~/components/ui/IconButton';
 import type { ProviderInfo } from '~/types/model';
 import Cookies from 'js-cookie';
+import { classNames } from '~/utils/classNames';
 
 interface APIKeyManagerProps {
   provider: ProviderInfo;
@@ -80,14 +81,25 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
     // Save to cookies
     const currentKeys = getApiKeysFromCookies();
     const newKeys = { ...currentKeys, [provider.name]: tempKey };
-    Cookies.set('apiKeys', JSON.stringify(newKeys));
+    const serialized = JSON.stringify(newKeys);
+    Cookies.set('apiKeys', serialized);
+
+    /*
+     * This component can now be mounted in more than one place at once (Settings ->
+     * Providers, and historically the chat composer) that don't share React state -- a
+     * plain cookie write is invisible to an already-mounted sibling. Dispatch the same
+     * synthetic StorageEvent pattern SettingsTab.tsx already uses for profile changes, so
+     * any other mounted consumer can re-sync from cookies instead of going stale until a
+     * full reload.
+     */
+    window.dispatchEvent(new StorageEvent('storage', { key: 'apiKeys', newValue: serialized }));
 
     setIsEditing(false);
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-y-2 py-3 px-1">
-      <div className="flex items-center gap-2 flex-1 min-w-0">
+    <div className="flex flex-col gap-2 py-3 px-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-y-2">
+      <div className="flex items-center gap-2 min-w-0 sm:flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-bolt-elements-textSecondary">{provider?.name} API Key:</span>
           {!isEditing && (
@@ -104,8 +116,8 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
                 </>
               ) : (
                 <>
-                  <div className="i-ph:x-circle-fill text-red-500 w-4 h-4" />
-                  <span className="text-xs text-red-500">Not Set (Please set via UI or ENV_VAR)</span>
+                  <div className="i-ph:circle-dashed text-bolt-elements-textTertiary w-4 h-4" />
+                  <span className="text-xs text-bolt-elements-textTertiary">Not configured</span>
                 </>
               )}
             </div>
@@ -113,33 +125,41 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      {/*
+       * A single flex row for the actions block (not a nested wrapper with its own competing
+       * width) -- the previous version's inner `w-full` div fought its `flex-1` label sibling for
+       * space inside one wrapped row, pushing the Cancel button off-screen on mobile. Stacking
+       * label/actions vertically below `sm` (outer container) sidesteps that entirely: the actions
+       * row gets the full card width to itself, so the input can genuinely share it with its
+       * buttons via flex-1/min-w-0 instead of both claiming 100%.
+       */}
+      <div className={classNames('flex items-center gap-2', isEditing ? 'w-full sm:w-auto' : 'shrink-0')}>
         {isEditing ? (
-          <div className="flex items-center gap-2">
+          <>
             <input
               type="password"
               value={tempKey}
               placeholder="Enter API Key"
               onChange={(e) => setTempKey(e.target.value)}
-              className="w-[300px] px-3 py-1.5 text-sm rounded border border-bolt-elements-borderColor 
-                        bg-bolt-elements-prompt-background text-bolt-elements-textPrimary 
+              className="min-w-0 flex-1 sm:w-[300px] sm:flex-none px-3 py-1.5 text-sm rounded border border-bolt-elements-borderColor
+                        bg-bolt-elements-prompt-background text-bolt-elements-textPrimary
                         focus:outline-none focus:ring-2 focus:ring-bolt-elements-focus"
             />
             <IconButton
               onClick={handleSave}
               title="Save API Key"
-              className="bg-green-500/10 hover:bg-green-500/20 text-green-500"
+              className="shrink-0 bg-green-500/10 hover:bg-green-500/20 text-green-500"
             >
               <div className="i-ph:check w-4 h-4" />
             </IconButton>
             <IconButton
               onClick={() => setIsEditing(false)}
               title="Cancel"
-              className="bg-red-500/10 hover:bg-red-500/20 text-red-500"
+              className="shrink-0 bg-red-500/10 hover:bg-red-500/20 text-red-500"
             >
               <div className="i-ph:x w-4 h-4" />
             </IconButton>
-          </div>
+          </>
         ) : (
           <>
             {
@@ -155,7 +175,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
               <IconButton
                 onClick={() => window.open(provider?.getApiKeyLink)}
                 title="Get API Key"
-                className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-500 flex items-center gap-2"
+                className="bg-accent-500/10 hover:bg-accent-500/20 text-accent-500 flex items-center gap-2"
               >
                 <span className="text-xs whitespace-nowrap">{provider?.labelForGetApiKey || 'Get API Key'}</span>
                 <div className={`${provider?.icon || 'i-ph:key'} w-4 h-4`} />

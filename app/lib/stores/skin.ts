@@ -1,72 +1,79 @@
 import { atom } from 'nanostores';
 
-/**
- * Skins are a named visual layer over the independent light/dark theme. Keeping the values in one
- * registry prevents Settings, persistence, and CSS from drifting apart as new skins are added.
+/*
+ * A skin is a named design language layered on top of the light/dark mode from theme.ts via a
+ * separate `data-skin` attribute, so switching skins never touches the light/dark toggle.
+ * 'veldra' has no CSS override (see variables.scss) and is a deliberate no-op — it's the
+ * palette+structure already shipping today, kept as the explicit default rather than an
+ * implicit one. The other 9 are real, distinct design languages (radius/shadow/blur/border,
+ * not palette swaps — see variables.scss's "VELDRA skin-structural layer"), plus 'obsidian',
+ * a dark-palette-only variant kept from an earlier loop.
  */
-export const SKINS = ['core', 'dark', 'light', 'midnight', 'matrix', 'aurora', 'industrial', 'minimal'] as const;
+export const SKINS = [
+  'veldra',
+  'glass',
+  'liquidglass',
+  'spatial',
+  'neomorphism',
+  'claymorphism',
+  'skeuomorphism',
+  'minimalism',
+  'maximalism',
+  'brutalism',
+  'obsidian',
+] as const;
 
 export type Skin = (typeof SKINS)[number];
 
-export interface SkinOption {
-  value: Skin;
-  label: string;
-  description: string;
-}
+export const SKIN_LABELS: Record<Skin, string> = {
+  veldra: 'VELDRA',
+  glass: 'Glassmorphism',
+  liquidglass: 'Liquid Glass',
+  spatial: 'Spatial UI',
+  neomorphism: 'Neomorphism',
+  claymorphism: 'Claymorphism',
+  skeuomorphism: 'Skeuomorphism',
+  minimalism: 'Minimalism',
+  maximalism: 'Maximalism',
+  brutalism: 'Brutalism',
+  obsidian: 'Obsidian',
+};
 
-export const SKIN_OPTIONS: readonly SkinOption[] = [
-  { value: 'core', label: 'VELDRA Core', description: 'Sky-blue technical surfaces and balanced depth.' },
-  { value: 'dark', label: 'VELDRA Dark', description: 'A familiar dark workspace with restrained contrast.' },
-  { value: 'light', label: 'VELDRA Light', description: 'A crisp, bright workspace for daylight sessions.' },
-  { value: 'midnight', label: 'Midnight', description: 'Near-black surfaces for focused late-night work.' },
-  { value: 'matrix', label: 'Matrix', description: 'Terminal green on black for a classic hacker feel.' },
-  { value: 'aurora', label: 'Aurora', description: 'Atmospheric violet surfaces with a softer glow.' },
-  { value: 'industrial', label: 'Industrial', description: 'High-contrast graphite with orange precision accents.' },
-  { value: 'minimal', label: 'Minimal', description: 'Monochrome surfaces with minimal visual noise.' },
-];
+export const SKIN_DESCRIPTIONS: Record<Skin, string> = {
+  veldra: 'Soft, calm, premium — the VELDRA default.',
+  glass: 'Frosted translucent panels with a soft blur.',
+  liquidglass: 'Fluid, luminous, high-blur glass with large concentric shapes.',
+  spatial: 'Layered depth with soft, generous shadows.',
+  neomorphism: 'Soft extruded surfaces, no borders, dual-tone shadow.',
+  claymorphism: 'Pillowy, oversized rounded corners, puffy shadow.',
+  skeuomorphism: 'Warm, tactile surfaces with a raised, physical feel.',
+  minimalism: 'Flat, quiet, almost no shadow or motion.',
+  maximalism: 'Bold accent borders, saturated shadow, expressive.',
+  brutalism: 'Raw, square corners, thick border, hard offset shadow.',
+  obsidian: 'Deep near-black dark-mode palette.',
+};
 
 export const kSkin = 'bolt_skin';
-export const DEFAULT_SKIN: Skin = 'core';
 
-/** Runtime guard used when reading untrusted localStorage values. */
-export function isSkin(value: unknown): value is Skin {
-  return typeof value === 'string' && (SKINS as readonly string[]).includes(value);
-}
+export const DEFAULT_SKIN: Skin = 'veldra';
 
-function migratePersistedSkin(value: string | null): Skin | undefined {
-  if (isSkin(value)) {
-    return value;
-  }
+export const skinStore = atom<Skin>(initStore());
 
-  /*
-   * Older builds called the default skin "veldra" and briefly exposed "obsidian". Keep those
-   * installations usable while converging on the eight-value contract used by the current UI.
-   */
-  if (value === 'veldra' || value === 'obsidian') {
-    return DEFAULT_SKIN;
-  }
-
-  return undefined;
+function isSkin(value: string | null): value is Skin {
+  return !!value && (SKINS as readonly string[]).includes(value);
 }
 
 function initStore(): Skin {
-  if (!import.meta.env.SSR && typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-    const persistedValue = localStorage.getItem(kSkin);
-    const persisted = migratePersistedSkin(persistedValue);
+  if (!import.meta.env.SSR) {
+    const persisted = localStorage.getItem(kSkin);
 
-    if (persisted) {
-      if (persisted !== persistedValue) {
-        localStorage.setItem(kSkin, persisted);
-      }
-
+    if (isSkin(persisted)) {
       return persisted;
     }
   }
 
   return DEFAULT_SKIN;
 }
-
-export const skinStore = atom<Skin>(initStore());
 
 export function setSkin(skin: Skin) {
   skinStore.set(skin);
