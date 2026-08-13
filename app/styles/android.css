@@ -628,11 +628,19 @@
 }
 
 /*
- * Make the composer textarea appropriate for mobile.
  * font-size: 16px prevents WebView auto-zoom on focus (Android/iOS).
+ * Applies to both the chat composer and settings form inputs.
  */
-.android-shell textarea {
+.android-shell textarea,
+.android-shell input[type='text'],
+.android-shell input[type='password'],
+.android-shell input[type='url'],
+.android-shell input[type='email'],
+.android-shell input[type='number'] {
   font-size: 16px !important;
+}
+
+.android-shell textarea {
   padding-left: 0.75rem !important;
   padding-right: 3rem !important;
   padding-top: 0.75rem !important;
@@ -782,6 +790,14 @@
   filter: blur(40px);
   opacity: 0.15;
   animation-duration: 30s;
+}
+
+/* =========================================================
+   Toasts: push below safe area on Android
+   ========================================================= */
+
+.android-shell .Toastify__toast-container--top-center {
+  top: calc(12px + env(safe-area-inset-top, 0px)) !important;
 }
 
 /* =========================================================
