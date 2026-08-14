@@ -12,6 +12,7 @@ import { runtimeModeStore } from '~/lib/stores/runtime-mode';
 import { isCapacitor } from '~/lib/adapters/platform';
 import { toast } from 'react-toastify';
 import { RemoteRuntimeClient, type RemotePreviewResponse } from '~/lib/remote-runtime/RemoteRuntimeClient';
+import { buildStaticPreview } from '~/lib/preview/staticPreviewBundle';
 
 type ResizeSide = 'left' | 'right' | null;
 
@@ -91,51 +92,76 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
   const remotePreviewConfigured = runtime.mode === 'remote' && missingRemotePreviewConfig.length === 0;
 
   const hasStaticHtml = Object.keys(files).some((path) => path.endsWith('/index.html') || path === 'index.html');
+  const staticRevokeRef = useRef<(() => void) | null>(null);
 
-  const handleStartStaticPreview = () => {
+  const rebuildStaticPreview = useCallback((options: { quiet?: boolean } = {}) => {
     const fileMap = workbenchStore.files.get();
     const indexPath = Object.keys(fileMap).find((path) => path.endsWith('/index.html') || path === 'index.html');
 
-    if (indexPath) {
-      const file = fileMap[indexPath];
+    if (!indexPath) {
+      if (!options.quiet) {
+        toast.error('No index.html found in your workspace.');
+      }
 
-      if (file && file.type === 'file') {
-        try {
-          if (staticUrl) {
-            URL.revokeObjectURL(staticUrl);
-          }
+      return;
+    }
 
-          const blob = new Blob([file.content], { type: 'text/html' });
-          const url = URL.createObjectURL(blob);
-          setStaticUrl(url);
-          setUseStaticPreview(true);
-          toast.success('Basic static preview started!');
-        } catch (error) {
-          console.error('[Preview] Failed to create blob URL', error);
-          toast.error('Failed to create static preview.');
+    try {
+      const build = buildStaticPreview(fileMap, indexPath);
+
+      if (!build) {
+        return;
+      }
+
+      staticRevokeRef.current?.();
+      staticRevokeRef.current = build.revoke;
+      setStaticUrl(build.url);
+      setUseStaticPreview(true);
+
+      if (!options.quiet) {
+        toast.success('Static preview started!');
+
+        if (build.unresolved.length > 0) {
+          toast.warn(`Some assets couldn't be resolved: ${build.unresolved.slice(0, 3).join(', ')}`);
         }
       }
-    } else {
-      toast.error('No index.html found in your workspace.');
+    } catch (error) {
+      console.error('[Preview] Failed to build static preview', error);
+
+      if (!options.quiet) {
+        toast.error('Failed to create static preview.');
+      }
     }
-  };
+  }, []);
+
+  const handleStartStaticPreview = () => rebuildStaticPreview();
 
   const handleStopStaticPreview = () => {
     setUseStaticPreview(false);
-
-    if (staticUrl) {
-      URL.revokeObjectURL(staticUrl);
-      setStaticUrl(null);
-    }
+    staticRevokeRef.current?.();
+    staticRevokeRef.current = null;
+    setStaticUrl(null);
   };
+
+  /*
+   * Keep the static preview live: regenerate (debounced) whenever workspace files change
+   * while it's active, so edits show up without a manual stop/restart.
+   */
+  useEffect(() => {
+    if (!useStaticPreview) {
+      return undefined;
+    }
+
+    const timeout = setTimeout(() => rebuildStaticPreview({ quiet: true }), 400);
+
+    return () => clearTimeout(timeout);
+  }, [files, useStaticPreview, rebuildStaticPreview]);
 
   useEffect(() => {
     return () => {
-      if (staticUrl) {
-        URL.revokeObjectURL(staticUrl);
-      }
+      staticRevokeRef.current?.();
     };
-  }, [staticUrl]);
+  }, []);
 
   const refreshRemotePreview = useCallback(
     async (options: { quiet?: boolean } = {}) => {

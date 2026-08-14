@@ -501,7 +501,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  border-radius: 20px;
+  border-radius: var(--veldra-radius-full, 20px);
   font-size: 13px;
   font-weight: 500;
   border: 1px solid transparent;
@@ -559,7 +559,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--veldra-radius-sm, 8px);
   font-size: 13px;
   font-weight: 500;
 }
@@ -605,7 +605,7 @@
   gap: 6px;
   width: 100%;
   padding: 10px 16px;
-  border-radius: 8px;
+  border-radius: var(--veldra-radius-sm, 8px);
   border: 1px solid rgba(239, 68, 68, 0.3);
   background-color: rgba(239, 68, 68, 0.08);
   color: #ef4444;
@@ -636,7 +636,7 @@
   gap: 6px;
   width: 100%;
   padding: 10px 16px;
-  border-radius: 8px;
+  border-radius: var(--veldra-radius-sm, 8px);
   border: 1px solid var(--bolt-elements-borderColor, #27272a);
   background-color: transparent;
   color: var(--bolt-elements-textSecondary, #71717a);
@@ -787,6 +787,15 @@
 .android-shell .kdb,
 .android-shell kbd {
   display: none !important;
+}
+
+/*
+ * WebView has no :hover -- any control that only reveals on group-hover
+ * (e.g. the code-block copy button) is otherwise permanently invisible
+ * and untappable on Android. Force it visible.
+ */
+.android-shell .group-hover\:opacity-100 {
+  opacity: 1 !important;
 }
 
 .android-shell .flex.shrink-0.items-center.gap-2 .hidden.text-xs {
@@ -961,12 +970,12 @@
 }
 
 .chat-history-close {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--veldra-radius-sm, 8px);
   border: none;
   background: transparent;
   color: var(--bolt-elements-textSecondary, #71717a);

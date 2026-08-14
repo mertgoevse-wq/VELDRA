@@ -56,7 +56,7 @@ function MobileTerminalDrawerBase({ children, label = 'Terminal' }: MobileTermin
             <div className="flex items-center justify-between px-3 py-2 border-b border-bolt-elements-borderColor bg-bolt-elements-background-depth-2">
               <span className="text-sm font-medium text-bolt-elements-textPrimary">{label}</span>
               <button
-                className="i-ph:x text-lg text-bolt-elements-textSecondary p-1"
+                className="i-ph:x text-lg text-bolt-elements-textSecondary min-w-[44px] min-h-[44px] flex items-center justify-center"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close terminal drawer"
               />
