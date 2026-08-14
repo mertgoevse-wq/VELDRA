@@ -34,6 +34,7 @@ import AndroidSettingsPanel from '~/components/mobile/AndroidSettingsPanel';
 
 import { startNewAndroidChat } from '~/lib/stores/androidChatSession';
 import { ChatHistoryDrawer } from '~/components/mobile/ChatHistoryDrawer';
+import { ConnectionBanner } from '~/components/mobile/ConnectionBanner';
 
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -225,7 +226,8 @@ export default function AndroidShell() {
     <DndProvider backend={TouchBackend} options={{ enableMouseEvents: true }}>
       {/* Theme-aware root */}
       <div className={classNames('android-shell', `theme-${theme}`)} data-theme={theme}>
-        {/* Android fallback mode banner */}
+        {/* Connection status + fallback banners */}
+        <ConnectionBanner />
         <AndroidFallbackBanner />
 
         {/* Main content area */}
