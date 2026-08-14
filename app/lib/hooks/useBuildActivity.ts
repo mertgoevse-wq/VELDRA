@@ -17,37 +17,42 @@ interface UseBuildActivityOptions {
 export function useBuildActivity({ isStreaming, chatStarted, messageCount }: UseBuildActivityOptions) {
   const prevStreamingRef = useRef(false);
   const prevMessageCountRef = useRef(messageCount);
-  const sessionIdRef = useRef<string | null>(null);
+  const generatingIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const wasStreaming = prevStreamingRef.current;
-    const prevCount = prevMessageCountRef.current;
+    const isFirstMessage = messageCount === 0;
+    const isNewMessage = messageCount > prevMessageCountRef.current;
 
     // Streaming started
     if (!wasStreaming && isStreaming) {
-      const sessionId = `session-${Date.now()}`;
-      sessionIdRef.current = sessionId;
-      startBuildSession(sessionId);
+      startBuildSession(`session-${Date.now()}`);
 
-      if (!chatStarted && messageCount === 0) {
+      if (!chatStarted && isFirstMessage) {
         addActivity('planning', 'Understanding your request');
-      } else if (messageCount > prevCount) {
-        addActivity('generating', 'Generating response');
+
+        const id = addActivity('generating', 'Planning project structure');
+        generatingIdRef.current = id;
+      } else if (isNewMessage) {
+        const id = addActivity('generating', 'Generating response');
+        generatingIdRef.current = id;
       } else {
-        addActivity('generating', 'Generating code');
+        const id = addActivity('generating', 'Generating code');
+        generatingIdRef.current = id;
       }
     }
 
-    // Streaming ended (completed)
+    // Streaming ended
     if (wasStreaming && !isStreaming) {
       completeBuildSession();
+      generatingIdRef.current = null;
     }
 
     prevStreamingRef.current = isStreaming;
     prevMessageCountRef.current = messageCount;
   }, [isStreaming, chatStarted, messageCount]);
 
-  // Reset activity when starting a new conversation
+  // Clear activity on new chat
   useEffect(() => {
     if (!chatStarted) {
       clearBuildActivity();

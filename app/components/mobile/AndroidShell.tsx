@@ -37,6 +37,7 @@ import { ChatHistoryDrawer } from '~/components/mobile/ChatHistoryDrawer';
 import { ConnectionBanner } from '~/components/mobile/ConnectionBanner';
 import { activeTemplateStore, clearTemplate } from '~/lib/stores/template';
 import { workspaceLayoutStore, panelToTab } from '~/lib/stores/workspaceLayout';
+import { computed } from 'nanostores';
 
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -153,6 +154,28 @@ export default function AndroidShell() {
       setActiveTab(targetTab);
     }
   }, [activeTemplate, workspaceLayout.primaryPanel]);
+
+  // Auto-navigate to preview when AI writes an index.html
+  const hasIndexHtml = useStore(
+    computed(workbenchStore.files, (files) =>
+      Object.keys(files).some((p) => p === 'index.html' || p.endsWith('/index.html')),
+    ),
+  );
+  const prevHasIndexHtmlRef = React.useRef(false);
+
+  useEffect(() => {
+    const hadFile = prevHasIndexHtmlRef.current;
+
+    if (!hadFile && hasIndexHtml && activeTab === 'chat') {
+      // Brief delay so AI finishes writing other files first
+      const t = window.setTimeout(() => setActiveTab('preview'), 1200);
+      return () => window.clearTimeout(t);
+    }
+
+    prevHasIndexHtmlRef.current = hasIndexHtml;
+
+    return undefined;
+  }, [hasIndexHtml, activeTab]);
 
   // Log platform info on mount
   useEffect(() => {
