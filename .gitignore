@@ -76,6 +76,8 @@ android/app/src/main/assets/public/
 !docs/VELDRA_MIGRATION_PLAN.md
 !docs/design/
 !docs/design/*.md
+!docs/ai-state/
+!docs/ai-state/*.md
 !VELDRA-RESEARCH/
 !VELDRA-RESEARCH/*.md
 !project/SESSION-HANDOFF.md
