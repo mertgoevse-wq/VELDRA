@@ -113,9 +113,9 @@ export const Markdown = memo(
 
             return (
               <CodeBlock
+                {...rest}
                 code={firstChild.children[0].value}
                 language={lang as unknown as BundledLanguage | SpecialLanguage}
-                {...rest}
               />
             );
           }

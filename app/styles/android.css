@@ -103,12 +103,17 @@
 }
 
 /*
- * The Workbench panel (Files/Preview tabs) is position:fixed, so it ignores
- * normal flow. Override it to fill the available space between top safe area
- * and the bottom navigation bar.
+ * The Workbench panel (Files/Preview tabs) is position:fixed, anchored to the
+ * viewport top -- that ignores the AndroidFallbackBanner, which lives in normal
+ * flow above .android-main and can push .android-main down by a variable amount.
+ * Re-anchor it to position:absolute inside .android-main (which is already
+ * position:relative) so it shares the same coordinate space as .android-tab-content
+ * and moves down together with it when the banner is shown/hidden, instead of a
+ * fixed offset that overlaps whatever is on screen at that vertical position.
  */
 .android-shell .fixed.top-\[calc\(var\(--header-height\)\+1\.2rem\)\] {
-  top: env(safe-area-inset-top, 0px) !important;
+  position: absolute !important;
+  top: 0 !important;
   bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
   left: 0 !important;
   right: 0 !important;
