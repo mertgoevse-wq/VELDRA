@@ -364,6 +364,8 @@
   --veldra-backdrop-blur: 0px;
   --veldra-backdrop-saturate: 100%;
   --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+  --veldra-surface-bg-hover: var(--bolt-elements-bg-depth-3, rgba(30, 30, 35, 1));
+  --veldra-border-color: var(--bolt-elements-borderColor);
   --veldra-motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
