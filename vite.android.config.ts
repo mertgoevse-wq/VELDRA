@@ -65,8 +65,29 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            /*
+             * react/react-dom must NOT be split into their own isolated chunk while other
+             * manual chunks (ai SDK hooks, framer-motion, Radix) also depend on them: Rollup's
+             * manualChunks resolves cross-chunk references by first-discoverer, which can
+             * produce a circular chunk reference -- e.g. a peer chunk ending up importing its
+             * React binding through another peer instead of directly, and reading it before
+             * that binding was initialized, throwing "Cannot read properties of undefined
+             * (reading 'useState')" on every load (100% reproducible, verified via headless
+             * Chromium against the built output -- a full white-screen crash, not a dev-only
+             * artifact). Fix: keep every react-consuming vendor lib in the same chunk as react
+             * itself so there is one evaluation unit and no cross-chunk ordering to get wrong.
+             */
+            if (
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/ai/') ||
+              id.includes('@ai-sdk/') ||
+              id.includes('framer-motion') ||
+              id.includes('@radix-ui/')
+            ) {
+              return 'vendor-react';
+            }
             if (id.includes('@codemirror/')) return 'vendor-codemirror';
-            if (id.includes('framer-motion') || id.includes('@radix-ui/')) return 'vendor-ui';
             if (id.includes('shiki') || id.includes('@shikijs/')) return 'vendor-shiki';
             if (id.includes('react-markdown') || id.includes('remark') || id.includes('rehype') || id.includes('unified') || id.includes('unist')) return 'vendor-markdown';
           }

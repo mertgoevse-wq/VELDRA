@@ -110,13 +110,20 @@
  * position:relative) so it shares the same coordinate space as .android-tab-content
  * and moves down together with it when the banner is shown/hidden, instead of a
  * fixed offset that overlaps whatever is on screen at that vertical position.
+ *
+ * Deliberately NOT overriding left/right here (this used to force `left:0
+ * !important; right:0 !important` unconditionally): the component's own
+ * `left-0` (open, small viewport) / `left-[100%]` (closed) / `w-full` classes
+ * are what actually show/hide the panel. Forcing left/right pinned it open
+ * and full-screen at all times regardless of `showWorkbench` state, which is
+ * why Code/Diff/Preview/Export/Files rendered on top of the Chat tab -- a
+ * pre-existing bug, confirmed via headless-browser screenshot of the built
+ * output, predating this session's other Android fixes.
  */
 .android-shell .fixed.top-\[calc\(var\(--header-height\)\+1\.2rem\)\] {
   position: absolute !important;
   top: 0 !important;
   bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
-  left: 0 !important;
-  right: 0 !important;
   border-radius: 0 !important;
   margin: 0 !important;
 }

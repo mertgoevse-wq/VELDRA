@@ -127,3 +127,41 @@ cd android && ./gradlew assembleDebug --no-daemon
 9. Remove remaining `@ts-nocheck` from BaseChat.tsx (requires type fixes)
 10. Add error recovery UI for failed file writes
 11. Skin token application to more specific components (Tag, Badge, Chip)
+
+---
+
+# Android Recovery Session Handoff (claude/veldra-android-recovery-85j8ws)
+
+Read this first, then CURRENT_STATE.md / ANDROID_STATE.md / ROADMAP.md / DECISIONS.md
+for detail. This section is a pointer, not a duplicate — keep it short.
+
+This branch's work has since been cherry-picked onto `integration/veldra-bedrock-plus-claude-web`
+(commits `79b45b9`, `784d7d2`, and the current HEAD) — the checkpoint above is this integration
+branch's own latest state; the notes below are carried forward from the recovery branch for context.
+
+## Where things stood
+Three blocks of Android recovery work (see git log for exact commits):
+1. Fixed the fallback-banner/workbench-toolbar overlap (the original bug screenshot's
+   most visible symptom).
+2. Live preview reactivity + multi-file resolution, Android touch/layering audit fixes,
+   partial skin-token wiring, this ai-state/ system.
+3. **Found and fixed two pre-existing, more severe bugs** via that session's first-ever
+   real screenshot verification (headless Chromium against the actual production
+   Android build): an app-crashing chunk-splitting bug, and the Workbench panel
+   rendering full-screen on top of every tab regardless of state. See CURRENT_STATE.md
+   for full detail — this second bug is almost certainly the real explanation for the
+   original screenshot's "editor area dominates the screen" complaint.
+
+## What's next (highest value, not yet started)
+- Real device / APK build+install — blocked on Android SDK in this environment.
+- `AndroidSettingsPanel.tsx`/`GitHubSyncPanel.tsx` hardcoded-color cleanup (skin tokens).
+- Service-Worker-backed virtual-FS preview (real live dev-server-less multi-file preview,
+  beyond the current blob-URL resolver).
+- Template system: verify template selection actually changes workspace composition.
+
+## How to verify without a device
+See "How to screenshot-verify" in CURRENT_STATE.md — `vite preview` serves the exact
+static output Capacitor ships, and a headless Chromium (Playwright, pre-installed in
+this environment at `/opt/pw-browsers`) can screenshot/click it at a Pixel 7 viewport.
+Use this before claiming any Android UI change is fixed — two of that session's bugs
+were invisible from source code alone.

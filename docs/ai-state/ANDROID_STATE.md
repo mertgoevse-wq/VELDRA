@@ -23,11 +23,22 @@ MobileFileTreeDrawer, MobileTerminalDrawer, ToastContainer.
   remote runtime URL.
 
 ## Open items (tracked via TaskList, see docs/ai-state/CURRENT_STATE.md)
-- Deeper layering/touch audit beyond the fallback-banner fix — in progress.
-- Live preview on Android fallback mode — needs investigation of whether
-  Preview.tsx can render anything without WebContainer.
-- Skin token coverage on Android surfaces — needs audit for hardcoded
-  colors/spacing in android.css bypassing the skin system.
+- `AndroidSettingsPanel.tsx`/`GitHubSyncPanel.tsx` still have raw hex/Tailwind-palette
+  colors bypassing skin tokens (audited, sized as its own follow-up — see DESIGN_SYSTEM.md).
+- Composer toolbar's "database" icon button (memory/context feature?) visually
+  inconsistent with the other 6 icon buttons in the same row (different fill/border
+  treatment) — cosmetic, not yet triaged.
+- No test harness exists for the Android shell/preview — quality gates are
+  tsc/eslint/build/screenshot only, no automated regression coverage.
+
+## Verified working (block 3, via real headless-Chromium screenshots against the
+production build, see CURRENT_STATE.md for the two critical bugs found+fixed there)
+- Tab switching (Chat/Files/Preview/Settings) via actual bottom-nav clicks.
+- Chat welcome screen + Guided Build expandable form (Platform/Visual style/
+  Integrations fields) via actual click.
+- New-chat button via actual click.
+- Settings panel (Runtime Mode, Android API Backend cards).
+- Preview tab's empty state.
 
 ## Known permanent limitation
 - Android WebView cannot run a Node.js WebContainer. Any live-preview or
