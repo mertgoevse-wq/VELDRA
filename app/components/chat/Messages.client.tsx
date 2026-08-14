@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import { forwardRef } from 'react';
 import type { ForwardedRef } from 'react';
 import type { ProviderInfo } from '~/types/model';
+import { BuildActivityFeed } from './BuildActivityFeed';
 
 interface MessagesProps {
   id?: string;
@@ -94,12 +95,15 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
             })
           : null}
         {isStreaming && (
-          <div className="flex items-center gap-2 mt-4 px-2 py-1.5 w-max rounded-sm border border-accent-500/20 bg-accent-500/10 text-accent-500 animate-pulse">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent-500 shrink-0" />
-            <div className="w-1.5 h-1.5 rounded-full bg-accent-500 shrink-0 opacity-75" />
-            <div className="w-1.5 h-1.5 rounded-full bg-accent-500 shrink-0 opacity-50" />
-            <span className="text-xs uppercase tracking-widest font-mono ml-1">Computing</span>
-          </div>
+          <>
+            <BuildActivityFeed />
+            <div className="flex items-center gap-2 mt-2 px-2 py-1.5 w-max rounded-sm border border-accent-500/20 bg-accent-500/10 text-accent-500 animate-pulse">
+              <div className="w-1.5 h-1.5 rounded-full bg-accent-500 shrink-0" />
+              <div className="w-1.5 h-1.5 rounded-full bg-accent-500 shrink-0 opacity-75" />
+              <div className="w-1.5 h-1.5 rounded-full bg-accent-500 shrink-0 opacity-50" />
+              <span className="text-xs uppercase tracking-widest font-mono ml-1">Computing</span>
+            </div>
+          </>
         )}
       </div>
     );

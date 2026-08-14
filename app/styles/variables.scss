@@ -606,6 +606,232 @@
 }
 
 /*
+ * Extended skin identity tokens (Loop 23 Slice 1 -- per-skin visual completeness)
+ *
+ * Adds typography, spacing, component, and accent tokens so each skin is meaningfully
+ * distinct — not just a radius/blur swap. These defaults represent the VELDRA skin.
+ * Each [data-skin] block below overrides only the tokens that differ for that design language.
+ */
+:root {
+  /* Typography scale */
+  --veldra-font-size-base: 14px;
+  --veldra-font-weight-normal: 400;
+  --veldra-font-weight-medium: 500;
+  --veldra-font-weight-bold: 600;
+  --veldra-letter-spacing: 0em;
+  --veldra-line-height: 1.5;
+  --veldra-heading-letter-spacing: -0.01em;
+
+  /* Component geometry */
+  --veldra-btn-radius: var(--veldra-radius-md);
+  --veldra-btn-padding-x: 16px;
+  --veldra-btn-padding-y: 8px;
+  --veldra-btn-border-width: var(--veldra-border-width);
+  --veldra-input-radius: var(--veldra-radius-md);
+  --veldra-card-padding: 16px;
+  --veldra-nav-item-radius: var(--veldra-radius-sm);
+
+  /* Depth / elevation z-offsets (used by spatial layers) */
+  --veldra-depth-surface: 0px;
+  --veldra-depth-elevated: 2px;
+  --veldra-depth-overlay: 8px;
+
+  /* Accent */
+  --veldra-accent: var(--bolt-elements-borderColorActive, #6366f1);
+  --veldra-accent-subtle: rgba(99, 102, 241, 0.12);
+  --veldra-accent-border: rgba(99, 102, 241, 0.35);
+}
+
+/* ── glass ───────────────────────────────────────────────────────────────── */
+[data-skin='glass'] {
+  --veldra-letter-spacing: 0.01em;
+  --veldra-btn-radius: var(--veldra-radius-lg);
+  --veldra-input-radius: var(--veldra-radius-lg);
+  --veldra-nav-item-radius: var(--veldra-radius-md);
+  --veldra-card-padding: 18px;
+}
+
+/* ── liquidglass ─────────────────────────────────────────────────────────── */
+[data-skin='liquidglass'] {
+  --veldra-font-size-base: 13.5px;
+  --veldra-letter-spacing: 0.015em;
+  --veldra-line-height: 1.6;
+  --veldra-btn-radius: var(--veldra-radius-xl);
+  --veldra-btn-padding-x: 20px;
+  --veldra-btn-padding-y: 10px;
+  --veldra-input-radius: var(--veldra-radius-xl);
+  --veldra-nav-item-radius: var(--veldra-radius-lg);
+  --veldra-card-padding: 20px;
+}
+
+/* ── spatial ─────────────────────────────────────────────────────────────── */
+[data-skin='spatial'] {
+  --veldra-letter-spacing: 0.005em;
+  --veldra-depth-surface: 0px;
+  --veldra-depth-elevated: 4px;
+  --veldra-depth-overlay: 12px;
+  --veldra-btn-radius: var(--veldra-radius-lg);
+  --veldra-input-radius: var(--veldra-radius-lg);
+  --veldra-nav-item-radius: var(--veldra-radius-md);
+  --veldra-card-padding: 18px;
+}
+
+/* ── neomorphism ─────────────────────────────────────────────────────────── */
+[data-skin='neomorphism'] {
+  --veldra-letter-spacing: 0.005em;
+  --veldra-line-height: 1.55;
+  --veldra-btn-radius: var(--veldra-radius-lg);
+  --veldra-btn-border-width: 0px;
+  --veldra-input-radius: var(--veldra-radius-lg);
+  --veldra-nav-item-radius: var(--veldra-radius-md);
+  --veldra-card-padding: 20px;
+  --veldra-accent-subtle: rgba(99, 102, 241, 0.08);
+}
+[data-theme='dark'][data-skin='neomorphism'] {
+  --veldra-accent: #8b8ff0;
+  --veldra-accent-border: rgba(139, 143, 240, 0.3);
+}
+[data-theme='light'][data-skin='neomorphism'] {
+  --veldra-accent: #5558d4;
+  --veldra-accent-border: rgba(85, 88, 212, 0.25);
+}
+
+/* ── claymorphism ────────────────────────────────────────────────────────── */
+[data-skin='claymorphism'] {
+  --veldra-font-weight-bold: 700;
+  --veldra-letter-spacing: 0.01em;
+  --veldra-line-height: 1.55;
+  --veldra-btn-radius: var(--veldra-radius-xl);
+  --veldra-btn-border-width: 0px;
+  --veldra-btn-padding-x: 20px;
+  --veldra-btn-padding-y: 10px;
+  --veldra-input-radius: var(--veldra-radius-xl);
+  --veldra-nav-item-radius: var(--veldra-radius-lg);
+  --veldra-card-padding: 20px;
+  --veldra-depth-elevated: 3px;
+}
+[data-theme='dark'][data-skin='claymorphism'] {
+  --veldra-accent: #a78bfa;
+  --veldra-accent-subtle: rgba(167, 139, 250, 0.15);
+  --veldra-accent-border: rgba(167, 139, 250, 0.3);
+}
+[data-theme='light'][data-skin='claymorphism'] {
+  --veldra-accent: #7c3aed;
+  --veldra-accent-subtle: rgba(124, 58, 237, 0.12);
+  --veldra-accent-border: rgba(124, 58, 237, 0.25);
+}
+
+/* ── skeuomorphism ───────────────────────────────────────────────────────── */
+[data-skin='skeuomorphism'] {
+  --veldra-font-weight-normal: 450;
+  --veldra-font-weight-medium: 550;
+  --veldra-font-weight-bold: 700;
+  --veldra-letter-spacing: 0.01em;
+  --veldra-heading-letter-spacing: 0em;
+  --veldra-line-height: 1.55;
+  --veldra-btn-radius: var(--veldra-radius-sm);
+  --veldra-btn-padding-x: 18px;
+  --veldra-input-radius: var(--veldra-radius-sm);
+  --veldra-nav-item-radius: var(--veldra-radius-xs);
+  --veldra-card-padding: 18px;
+}
+[data-theme='dark'][data-skin='skeuomorphism'] {
+  --veldra-accent: #c9a96e;
+  --veldra-accent-subtle: rgba(201, 169, 110, 0.12);
+  --veldra-accent-border: rgba(201, 169, 110, 0.3);
+}
+[data-theme='light'][data-skin='skeuomorphism'] {
+  --veldra-accent: #8b5e1a;
+  --veldra-accent-subtle: rgba(139, 94, 26, 0.1);
+  --veldra-accent-border: rgba(139, 94, 26, 0.25);
+}
+
+/* ── minimalism ──────────────────────────────────────────────────────────── */
+[data-skin='minimalism'] {
+  --veldra-font-size-base: 13px;
+  --veldra-letter-spacing: -0.01em;
+  --veldra-heading-letter-spacing: -0.02em;
+  --veldra-line-height: 1.45;
+  --veldra-density: 0.875;
+  --veldra-btn-radius: var(--veldra-radius-xs);
+  --veldra-btn-padding-x: 12px;
+  --veldra-btn-padding-y: 6px;
+  --veldra-input-radius: var(--veldra-radius-xs);
+  --veldra-nav-item-radius: var(--veldra-radius-xs);
+  --veldra-card-padding: 12px;
+  --veldra-accent-subtle: rgba(99, 102, 241, 0.07);
+  --veldra-depth-elevated: 1px;
+  --veldra-depth-overlay: 3px;
+}
+
+/* ── maximalism ──────────────────────────────────────────────────────────── */
+[data-skin='maximalism'] {
+  --veldra-font-size-base: 15px;
+  --veldra-font-weight-bold: 700;
+  --veldra-letter-spacing: 0.02em;
+  --veldra-heading-letter-spacing: 0.01em;
+  --veldra-line-height: 1.6;
+  --veldra-btn-radius: var(--veldra-radius-xl);
+  --veldra-btn-padding-x: 22px;
+  --veldra-btn-padding-y: 10px;
+  --veldra-input-radius: var(--veldra-radius-xl);
+  --veldra-nav-item-radius: var(--veldra-radius-lg);
+  --veldra-card-padding: 20px;
+  --veldra-depth-elevated: 5px;
+  --veldra-depth-overlay: 14px;
+  --veldra-accent: #38bdf8;
+  --veldra-accent-subtle: rgba(56, 189, 248, 0.15);
+  --veldra-accent-border: rgba(56, 189, 248, 0.4);
+}
+
+/* ── brutalism ───────────────────────────────────────────────────────────── */
+[data-skin='brutalism'] {
+  --veldra-font-size-base: 13px;
+  --veldra-font-weight-normal: 500;
+  --veldra-font-weight-medium: 600;
+  --veldra-font-weight-bold: 800;
+  --veldra-letter-spacing: 0.04em;
+  --veldra-heading-letter-spacing: 0.06em;
+  --veldra-line-height: 1.4;
+  --veldra-btn-radius: 0px;
+  --veldra-btn-padding-x: 18px;
+  --veldra-btn-padding-y: 10px;
+  --veldra-btn-border-width: var(--veldra-border-width-thick);
+  --veldra-input-radius: 0px;
+  --veldra-nav-item-radius: 0px;
+  --veldra-card-padding: 16px;
+  --veldra-accent: #facc15;
+  --veldra-accent-subtle: rgba(250, 204, 21, 0.12);
+  --veldra-accent-border: rgba(250, 204, 21, 0.5);
+  --veldra-depth-elevated: 4px;
+  --veldra-depth-overlay: 8px;
+}
+[data-theme='light'][data-skin='brutalism'] {
+  --veldra-accent: #dc2626;
+  --veldra-accent-subtle: rgba(220, 38, 38, 0.1);
+  --veldra-accent-border: rgba(220, 38, 38, 0.4);
+}
+
+/* ── obsidian ────────────────────────────────────────────────────────────── */
+[data-theme='dark'][data-skin='obsidian'] {
+  --veldra-letter-spacing: -0.01em;
+  --veldra-heading-letter-spacing: -0.025em;
+  --veldra-line-height: 1.55;
+  --veldra-btn-radius: var(--veldra-radius-md);
+  --veldra-nav-item-radius: var(--veldra-radius-sm);
+  --veldra-card-padding: 16px;
+  --veldra-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --veldra-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --veldra-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --veldra-surface-bg: var(--bolt-elements-bg-depth-2);
+  --veldra-accent: #818cf8;
+  --veldra-accent-subtle: rgba(129, 140, 248, 0.1);
+  --veldra-accent-border: rgba(129, 140, 248, 0.25);
+  --veldra-depth-elevated: 3px;
+  --veldra-depth-overlay: 10px;
+}
+
+/*
  * Mobile / Android WebView overrides
  *
  * Bolt.diy defaults to a desktop layout with --chat-min-width: 533px.

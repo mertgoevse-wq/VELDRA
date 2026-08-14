@@ -9,6 +9,7 @@ import type { ActionCallbackData } from './message-parser';
 import type { BoltShell } from '~/utils/shell';
 import { runtimeModeStore, type RuntimeMode } from '~/lib/stores/runtime-mode';
 import { toast } from 'react-toastify';
+import { addActivity } from '~/lib/stores/buildActivity';
 
 /**
  * File actions are already persisted by FilesStore on Android fallback and
@@ -221,6 +222,19 @@ export class ActionRunner {
     }
 
     this.#updateAction(actionId, { status: 'running' });
+
+    // Emit structured activity for visibility in BuildActivityFeed
+    if (action.type === 'file') {
+      const filePath = 'filePath' in action ? action.filePath : '';
+      addActivity('writing', `Writing ${filePath.split('/').pop() ?? 'file'}`, filePath || undefined);
+    } else if (action.type === 'shell') {
+      const cmd = 'content' in action ? String(action.content).slice(0, 60) : 'command';
+      addActivity('running', `Running: ${cmd}`);
+    } else if (action.type === 'build') {
+      addActivity('building', 'Building project');
+    } else if (action.type === 'start') {
+      addActivity('previewing', 'Starting preview server');
+    }
 
     try {
       switch (action.type) {

@@ -35,6 +35,8 @@ import AndroidSettingsPanel from '~/components/mobile/AndroidSettingsPanel';
 import { startNewAndroidChat } from '~/lib/stores/androidChatSession';
 import { ChatHistoryDrawer } from '~/components/mobile/ChatHistoryDrawer';
 import { ConnectionBanner } from '~/components/mobile/ConnectionBanner';
+import { activeTemplateStore, clearTemplate } from '~/lib/stores/template';
+import { workspaceLayoutStore, panelToTab } from '~/lib/stores/workspaceLayout';
 
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -113,6 +115,8 @@ export default function AndroidShell() {
   const theme = useStore(themeStore);
   const skin = useStore(skinStore);
   const runtime = useStore(runtimeModeStore);
+  const activeTemplate = useStore(activeTemplateStore);
+  const workspaceLayout = useStore(workspaceLayoutStore);
   const [activeTab, setActiveTab] = useState<MobileTab>('chat');
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -141,6 +145,14 @@ export default function AndroidShell() {
       window.removeEventListener('open-mobile-tab', handleOpenTab);
     };
   }, []);
+
+  // When a template is applied, switch to the tab matching its primary panel
+  useEffect(() => {
+    if (activeTemplate) {
+      const targetTab = panelToTab(workspaceLayout.primaryPanel);
+      setActiveTab(targetTab);
+    }
+  }, [activeTemplate, workspaceLayout.primaryPanel]);
 
   // Log platform info on mount
   useEffect(() => {
@@ -240,6 +252,21 @@ export default function AndroidShell() {
             })}
             aria-hidden={activeTab !== 'chat'}
           >
+            {/* Active template badge */}
+            {activeTemplate && (
+              <div className="android-template-badge">
+                <div className={`android-template-badge-icon ${activeTemplate.icon}`} />
+                <span>{activeTemplate.name}</span>
+                <button
+                  className="android-template-badge-dismiss"
+                  onClick={() => clearTemplate()}
+                  aria-label="Clear template"
+                >
+                  <div className="i-ph:x-bold" />
+                </button>
+              </div>
+            )}
+
             {/* Top action buttons */}
             <button
               className="android-new-chat-btn"
