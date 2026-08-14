@@ -106,9 +106,7 @@ export interface CatalogFreshnessPolicy {
 }
 
 export type CatalogFreshnessDecision =
-  | { action: 'use-cached' }
-  | { action: 'use-cached-and-revalidate' }
-  | { action: 'must-fetch' };
+  { action: 'use-cached' } | { action: 'use-cached-and-revalidate' } | { action: 'must-fetch' };
 
 export function evaluateCatalogFreshness(
   cached: CatalogSnapshot | null,

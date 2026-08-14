@@ -110,11 +110,7 @@ export interface VerificationRequirement {
 }
 
 export type ApprovalKind =
-  | 'plan'
-  | 'destructive-action'
-  | 'budget-exceeded'
-  | 'external-side-effect'
-  | 'low-confidence';
+  'plan' | 'destructive-action' | 'budget-exceeded' | 'external-side-effect' | 'low-confidence';
 
 /**
  * A point where the workflow stops and waits for a human. Never auto-resolved

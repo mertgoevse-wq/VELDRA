@@ -111,7 +111,7 @@ export const Markdown = memo(
             const { className, ...rest } = firstChild.properties;
             const [, language = 'plaintext'] = /language-(\w+)/.exec(String(className) || '') ?? [];
 
-            return <CodeBlock code={firstChild.children[0].value} language={language as BundledLanguage} {...rest} />;
+            return <CodeBlock {...rest} code={firstChild.children[0].value} language={language as BundledLanguage} />;
           }
 
           return <pre {...rest}>{children}</pre>;

@@ -38,7 +38,7 @@ export default function AndroidFallbackBanner() {
   return (
     <motion.div
       className={classNames(
-        'fixed top-0 left-0 right-0 z-50',
+        'relative shrink-0 w-full',
         'bg-amber-50 dark:bg-amber-950/20',
         'border-b border-amber-200 dark:border-amber-800/50',
         'px-4 py-3 text-sm',
