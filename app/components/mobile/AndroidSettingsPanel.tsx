@@ -846,7 +846,7 @@ export default function AndroidSettingsPanel() {
           <div className="android-card-content android-about space-y-2">
             <p className="android-about-name font-bold text-bolt-elements-textPrimary">VELDRA</p>
             <p className="android-about-version text-xs text-bolt-elements-textSecondary">v1.0.0 (Debug build)</p>
-            <p className="text-xs text-bolt-elements-textSecondary">Build Date: 2026-07-05</p>
+            <p className="text-xs text-bolt-elements-textSecondary">Build Date: 2026-08-14</p>
 
             <div className="border-t border-bolt-elements-borderColor/30 my-2 pt-2 text-xs">
               <span className="text-bolt-elements-textSecondary">Runtime Mode: </span>
