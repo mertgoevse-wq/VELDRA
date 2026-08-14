@@ -189,6 +189,11 @@ export default function AndroidShell() {
     let cancelled = false;
 
     CapacitorApp.addListener('backButton', () => {
+      if (historyOpen) {
+        setHistoryOpen(false);
+        return;
+      }
+
       if (workbenchStore.showWorkbench.get()) {
         setActiveTab('chat');
         return;
@@ -217,7 +222,7 @@ export default function AndroidShell() {
       cancelled = true;
       handle?.remove();
     };
-  }, [activeTab]);
+  }, [activeTab, historyOpen]);
 
   const isStreaming = useStore(streamingState);
 
