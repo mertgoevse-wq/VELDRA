@@ -63,16 +63,35 @@ export default defineConfig({
     rollupOptions: {
       input: resolve(__dirname, 'android-index.html'),
       output: {
+        /*
+         * react/react-dom must NOT be split into their own isolated chunk while other
+         * manual chunks (ai SDK hooks, framer-motion, Radix) also depend on them: Rollup's
+         * manualChunks (object form) resolves cross-chunk references by first-discoverer,
+         * which produced a circular chunk reference here -- vendor-ai ended up importing
+         * its React binding through vendor-ui instead of vendor-react, and read it before
+         * that binding was initialized, throwing "Cannot read properties of undefined
+         * (reading 'useState')" on every load (100% reproducible, verified via headless
+         * Chromium against the built output -- a full white-screen crash, not a dev-only
+         * artifact). Fix: keep every react-consuming vendor lib in the same chunk as react
+         * itself so there is one evaluation unit and no cross-chunk ordering to get wrong.
+         */
         manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
+          'vendor-react': [
+            'react',
+            'react-dom',
+            'ai',
+            '@ai-sdk/react',
+            '@ai-sdk/ui-utils',
+            'framer-motion',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-popover',
+          ],
           'vendor-codemirror': [
             '@codemirror/state',
             '@codemirror/view',
             '@codemirror/language',
             '@codemirror/commands',
           ],
-          'vendor-ai': ['ai', '@ai-sdk/react', '@ai-sdk/ui-utils'],
-          'vendor-ui': ['framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-popover'],
         },
       },
     },
