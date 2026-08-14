@@ -1226,12 +1226,24 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
             </div>
           ) : (
             <div className="flex flex-col w-full h-full justify-center items-center p-6 text-center bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary">
-              <div className="i-ph:monitor-play text-5xl text-bolt-elements-textSecondary mb-3 animate-pulse" />
-              <h3 className="text-md font-semibold mb-1">Live Preview Unavailable</h3>
+              <div className="i-ph:eye text-5xl text-bolt-elements-textSecondary mb-3" />
+              <h3 className="text-md font-semibold mb-1">
+                {isCapacitor() ? 'No Preview Yet' : 'Live Preview Unavailable'}
+              </h3>
               <p className="text-xs text-bolt-elements-textSecondary max-w-xs mb-4 leading-relaxed">
-                Live Server Preview requires a WebContainer environment (desktop browser) or a configured Remote
-                Runtime.
+                {isCapacitor()
+                  ? 'Ask VELDRA to build something. When code with index.html is generated, the preview appears here automatically.'
+                  : 'Live Server Preview requires a WebContainer environment (desktop browser) or a configured Remote Runtime.'}
               </p>
+              {isCapacitor() && !hasStaticHtml && (
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-mobile-tab', { detail: 'chat' }))}
+                  className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors mb-4"
+                >
+                  <span className="i-ph:chat-circle-text" />
+                  Go to Chat
+                </button>
+              )}
               {runtime.mode === 'remote' && (
                 <div className="bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor rounded-xl p-4 max-w-sm mb-3 text-left">
                   <div className="flex items-center justify-between gap-3 mb-2">

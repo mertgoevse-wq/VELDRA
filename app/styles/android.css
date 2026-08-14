@@ -1301,3 +1301,79 @@
   line-height: 1.4;
   word-break: break-word;
 }
+
+/* =========================================================
+   Setup Guide (first-run onboarding)
+   ========================================================= */
+
+.setup-guide-card {
+  margin: 0 16px 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.07) 0%, rgba(139,92,246,0.05) 100%);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: var(--veldra-radius-lg, 12px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setup-guide-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.setup-guide-icon {
+  width: 18px;
+  height: 18px;
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
+.setup-guide-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bolt-elements-textPrimary, #e4e4e7);
+}
+
+.setup-guide-body {
+  font-size: 12px;
+  color: var(--bolt-elements-textSecondary, #a1a1aa);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.setup-guide-steps {
+  font-size: 11.5px;
+  color: var(--bolt-elements-textSecondary, #a1a1aa);
+  padding-left: 16px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setup-guide-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: var(--veldra-radius-md, 8px);
+  color: #818cf8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--veldra-motion-duration-base, 200ms) ease;
+}
+
+.setup-guide-btn:active {
+  background: rgba(99,102,241,0.25);
+}
+
+.setup-guide-btn span:first-child {
+  width: 14px;
+  height: 14px;
+}

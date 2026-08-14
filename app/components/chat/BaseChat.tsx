@@ -40,6 +40,7 @@ import { isCapacitor } from '~/lib/adapters/platform';
 import { getAndroidModelsRequest } from '~/lib/android-api/backend-config';
 import { ProjectGuidedBuild } from '~/components/chat/ProjectGuidedBuild';
 import { WelcomeHero } from '~/components/chat/WelcomeHero.client';
+import { SetupGuide } from '~/components/mobile/SetupGuide';
 import { BreathingBackground } from '~/components/ui/BreathingBackground';
 import { processImageFiles } from './composer';
 import { toast } from 'react-toastify';
@@ -555,15 +556,18 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   })}
                 {!chatStarted && !isCapacitor() && <StarterTemplates />}
                 {!chatStarted && isCapacitor() && (
-                  <TemplatePicker
-                    onSelect={(template) => {
-                      applyTemplate(template);
+                  <>
+                    <ClientOnly>{() => <SetupGuide />}</ClientOnly>
+                    <TemplatePicker
+                      onSelect={(template) => {
+                        applyTemplate(template);
 
-                      if (template.suggestedPrompt) {
-                        handleSendMessage?.(new Event('click') as unknown as React.UIEvent, template.suggestedPrompt);
-                      }
-                    }}
-                  />
+                        if (template.suggestedPrompt) {
+                          handleSendMessage?.(new Event('click') as unknown as React.UIEvent, template.suggestedPrompt);
+                        }
+                      }}
+                    />
+                  </>
                 )}
               </div>
             </div>
