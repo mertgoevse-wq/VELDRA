@@ -36,6 +36,13 @@ if (!container) {
   throw new Error('[Android] Root element #root not found');
 }
 
+// Remove inline splash screen once React is ready to paint
+const splash = document.getElementById('splash');
+
+if (splash) {
+  splash.remove();
+}
+
 const root = createRoot(container);
 
 root.render(

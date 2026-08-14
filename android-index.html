@@ -17,7 +17,12 @@
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+    </noscript>
     <script>
       // Apply theme + skin before React mounts to avoid FOUC
       (function () {
@@ -34,7 +39,16 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Inline splash: visible before React hydrates, removed by android-main.tsx -->
+      <div id="splash" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#08090d;z-index:9999">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border:3px solid #27272a;border-top-color:#a1a1aa;border-radius:50%;animation:sp .7s linear infinite"></div>
+          <span style="font:500 14px/1 system-ui;color:#71717a;letter-spacing:.02em">VELDRA</span>
+        </div>
+      </div>
+      <style>@keyframes sp{to{transform:rotate(360deg)}}</style>
+    </div>
     <script type="module" src="/src/android-main.tsx"></script>
   </body>
 </html>
