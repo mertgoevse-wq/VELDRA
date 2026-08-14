@@ -11,10 +11,10 @@ const EXAMPLE_PROMPTS = [
 ];
 
 const MOBILE_EXAMPLE_PROMPTS = [
-  { text: 'Build a React todo app' },
-  { text: 'Create a landing page' },
-  { text: 'Make a weather dashboard' },
-  { text: 'Build a chat interface' },
+  { text: 'Build a React component' },
+  { text: 'Explain this codebase' },
+  { text: 'Debug an API error' },
+  { text: 'Write unit tests' },
 ];
 
 export function ExamplePrompts(sendMessage?: { (event: React.UIEvent, messageInput?: string): void | undefined }) {

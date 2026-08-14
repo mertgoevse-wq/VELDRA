@@ -31,8 +31,13 @@ interface TabConfig {
   disabled?: boolean;
 }
 
+function triggerHaptic() {
+  if (navigator.vibrate) {
+    navigator.vibrate(8);
+  }
+}
+
 function BottomNavBase({ activeTab, onTabChange, workbenchAvailable = false }: BottomNavProps) {
-  // Don't render on desktop
   if (!isMobileDevice()) {
     return null;
   }
@@ -51,7 +56,12 @@ function BottomNavBase({ activeTab, onTabChange, workbenchAvailable = false }: B
           key={tab.id}
           className={classNames({ active: activeTab === tab.id })}
           disabled={tab.disabled}
-          onClick={() => !tab.disabled && onTabChange(tab.id)}
+          onClick={() => {
+            if (!tab.disabled) {
+              triggerHaptic();
+              onTabChange(tab.id);
+            }
+          }}
           aria-label={tab.label}
           aria-current={activeTab === tab.id ? 'page' : undefined}
         >
