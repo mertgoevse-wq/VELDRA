@@ -279,6 +279,21 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
     setIsDeviceModeOn((prev) => !prev);
   };
 
+  // On Android: auto-start static preview when index.html exists and no other preview is active
+  useEffect(() => {
+    if (!isCapacitor()) {
+      return undefined;
+    }
+
+    if (hasStaticHtml && !useStaticPreview && !activePreview && !remotePreview) {
+      const t = window.setTimeout(() => handleStartStaticPreview(), 400);
+
+      return () => window.clearTimeout(t);
+    }
+
+    return undefined;
+  }, [hasStaticHtml, useStaticPreview, activePreview, remotePreview]);
+
   const startResizing = (e: React.PointerEvent, side: ResizeSide) => {
     if (!isDeviceModeOn) {
       return;
