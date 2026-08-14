@@ -63,16 +63,14 @@ export default defineConfig({
     rollupOptions: {
       input: resolve(__dirname, 'android-index.html'),
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-codemirror': [
-            '@codemirror/state',
-            '@codemirror/view',
-            '@codemirror/language',
-            '@codemirror/commands',
-          ],
-          'vendor-ai': ['ai', '@ai-sdk/react', '@ai-sdk/ui-utils'],
-          'vendor-ui': ['framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-popover'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@codemirror/')) return 'vendor-codemirror';
+            if (id.includes('framer-motion') || id.includes('@radix-ui/')) return 'vendor-ui';
+            if (id.includes('shiki') || id.includes('@shikijs/')) return 'vendor-shiki';
+            if (id.includes('react-markdown') || id.includes('remark') || id.includes('rehype') || id.includes('unified') || id.includes('unist')) return 'vendor-markdown';
+          }
+          if (id.includes('/components/workbench/') || id.includes('/components/editor/')) return 'app-workbench';
         },
       },
     },
