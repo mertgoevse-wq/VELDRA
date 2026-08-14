@@ -19,6 +19,7 @@ import { ExamplePrompts } from '~/components/chat/ExamplePrompts';
 import GitCloneButton from './GitCloneButton';
 import type { ProviderInfo } from '~/types/model';
 import StarterTemplates from './StarterTemplates';
+import { TemplatePicker } from '~/components/mobile/TemplatePicker';
 import type { ActionAlert, SupabaseAlert, DeployAlert, LlmErrorAlertType } from '~/types/actions';
 import DeployChatAlert from '~/components/deploy/DeployAlert';
 import ChatAlert from './ChatAlert';
@@ -552,6 +553,15 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     handleSendMessage?.(event, messageInput);
                   })}
                 {!chatStarted && !isCapacitor() && <StarterTemplates />}
+                {!chatStarted && isCapacitor() && (
+                  <TemplatePicker
+                    onSelect={(template) => {
+                      if (template.suggestedPrompt) {
+                        handleSendMessage?.(new Event('click') as unknown as React.UIEvent, template.suggestedPrompt);
+                      }
+                    }}
+                  />
+                )}
               </div>
             </div>
           </div>

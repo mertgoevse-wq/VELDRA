@@ -1001,3 +1001,71 @@
     transform: translateX(20px);
   }
 }
+
+/* =========================================================
+   Template Picker
+   ========================================================= */
+
+.android-template-picker {
+  padding: 16px;
+  margin-bottom: 8px;
+}
+
+.android-template-picker-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bolt-elements-textSecondary, #a1a1aa);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 4px;
+}
+
+.android-template-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.android-template-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: var(--veldra-surface-bg, rgba(24, 24, 27, 1));
+  border: 1px solid var(--veldra-border-color, rgba(255, 255, 255, 0.08));
+  border-radius: var(--veldra-radius-lg, 12px);
+  box-shadow: var(--veldra-shadow-sm, none);
+  transition: all var(--veldra-motion-duration-base, 200ms) ease;
+  cursor: pointer;
+  text-align: center;
+}
+
+.android-template-card:active {
+  transform: scale(0.96);
+  background: var(--veldra-surface-bg-hover, rgba(30, 30, 35, 1));
+}
+
+.android-template-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--bolt-elements-textPrimary, #e4e4e7);
+  opacity: 0.85;
+}
+
+.android-template-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bolt-elements-textPrimary, #e4e4e7);
+  line-height: 1.2;
+}
+
+.android-template-desc {
+  font-size: 10px;
+  color: var(--bolt-elements-textSecondary, #a1a1aa);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

@@ -25,7 +25,8 @@ import {
   type RuntimeMode,
 } from '~/lib/stores/runtime-mode';
 import { themeStore, toggleTheme } from '~/lib/stores/theme';
-import { skinStore, setSkin, SKINS, SKIN_LABELS } from '~/lib/stores/skin';
+import { skinStore, setSkin, SKINS, SKIN_LABELS, type Skin } from '~/lib/stores/skin';
+import { SKIN_PREVIEWS } from '~/lib/stores/skin-previews';
 import { getAndroidFallbackPersistenceStatus } from '~/lib/persistence/androidFallbackStorage';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
@@ -80,21 +81,36 @@ function ThemeAppearanceCard() {
         <div className="flex flex-col gap-2">
           <span className="text-sm text-bolt-elements-textPrimary">Skin</span>
           <div className="grid grid-cols-2 gap-1.5">
-            {SKINS.map((s) => (
-              <button
-                key={s}
-                className={classNames(
-                  'px-2.5 py-2 rounded-lg text-xs font-medium transition-all',
-                  'border',
-                  s === skin
-                    ? 'border-bolt-elements-borderColorActive bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent'
-                    : 'border-bolt-elements-borderColor text-bolt-elements-textSecondary',
-                )}
-                onClick={() => setSkin(s)}
-              >
-                {SKIN_LABELS[s]}
-              </button>
-            ))}
+            {SKINS.map((s) => {
+              const preview = SKIN_PREVIEWS.find((p) => p.id === s);
+
+              return (
+                <button
+                  key={s}
+                  className={classNames(
+                    'flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-all',
+                    'border',
+                    s === skin
+                      ? 'border-bolt-elements-borderColorActive bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent'
+                      : 'border-bolt-elements-borderColor text-bolt-elements-textSecondary',
+                  )}
+                  onClick={() => setSkin(s as Skin)}
+                >
+                  {preview && (
+                    <span
+                      className="inline-block w-5 h-5 shrink-0"
+                      style={{
+                        background: preview.previewTokens.surfaceBg,
+                        borderRadius: preview.previewTokens.radius,
+                        border: `${preview.previewTokens.borderWidth} solid ${preview.previewTokens.borderColor}`,
+                        boxShadow: preview.previewTokens.shadow,
+                      }}
+                    />
+                  )}
+                  {SKIN_LABELS[s]}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
