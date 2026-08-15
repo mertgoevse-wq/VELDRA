@@ -30,7 +30,7 @@ VELDRA lets you chat with LLMs, generate code, browse files, and edit projects o
 
 ## Android Status Table
 
-Honest status, not aspirational — a feature is only marked "Complete" once it has been tested for real, not merely compiled. Full detail (including exact verification method) lives in `project/STATUS.md`.
+Honest status, not aspirational — a feature is only marked "Complete" once it has been tested for real, not merely compiled. Full detail (including exact verification method) lives in `docs/ai-state/CURRENT_STATE.md` (the actively-maintained living doc; `project/STATUS.md` is an earlier session's historical record, kept for reference but no longer updated).
 
 | Feature | Status | Notes |
 |---------|--------|-------|
@@ -42,7 +42,7 @@ Honest status, not aspirational — a feature is only marked "Complete" once it 
 | **Touch DnD Backend** | ✅ Complete | Layout drag-and-drop works on touchscreens (React DnD Touch Backend) |
 | **Mobile Settings** | ✅ Complete | Compact grouped list navigation (Account / AI Setup / Workspace / …), real `<button>` semantics, `focus-visible`, 44px+ touch targets |
 | **Composer** | ✅ Works | Shared, error-isolated upload pipeline for drag-and-drop, paste, and file picker (multi-file); animated skin-aware accent border |
-| **Skin System** | ✅ Complete | 11 distinct visual languages (Glassmorphism, Liquid Glass, Neomorphism, Claymorphism, Skeuomorphism, Minimalism, Maximalism, Brutalism, and more) — each affects radius, shadow, blur, border, and motion, not just color |
+| **Skin System** | ✅ Complete | 11 selectable skins: 9 structurally distinct visual languages (Glass, Liquid Glass, Spatial, Neomorphism, Claymorphism, Skeuomorphism, Minimalism, Maximalism, Brutalism — each changes radius, shadow, blur, border, and motion, not just color), plus the default VELDRA look (no override) and a dark-palette-only "Obsidian" variant |
 | **Terminal** | ⚠️ Partial | Real WebSocket-based remote command runner exists (`RemoteCommandPanel`) with connection/status/error states — requires a configured Remote Runtime server; falls back to a clear "not configured" state otherwise, never a fake shell |
 | **Preview** | ⚠️ Partial | Local static HTML preview (Blob URL) works offline; Live Server preview requires a WebContainer (desktop browser) or a configured Remote Runtime, with an honest "Live Preview Unavailable" state and remote-preview status card otherwise |
 | **WebContainer Interception** | ✅ Safe | Intercepts commands (npm install, shell, start) and fails gracefully with toasts on platforms without WebContainer support |
@@ -53,7 +53,7 @@ Honest status, not aspirational — a feature is only marked "Complete" once it 
 ## Key Features
 
 - 📱 **Mobile-First Design**: Every primary surface (home, composer, Settings, provider/model pickers) is designed and tested first at 360–430px, with desktop as an expanded adaptation — not the other way around.
-- 🎨 **11-Skin Design System**: Genuinely different visual languages sharing one token layer (radius, shadow, blur, border, motion) — switching skins changes real controls, not just an accent color.
+- 🎨 **11-Skin Design System**: 9 structurally distinct visual languages sharing one token layer (radius, shadow, blur, border, motion) — switching skins changes real controls, not just an accent color — plus the default look and a dark-palette-only variant.
 - 💾 **Local File Persistence**: IndexedDB adapter automatically restores your projects and chat history on relaunch.
 - ⚡ **Offline-Ready UI Shell**: Runs as a pure Client-Side Rendered (CSR) app — no active Node.js server or Cloudflare environment is required to load the UI.
 - 🖼️ **Local Static HTML Preview**: Compile an `index.html` file into a local Blob URL to test layouts offline; Remote Runtime support for a real live preview.
@@ -138,7 +138,7 @@ Since standard Android WebViews do not support `SharedArrayBuffer` and WebContai
 ## Roadmap
 
 - [x] **Mobile UI Pass**: Restyle chat buttons, dialogs, header, and Settings to prevent overflow and unselectable controls on 360–430px wide devices.
-- [x] **Skin System**: 11 distinct visual languages sharing one token layer.
+- [x] **Skin System**: 11 selectable skins (9 structurally distinct visual languages, plus the default look and a dark-palette variant) sharing one token layer.
 - [x] **Startup Splash**: Animated branded launch screen synced with the native Capacitor splash.
 - [ ] **Remote Runtime Server**: Implement a lightweight Node.js/Docker sandbox backend that `RemoteCommandPanel` and the Live Preview status card can connect to, so Terminal and Preview work beyond their current "not configured" fallback states.
 - [ ] **Native File Picker**: Hook Capacitor Filesystem API to export/import files into the phone's native storage.
