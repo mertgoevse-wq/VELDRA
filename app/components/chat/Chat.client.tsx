@@ -220,7 +220,7 @@ export const ChatImpl = memo(
     const { enhancingPrompt, promptEnhanced, enhancePrompt, resetEnhancer } = usePromptEnhancer();
     const { parsedMessages, parseMessages } = useMessageParser();
 
-    useBuildActivity({ isStreaming: isLoading, chatStarted, messageCount: messages.length });
+    useBuildActivity({ isStreaming: isLoading, chatStarted });
 
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
 

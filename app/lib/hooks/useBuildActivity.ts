@@ -11,35 +11,30 @@ import { addActivity, clearBuildActivity, completeBuildSession, startBuildSessio
 interface UseBuildActivityOptions {
   isStreaming: boolean;
   chatStarted: boolean;
-  messageCount: number;
 }
 
-export function useBuildActivity({ isStreaming, chatStarted, messageCount }: UseBuildActivityOptions) {
+export function useBuildActivity({ isStreaming, chatStarted }: UseBuildActivityOptions) {
   const prevStreamingRef = useRef(false);
-  const prevMessageCountRef = useRef(messageCount);
   const generatingIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const wasStreaming = prevStreamingRef.current;
-    const isFirstMessage = messageCount === 0;
-    const isNewMessage = messageCount > prevMessageCountRef.current;
 
-    // Streaming started
+    /*
+     * Streaming started. Only one honest, generic entry here -- "the LLM is now
+     * generating a response" is the one real fact we have at this point. Earlier
+     * versions guessed a specific cognitive phase ("Understanding your request",
+     * "Planning project structure") purely from conversation bookkeeping (first
+     * message vs. new message), with no real signal backing which phase the LLM
+     * was actually in -- exactly the fake-progress pattern this store's own doc
+     * comment says to avoid. Real, more specific phases (writing/running/building/
+     * previewing) still come from action-runner.ts as real actions actually happen.
+     */
     if (!wasStreaming && isStreaming) {
       startBuildSession(`session-${Date.now()}`);
 
-      if (!chatStarted && isFirstMessage) {
-        addActivity('planning', 'Understanding your request');
-
-        const id = addActivity('generating', 'Planning project structure');
-        generatingIdRef.current = id;
-      } else if (isNewMessage) {
-        const id = addActivity('generating', 'Generating response');
-        generatingIdRef.current = id;
-      } else {
-        const id = addActivity('generating', 'Generating code');
-        generatingIdRef.current = id;
-      }
+      const id = addActivity('generating', 'Generating a response');
+      generatingIdRef.current = id;
     }
 
     // Streaming ended
@@ -49,8 +44,7 @@ export function useBuildActivity({ isStreaming, chatStarted, messageCount }: Use
     }
 
     prevStreamingRef.current = isStreaming;
-    prevMessageCountRef.current = messageCount;
-  }, [isStreaming, chatStarted, messageCount]);
+  }, [isStreaming, chatStarted]);
 
   // Clear activity on new chat
   useEffect(() => {
