@@ -131,11 +131,33 @@ Found and fixed two real bugs:
 Full detail in `DECISIONS.md`'s Phase 6 entry. 417 tests (was 413), typecheck clean, lint
 clean.
 
-## Phase 7+ — not started yet
-See the TaskList in this session for the remaining phases (template unification, workbench
-state-truth audit, UX/motion/design-system passes, Android pass, docs refresh, security
-review, and a final APK block deliberately deferred until the core product blocks are
-done).
+## Phase 7 — Unified template/project system (done)
+Continued the crashed session's own c998f16 template-unification round rather than
+re-auditing the same ground -- that round already confirmed `/git` is legitimately
+different domain logic (not a duplicate) and extracted the one real duplication
+(`buildFileSeedArtifactMessage()`, fixing a real escaping gap in the process). The
+remaining known gap (`/git` navigating to a whole new chat instead of seeding into the
+current one) is still explicitly out of scope -- a deliberate, separate, larger change,
+not reopened by this round's own narrower scope.
+
+Found instead that `getTemplates()` -- the actual mechanism behind "pick a template, get a
+real project" -- had zero test coverage, along with every other template-system file.
+Added `selectStarterTemplate.spec.ts` (5 tests) covering `.git`/`.bolt` file exclusion, a
+`.bolt/prompt` file's instructions reaching the LLM, and a real, easy-to-get-backwards
+distinction in `.bolt/ignore` handling: a read-only file is still *included* in the seeded
+artifact content (the LLM needs the real content to import/reference it), just flagged
+read-only in the accompanying instructions -- not silently dropped. First real regression
+guard for this pipeline. Also recorded a test-authoring lesson in `DECISIONS.md`: an early
+version used unnecessary `vi.resetModules()` + dynamic imports per test, which forced a
+full module-graph reimport every time and timed one test out; a plain top-level import
+(since `vi.mock` is already hoisted and file-scoped) was both correct and ~400x faster.
+
+422 tests (was 417), typecheck clean, lint clean.
+
+## Phase 8+ — not started yet
+See the TaskList in this session for the remaining phases (workbench state-truth audit,
+UX/motion/design-system passes, Android pass, docs refresh, security review, and a final
+APK block deliberately deferred until the core product blocks are done).
 
 ---
 

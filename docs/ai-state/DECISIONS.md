@@ -379,3 +379,36 @@
   doing nothing.
 - 417 tests (was 413), typecheck clean, lint clean (0 errors, the same 2 pre-existing
   warnings baseline).
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 7)
+
+- **Continued the c998f16 template-unification round rather than re-auditing the same
+  ground.** That round already read `GitUrlImport.client.tsx` in full and confirmed the
+  `/git` route is legitimately different domain logic from `getTemplates()` (arbitrary
+  user URL + real `git clone` + a brand-new chat, vs. a curated catalog seeded into the
+  current chat) — not re-litigated here. It also already extracted the one thing that
+  really was duplicated (`buildFileSeedArtifactMessage()`) and fixed a real escaping gap
+  that comparison surfaced. What was left unaddressed, and stayed that way here too: `/git`
+  navigating to a whole new chat instead of seeding into the current one — explicitly
+  flagged as "a deliberate, separate, larger change," which this round's own scope (adding
+  missing test coverage for the core pipeline, not a `/git`-route behavior change) didn't
+  warrant reopening.
+- **`getTemplates()` — the actual mechanism behind "pick a template, get a real project" —
+  had no test coverage at all before this.** Neither did `templates.ts`, `StarterTemplates.tsx`,
+  or `TemplatePicker.tsx`. Added `selectStarterTemplate.spec.ts` (5 tests, mocking only
+  `fetch` and `STARTER_TEMPLATES`) covering what was genuinely untested: `.git`/`.bolt`
+  file exclusion from the seeded artifact, a `.bolt/prompt` file's instructions actually
+  reaching `userMessage`, a `.bolt/ignore` file's matched paths being listed as read-only
+  in `userMessage` while still being *included* in the seeded artifact content (a real,
+  easy-to-get-backwards distinction — read-only isn't the same as absent, the LLM still
+  needs the file's real content to import/reference it), and the not-found case. First
+  real regression guard for this pipeline. 422 tests (was 417), typecheck clean, lint
+  clean.
+- **Test-authoring note**: an early version of the new spec used `vi.resetModules()` +
+  a fresh dynamic `import('./selectStarterTemplate')` per test (reaching for it to make a
+  per-test `vi.mock('./constants', ...)` override "feel" isolated) — `vi.mock` calls are
+  already hoisted and file-scoped in Vitest, so this bought nothing but forced a full
+  module-graph reimport (including `LLMManager`'s real provider-registration side effect)
+  on every single test, timing one of them out at the default 5s. A plain top-level
+  `import` was not only correct but ~400x faster once removed (5769ms → 13ms for the
+  whole suite).
