@@ -412,3 +412,37 @@
   on every single test, timing one of them out at the default 5s. A plain top-level
   `import` was not only correct but ~400x faster once removed (5769ms → 13ms for the
   whole suite).
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 8)
+
+- **Audited `workbenchStore` (`app/lib/stores/workbench.ts`) and its neighbors for
+  duplicate/competing state-truth, beyond the one instance already fixed
+  (`AndroidShell.tsx`'s `activeTab`/`showWorkbench` desync, an earlier round). Found the
+  architecture sound — no new bugs — via direct code reading, not a re-derivation of the
+  earlier finding:**
+  - `showWorkbench`/`currentView`: single `WritableAtom`s directly on `workbenchStore`,
+    nothing else in the codebase (`grep`-confirmed: no component keeps a local
+    `useState`-based shadow of workbench visibility) maintains a parallel copy.
+  - `selectedFile`: delegated through a getter to a private `#editorStore` — genuinely
+    encapsulated, not duplicated anywhere else.
+  - `unsavedFiles`: a single canonical `Set<string>` atom on `workbenchStore`; every
+    mutation site reads-then-writes the same atom, no shadow copy found.
+  - `Preview.tsx` reads its file data directly from `workbenchStore.files` (via
+    `useStore`/`.get()`), not an independent snapshot — `buildStaticPreview()` itself is a
+    pure function taking a `FileMap` parameter, so it can't drift from whatever the caller
+    passes in.
+  - `runtime-status.ts` vs `runtime-mode.ts`: not two competing stores — `runtime-mode.ts`
+    owns the actual state (`runtimeModeStore`); `runtime-status.ts` is a pure, read-only
+    query function that reports registry-backed provider availability *for* the current
+    mode, never mutates it and holds no state of its own.
+  - `settingsStore`/`runtime-mode.ts` were flagged as "not exhaustively audited" by the
+    round that fixed the `AndroidShell` bug — checked this round too, same conclusion: no
+    duplicate-truth issue found in either.
+  - No code changes resulted from this pass — an honest "audited, confirmed healthy"
+    outcome is the correct deliverable when that's what the evidence shows, not a
+    manufactured finding to have something to fix. `workbench.ts` itself still has no test
+    coverage (confirmed: no `workbench.spec.ts` exists, unlike several of its sibling
+    stores) — flagged as a real, separate gap, not attempted here given the store's deep
+    infra coupling (FilesStore/PreviewsStore/EditorStore/WebContainer) would need real
+    investigation into testability before writing tests blind, which this round's time
+    didn't warrant opening.

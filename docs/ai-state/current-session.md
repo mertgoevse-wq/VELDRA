@@ -154,10 +154,29 @@ full module-graph reimport every time and timed one test out; a plain top-level 
 
 422 tests (was 417), typecheck clean, lint clean.
 
-## Phase 8+ — not started yet
-See the TaskList in this session for the remaining phases (workbench state-truth audit,
-UX/motion/design-system passes, Android pass, docs refresh, security review, and a final
-APK block deliberately deferred until the core product blocks are done).
+## Phase 8 — Workbench truth-of-state pass (done, audit-only)
+Audited `workbenchStore` and its neighbors for duplicate/competing state-truth, beyond the
+one instance a prior round already fixed (`AndroidShell.tsx`'s `activeTab`/`showWorkbench`
+desync). Checked, via direct code reading, not re-derivation: `showWorkbench`/`currentView`
+(single atoms, no shadow `useState` anywhere), `selectedFile` (encapsulated in a private
+`#editorStore`), `unsavedFiles` (single canonical atom), `Preview.tsx`'s file sourcing
+(reads `workbenchStore.files` directly, no independent snapshot), and `runtime-status.ts`
+vs `runtime-mode.ts` (a pure read-only query over the latter's real state, not two
+competing stores). Found the architecture sound — no new bugs, no code changes this phase.
+An honest "audited, confirmed healthy" is the correct outcome when that's what the
+evidence shows, same principle as declining to fabricate activity states in Phase 2/4.
+
+Flagged one real, separate gap for a future round rather than attempting it blind:
+`workbench.ts` itself has no test coverage at all (confirmed: no `workbench.spec.ts`,
+unlike several sibling stores) — its deep infra coupling
+(FilesStore/PreviewsStore/EditorStore/WebContainer) needs real testability investigation
+before writing tests for it, which this round didn't have scope for. Full detail in
+`DECISIONS.md`'s Phase 8 entry.
+
+## Phase 9+ — not started yet
+See the TaskList in this session for the remaining phases (UX/motion/design-system passes,
+Android pass, docs refresh, security review, and a final APK block deliberately deferred
+until the core product blocks are done).
 
 ---
 

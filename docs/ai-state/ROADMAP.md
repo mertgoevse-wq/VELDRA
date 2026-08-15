@@ -49,12 +49,19 @@
       there. Not changed without visual confirmation across the other skins.
 - [ ] `UserMessage.tsx`'s two content-shape branches unified into one
       consistent layout (2026-08-15) — done, see DECISIONS.md/current-session.md.
-- [ ] Real-time state-truth bug fixed: Android's bottom-nav `activeTab` could
+- [x] Real-time state-truth bug fixed: Android's bottom-nav `activeTab` could
       disagree with `workbenchStore.showWorkbench` when the panel opened from
       an artifact-link click or AI file-streaming rather than a tab switch
       (2026-08-15, `AndroidShell.tsx`). Audit found no other duplicate-truth
-      issues in chatStore/subagentsStore/skinStore; settingsStore and
-      runtime-mode.ts were not exhaustively audited (flagged, not claimed clean).
+      issues in chatStore/subagentsStore/skinStore. `settingsStore` and
+      `runtime-mode.ts` were flagged as not exhaustively audited at the time —
+      checked in the product-integration mandate's Phase 8 (2026-08-15, later):
+      `runtime-status.ts` is a pure read-only query over `runtime-mode.ts`'s
+      real state, not a second competing store; no duplicate-truth issue found
+      in either. `workbenchStore`'s own `showWorkbench`/`currentView`/
+      `selectedFile`/`unsavedFiles`/`Preview.tsx` file-sourcing were also
+      checked this round — all single-source-of-truth. See
+      `docs/ai-state/DECISIONS.md`'s Phase 8 entry for the full trail.
 
 ## P2 (future architecture, don't block P0/P1)
 - Local models (GGUF/safetensors/LoRA), media generation extension points.
