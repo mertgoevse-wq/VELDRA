@@ -287,3 +287,46 @@
   bridge ever subscribed. Render first, then mutate the store, to match how production
   actually orders things (widget mounts once at chat-load time, long before any real
   spawn happens).
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 5)
+
+- **Investigated "true interleaving" of tool calls within assistant message text
+  (`AssistantMessage.tsx`) — the exact fix `daeabc6` deliberately deferred as "the more
+  complete fix" — and preserved that deferral, now with concrete evidence rather than just
+  caution.** `Markdown.tsx` renders `<boltArtifact>` content by parsing the *full* `content`
+  string (VELDRA's own message-parser rewrites `<boltArtifact>` tags into
+  `__boltArtifact__`-classed placeholder elements before this component ever sees them);
+  splitting `content` into fragments aligned to the AI SDK's `parts` array boundaries risks
+  a fragment boundary falling in the middle of an artifact tag the AI SDK has no awareness
+  of, since `parts` are chunked by streaming/tool-call structure, not by VELDRA's own tag
+  syntax. This is a real, confirmed architectural coupling, not just an abundance of
+  caution — attempting the naive version of this fix could break the artifact system,
+  the single most business-critical rendering path in the app (it's how every file the AI
+  writes actually reaches the user). Correctly de-risking this would need auditing
+  `message-parser.ts`'s tag-boundary handling against real `parts` chunking behavior first
+  — out of scope for this round. Left `AssistantMessage.tsx` unchanged.
+- **`BuildActivityFeed` had zero styling on web/desktop** — a real, high-severity, entirely
+  pre-existing bug found while looking for genuine "disconnected UI system" issues (Phase
+  5's actual mandate) rather than assuming the tool-interleaving gap was the only one.
+  `BuildActivityFeed.tsx` used bespoke CSS class names (`.build-activity-feed`,
+  `.activity-row`, etc.) that were defined *only* in `app/styles/android.css` — confirmed
+  via search that no other stylesheet anywhere in the codebase defines them, and confirmed
+  `android.css` is imported *only* by `src/android-main.tsx`, the Android-only entry point.
+  The web/desktop entry (`app/root.tsx` → `index.scss`) never loads it. Since
+  `BuildActivityFeed` renders on every single AI streaming response and is shared by both
+  entry points, this means it rendered as completely unstyled raw HTML on web/desktop the
+  entire time it existed. Rewrote it to use Tailwind/UnoCSS utility classes with
+  `bg-bolt-elements-*`/`text-bolt-elements-*` design tokens — the same pattern
+  `SubagentActivityWidget`/`ApprovalRequestWidget` already use — which fixes the missing
+  styling (utility classes apply everywhere, not gated behind a platform-specific
+  stylesheet) and genuinely unifies the visual language across all three activity
+  indicators now visible in chat, which is what "not several disconnected UI systems"
+  concretely means here. Also dropped `PHASE_COLORS`' 14-hue hardcoded-Tailwind-color
+  rainbow (`text-blue-400`, `text-violet-400`, etc. — one per `ActivityPhase`, none
+  skin-aware) in favor of a status-based tokenized color (`statusColorClass`: active/done/
+  error/skipped), keeping the per-phase *icon* shape as the differentiator instead — icons
+  don't have a skin/theming problem the way raw hex-adjacent color utilities do. Removed
+  the now-orphaned CSS block from `android.css` rather than leaving dead code with no
+  remaining reference. Added `BuildActivityFeed.spec.tsx` (first real test for this
+  component) proving the rewrite renders real `buildActivityStore` data correctly.
+  413 tests (was 408), typecheck clean, lint clean.

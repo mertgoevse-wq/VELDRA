@@ -84,11 +84,33 @@ seeding store state, not after.
 
 408 tests (was 400), typecheck clean, lint clean.
 
-## Phase 5+ — not started yet
-See the TaskList in this session for the remaining phases (unified chat/workbench
-experience, composer audit, template unification, workbench state-truth audit,
-UX/motion/design-system passes, Android pass, docs refresh, security review, and a final
-APK block deliberately deferred until the core product blocks are done).
+## Phase 5 — Unified chat/orchestrator/artifact/workbench experience (done)
+Investigated "true interleaving" of tool calls within assistant message text -- the exact
+fix `daeabc6` deliberately deferred -- and preserved that deferral with concrete evidence:
+`Markdown.tsx`'s artifact rendering depends on the *full* `content` string (VELDRA's own
+`<boltArtifact>` tag parser output), which doesn't align with the AI SDK's `parts`
+chunking boundaries. Splitting `content` per-part risks breaking artifact rendering, the
+single most business-critical path in the app. Confirmed real, not just cautious --
+`AssistantMessage.tsx` left unchanged.
+
+Found a real, higher-value "disconnected UI" bug instead: `BuildActivityFeed` (renders on
+every AI streaming response) had zero styling on web/desktop -- its CSS classes were
+defined only in `android.css`, which only `src/android-main.tsx` imports. Rewrote it with
+the same tokenized Tailwind pattern as `SubagentActivityWidget`/`ApprovalRequestWidget`,
+which both fixes the missing styling and genuinely unifies the visual language across all
+three activity indicators now visible in chat -- concretely what "not several disconnected
+UI systems" means. Dropped a 14-hue hardcoded-color rainbow in favor of a tokenized
+status-based color, keeping per-phase icons as the (skin-safe) differentiator. Removed the
+now-orphaned CSS from `android.css`. Added `BuildActivityFeed.spec.tsx`, the component's
+first real test. Full detail in `DECISIONS.md`'s Phase 5 entry.
+
+413 tests (was 408), typecheck clean, lint clean.
+
+## Phase 6+ — not started yet
+See the TaskList in this session for the remaining phases (composer audit, template
+unification, workbench state-truth audit, UX/motion/design-system passes, Android pass,
+docs refresh, security review, and a final APK block deliberately deferred until the core
+product blocks are done).
 
 ---
 
