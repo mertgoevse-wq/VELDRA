@@ -446,3 +446,29 @@
     infra coupling (FilesStore/PreviewsStore/EditorStore/WebContainer) would need real
     investigation into testability before writing tests blind, which this round's time
     didn't warrant opening.
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 9)
+
+- **Ran the one static-analysis technique that could meaningfully check for more
+  "unstyled on one platform" bugs (the `BuildActivityFeed` bug class from Phase 5) without
+  a browser: extracted all 77 top-level selectors from `android.css` and cross-referenced
+  every one against every component outside `app/components/mobile/`.** Result: no new
+  instances — every non-`.android-*`-prefixed class (`.chat-history-*`, `.setup-guide-*`,
+  `.mobile-bottom-nav`) is used exclusively by components that only ever render inside
+  `AndroidShell` (where `android.css` genuinely is loaded), which is correct, not a bug.
+  `BuildActivityFeed` was the only real instance of this bug class.
+- **The rest of Phase 9's own scope (typography, spacing, hierarchy, card/button/input
+  consistency, empty/error/loading/success states, navigation feel across
+  mobile/desktop/tablet) is not something static analysis can honestly assess** — these
+  are visual/interaction judgments, and this container still has no headless browser
+  available (confirmed again this round, same as every prior round's finding). Per the
+  mandate's own instruction ("wenn Browser technisch nicht verfügbar: nicht behaupten,
+  dass visuell getestet wurde"), not claiming any of that work happened. Deferred to
+  Phase 16 (or whenever a browser becomes available), not attempted blind here.
+- **A broader hardcoded-hex-color surface was found while checking for the CSS-class bug
+  (~19+ files, concentrated in `app/components/@settings/**` plus `ChatBox.tsx`) — routed
+  to Phase 11 (design-system/skin-token audit) instead of triaged here**, since each
+  instance needs the same "brand color vs. real gap" judgment call the existing "When NOT
+  to tokenize" rule requires, and the mandate already reserves exactly this as its own
+  later phase. `app/components/@settings/` is the densest cluster and the concrete
+  starting point for that phase. No code changes this phase.

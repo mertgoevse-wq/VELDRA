@@ -173,9 +173,23 @@ unlike several sibling stores) — its deep infra coupling
 before writing tests for it, which this round didn't have scope for. Full detail in
 `DECISIONS.md`'s Phase 8 entry.
 
-## Phase 9+ — not started yet
-See the TaskList in this session for the remaining phases (UX/motion/design-system passes,
-Android pass, docs refresh, security review, and a final APK block deliberately deferred
+## Phase 9 — Product-quality UX/design pass (done, audit-only, no browser)
+Ran the one static-analysis technique that could meaningfully re-check for more
+`BuildActivityFeed`-style "unstyled on one platform" bugs (all 77 `android.css` selectors
+cross-referenced against every non-mobile component) -- found no new instances; that
+component was the only real one. The rest of Phase 9's own scope (typography, spacing,
+hierarchy, empty/error/loading/success states, cross-device navigation feel) is a visual
+judgment call static analysis can't honestly make, and this container still has no
+headless browser (confirmed again). Not claiming that work happened -- deferred to Phase
+16 or whenever a browser is available, per the mandate's own "don't claim visual
+verification that didn't happen" instruction. Routed a broader hardcoded-hex-color finding
+(~19+ files, concentrated in `app/components/@settings/**`) to Phase 11, where it actually
+belongs. No code changes this phase. Full detail in `DECISIONS.md`'s Phase 9 entry.
+
+## Phase 10+ — not started yet
+See the TaskList in this session for the remaining phases (motion system, design-system
+audit, Android pass, docs refresh, security review, and a final APK block deliberately
+deferred
 until the core product blocks are done).
 
 ---
