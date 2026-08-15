@@ -773,3 +773,29 @@ not taken on the subagent's word alone:
   dynamically-registered, third-party MCP tool throws, with no redaction -- worth capping/
   redacting in a future pass if MCP tool error text is ever found to echo request
   headers/credentials; not confirmed as an actual leak today, no fix applied this round.
+
+## 2026-08-15: Phase 16 attempt -- Android build blocked, then unblocked one layer, still OOMs
+
+First real attempt this round at the documented "screenshot-verify via vite preview"
+recipe (`CURRENT_STATE.md`). `node scripts/build-android.mjs` failed immediately, before
+even reaching the OOM this environment is already documented as prone to:
+`mcpService.ts` imports `Experimental_StdioMCPTransport` from `ai/mcp-stdio`, which uses
+`node:child_process`'s `spawn` to talk to a local stdio-based MCP server -- fundamentally
+unavailable in a browser/WebView (same category as the already-shimmed `external-cli`
+provider). Not previously hit because the Android build apparently hadn't actually been
+re-run since this import was added. Fixed the same way as the existing precedent: a new
+`src/shims/mcp-stdio.ts` (real class shape, `start()`/`send()` throw an honest "not
+available on Android" error) + a `resolve.alias` entry in `vite.android.config.ts`
+(`e08e61e`). This is real, verified progress (typecheck/lint clean, unblocks module
+resolution) independent of whether the build fully completes.
+
+With that fixed, the build gets past all 4977 modules and into chunk rendering, then hits
+`FATAL ERROR: Ineffective mark-compacts near heap limit ... JavaScript heap out of memory`
+-- the exact, already-documented "Production Builds: May OOM on ARM64/Termux" constraint
+in `CLAUDE.md`, now actually reproduced rather than just cited. Tried
+`NODE_OPTIONS=--max-old-space-size=4096` (this container: 7.2GB RAM, ~2GB free at time of
+attempt, 8-11GB swap available) -- session was interrupted before this attempt's result
+was observed; not yet confirmed either way. Phase 16 (screenshot verification) stays
+blocked until either this succeeds or a lower-memory build strategy is found (e.g.
+disabling minification for the verification build only, or building on a less
+memory-constrained machine) -- not claiming visual verification happened.
