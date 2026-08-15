@@ -4,6 +4,7 @@ import { runtimeModeStore } from '~/lib/stores/runtime-mode';
 import { ActionRunner } from './action-runner';
 import { WORK_DIR } from '~/utils/constants';
 import type { FileHistory } from '~/types/actions';
+import { buildActivityStore, clearBuildActivity } from '~/lib/stores/buildActivity';
 
 describe('file action runtime policy', () => {
   const initialRuntime = runtimeModeStore.get();
@@ -165,6 +166,56 @@ describe('file action runtime policy', () => {
     await runner.runAction(action);
 
     expect(writeFile).not.toHaveBeenCalled();
+  });
+
+  it('resolves a real BuildActivityFeed entry as done when a file write actually succeeds', async () => {
+    clearBuildActivity();
+
+    const writeFile = vi.fn(async () => undefined);
+    const webcontainer = () => Promise.reject(new Error('WebContainer unavailable'));
+
+    const runner = new ActionRunner(webcontainer, () => undefined as never, undefined, undefined, undefined, writeFile);
+
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'ok-action',
+      action: { type: 'file', filePath: 'src/ok.ts', content: 'export {}' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+
+    const { events } = buildActivityStore.get();
+    const entry = events.find((e) => e.label.includes('ok.ts'));
+    expect(entry?.status).toBe('done');
+  });
+
+  it('resolves a real BuildActivityFeed entry as an error, not a fake success, when a file write actually fails', async () => {
+    clearBuildActivity();
+
+    const writeFile = vi.fn(async () => {
+      throw new Error('disk full');
+    });
+    const webcontainer = () => Promise.reject(new Error('WebContainer unavailable'));
+
+    const runner = new ActionRunner(webcontainer, () => undefined as never, undefined, undefined, undefined, writeFile);
+
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'failing-action',
+      action: { type: 'file', filePath: 'src/fails.ts', content: 'export {}' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+
+    expect(runner.actions.get()['failing-action']?.status).toBe('failed');
+
+    const { events } = buildActivityStore.get();
+    const entry = events.find((e) => e.label.includes('fails.ts'));
+    expect(entry?.status).toBe('error');
   });
 
   it('rejects a local file action outside the workspace', async () => {

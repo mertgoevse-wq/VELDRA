@@ -9,7 +9,7 @@ import type { ActionCallbackData } from './message-parser';
 import type { BoltShell } from '~/utils/shell';
 import { runtimeModeStore, type RuntimeMode } from '~/lib/stores/runtime-mode';
 import { toast } from 'react-toastify';
-import { addActivity } from '~/lib/stores/buildActivity';
+import { addActivity, completeActivity, errorActivity } from '~/lib/stores/buildActivity';
 
 /**
  * File actions are already persisted by FilesStore on Android fallback and
@@ -224,17 +224,26 @@ export class ActionRunner {
 
     this.#updateAction(actionId, { status: 'running' });
 
-    // Emit structured activity for visibility in BuildActivityFeed
+    /*
+     * Emit structured activity for visibility in BuildActivityFeed, and keep the returned id
+     * so this same action's real outcome (success/failure) can resolve it precisely below --
+     * without this, a failed build/shell/file/start action previously left its activity entry
+     * to be bulk-marked "done" by completeBuildSession() when streaming ends, which reads as a
+     * false success in the feed the user is watching. No activity is started for 'supabase'
+     * (it has its own pending/approval flow), so activityId stays undefined for it.
+     */
+    let activityId: string | undefined;
+
     if (action.type === 'file') {
       const filePath = 'filePath' in action ? action.filePath : '';
-      addActivity('writing', `Writing ${filePath.split('/').pop() ?? 'file'}`, filePath || undefined);
+      activityId = addActivity('writing', `Writing ${filePath.split('/').pop() ?? 'file'}`, filePath || undefined);
     } else if (action.type === 'shell') {
       const cmd = 'content' in action ? String(action.content).slice(0, 60) : 'command';
-      addActivity('running', `Running: ${cmd}`);
+      activityId = addActivity('running', `Running: ${cmd}`);
     } else if (action.type === 'build') {
-      addActivity('building', 'Building project');
+      activityId = addActivity('building', 'Building project');
     } else if (action.type === 'start') {
-      addActivity('previewing', 'Starting preview server');
+      activityId = addActivity('previewing', 'Starting preview server');
     }
 
     try {
@@ -278,13 +287,24 @@ export class ActionRunner {
           // making the start app non blocking
 
           this.#runStartAction(action)
-            .then(() => this.#updateAction(actionId, { status: 'complete' }))
+            .then(() => {
+              this.#updateAction(actionId, { status: 'complete' });
+
+              if (activityId) {
+                completeActivity(activityId);
+              }
+            })
             .catch((err: Error) => {
               if (action.abortSignal.aborted) {
                 return;
               }
 
               this.#updateAction(actionId, { status: 'failed', error: 'Action failed' });
+
+              if (activityId) {
+                errorActivity(activityId, err instanceof Error ? err.message : 'Action failed');
+              }
+
               logger.error(`[${action.type}]:Action failed\n\n`, err);
 
               if (!(err instanceof ActionCommandError)) {
@@ -312,12 +332,21 @@ export class ActionRunner {
       this.#updateAction(actionId, {
         status: isStreaming ? 'running' : action.abortSignal.aborted ? 'aborted' : 'complete',
       });
+
+      if (activityId && !action.abortSignal.aborted) {
+        completeActivity(activityId);
+      }
     } catch (error) {
       if (action.abortSignal.aborted) {
         return;
       }
 
       this.#updateAction(actionId, { status: 'failed', error: 'Action failed' });
+
+      if (activityId) {
+        errorActivity(activityId, error instanceof Error ? error.message : 'Action failed');
+      }
+
       logger.error(`[${action.type}]:Action failed\n\n`, error);
 
       if (!(error instanceof ActionCommandError)) {
