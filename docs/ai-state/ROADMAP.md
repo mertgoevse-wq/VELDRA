@@ -19,13 +19,42 @@
       "Guided Build" flow, greeting, provider/model selectors, composer. Not a
       raw scaffold; further polish (button consistency, ambient motion) is a
       nice-to-have, not a P0 blocker.
-- [ ] Skin tokens: `.android-card`/`.android-mode-badge`/button radii wired to
-      `--veldra-radius-*` this session; `AndroidSettingsPanel`/`GitHubSyncPanel`'s
-      raw hex colors still bypass the token system (sized as a separate block).
-- [ ] Template system changes real workspace composition on Android.
-- [ ] Activity/agent status stream reflects real tool state (not synthetic).
-- [ ] Composer toolbar icon-button visual consistency (one button styled
-      differently from its siblings).
+- [x] Skin tokens: `.android-card`/`.android-mode-badge`/button radii (prior
+      session), `AndroidSettingsPanel`/`GitHubSyncPanel` (2026-08-15), and a
+      further sweep across `Preview.tsx`/`Workbench.client.tsx`/
+      `ToolInvocations.tsx`/`SupabaseConnection.tsx` (2026-08-15) all now use
+      `bg-bolt-elements-background-depth-*`/`border-bolt-elements-borderColor`.
+      Deliberately NOT touched: semantic status colors and third-party brand
+      colors (Supabase green) — see DECISIONS.md "When NOT to tokenize".
+- [x] Template system changes real workspace composition on Android (2026-08-15)
+      — "Code Workspace"/"Project Overview" now deterministically seed real
+      starter files via `applyStarterTemplate`, not just a layout switch. The
+      other 6 templates are workspace-mode presets by design, not project
+      scaffolds — see DECISIONS.md. Still open: unifying with desktop's
+      `StarterTemplates`/`/git`-route path (separate, larger change).
+- [x] SubagentActivityWidget mounted (prior session) and confirmed genuinely
+      wired to real subagentService.ts task state, not synthetic (2026-08-15
+      orchestrator audit). Real per-tool-call granularity (tool selected/
+      executing, file read, verification, retry) does NOT exist in the
+      current data model (`SubagentTask` only has running/completed/failed +
+      createdAt) — would need new instrumentation in subagentService.ts
+      itself, not just UI wiring. Deliberately not faked.
+- [ ] Composer toolbar icon-button visual consistency ("Discuss"/"Model
+      Settings" carry a persistent background pill even when off; every
+      sibling icon button is hover-only). Investigated 2026-08-15, twice now
+      (once via direct read, once via independent fork read reaching the same
+      conclusion) — most likely an intentional toggle-vs-momentary-action
+      distinction, and it's visually a no-op in the default theme since
+      `--bolt-elements-item-backgroundDefault` resolves to fully transparent
+      there. Not changed without visual confirmation across the other skins.
+- [ ] `UserMessage.tsx`'s two content-shape branches unified into one
+      consistent layout (2026-08-15) — done, see DECISIONS.md/current-session.md.
+- [ ] Real-time state-truth bug fixed: Android's bottom-nav `activeTab` could
+      disagree with `workbenchStore.showWorkbench` when the panel opened from
+      an artifact-link click or AI file-streaming rather than a tab switch
+      (2026-08-15, `AndroidShell.tsx`). Audit found no other duplicate-truth
+      issues in chatStore/subagentsStore/skinStore; settingsStore and
+      runtime-mode.ts were not exhaustively audited (flagged, not claimed clean).
 
 ## P2 (future architecture, don't block P0/P1)
 - Local models (GGUF/safetensors/LoRA), media generation extension points.

@@ -1,3 +1,46 @@
+# VELDRA Session Checkpoint — 2026-08-15 (product evolution pass)
+
+Read this section first; everything below it is prior-session history, kept for context.
+
+## Latest commit / branch
+Branch `integration/veldra-bedrock-plus-claude-web` (single active branch, work directly
+on it). See git log for the exact commit — this file isn't the place to hardcode a hash
+that goes stale the moment another commit lands.
+
+## What changed this session
+1. **Deterministic starter-code seeding for Android templates** — "Code Workspace" and
+   "Project Overview" now trigger the same `getTemplates()` GitHub-backed file-seeding
+   pipeline desktop's auto-select-on-first-message already used, but deterministically
+   (no LLM guess) via a new `applyStarterTemplate` prop threaded through
+   `Chat.client.tsx` -> `BaseChat.tsx` -> `TemplatePicker`. The other 6 Android
+   templates are workspace-layout/mode presets by design (not code scaffolds) and
+   correctly do NOT get this.
+2. **Fixed a real state-truth bug**: `AndroidShell.tsx`'s `activeTab` and
+   `workbenchStore.showWorkbench` could disagree about what's on screen when the
+   Workbench opened from an artifact-link click or AI file-streaming rather than a tab
+   switch. Added the missing reverse sync.
+3. **Unified `UserMessage.tsx`** — was two structurally different layouts depending on
+   whether the AI SDK gave it string vs. array content (different alignment, avatar
+   presence, image ordering). Also dropped a leftover `@ts-nocheck` from this file's
+   upstream bolt.diy-tutorial origin; typechecks clean without it.
+4. **Continued the hardcoded-hex-to-design-token cleanup** across `Preview.tsx`,
+   `Workbench.client.tsx`, `ToolInvocations.tsx`, `SupabaseConnection.tsx` — while
+   explicitly leaving semantic/status colors, Supabase's actual brand green, and
+   `Preview.tsx`'s device-mockup colors (rendered in a separate document context)
+   untouched. See `DECISIONS.md` "When NOT to tokenize" for the rule.
+5. **Investigated, deliberately deferred** (see `DECISIONS.md` for the full reasoning):
+   orchestrator approval/policy UI (no backend event stream exists yet — would be
+   showing the user data the runtime doesn't back up), and unifying desktop's
+   `StarterTemplates`/`/git`-route starter-import path with the pipeline in (1) above.
+
+## What was NOT possible this session
+No headless browser was available in this container to visually verify any of the above
+(a fresh `npx playwright install chromium` timed out after 90s). Verification was
+typecheck + lint + build + direct code/call-site reading only. Flagging this honestly
+rather than claiming visual confirmation that didn't happen — see CURRENT_STATE.md block 4.
+
+---
+
 # VELDRA Session Checkpoint — 2026-08-14 (End of Session)
 
 ## Latest Commit

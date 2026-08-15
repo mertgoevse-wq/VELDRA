@@ -225,16 +225,36 @@ The orchestrator is being integrated gradually:
 ### Phase 1: PoC Implementation ✅
 - [x] Create VeldraOrchestratorHost
 - [x] Implement VeldraAgentRunner
-- [x] Write comprehensive tests (23 tests)
+- [x] Write comprehensive tests (99 tests across app/lib/orchestrator/*.spec.ts as of
+      2026-08-15 -- unit tests against mocked dependencies verifying the stub behavior
+      itself, not a real approval/policy mechanism; see Phase 2 below)
 - [x] Feature flag + fallback wrapper
 - **Commit**: `68e0b07`
 
 ### Phase 2: Integration (Current)
-- [ ] Wire ApprovalPort to UI confirmations
-- [ ] Wire PolicyGate to settings/permissions
-- [ ] Implement RunStore for persistence
-- [ ] Test with feature flag enabled
-- [ ] Collect evidence of correctness
+- [ ] Wire ApprovalPort to UI confirmations -- **not started**: `_createApprovalStub()`
+      (veldra-host.ts) always auto-approves `options[0]` and only logs a warning. No UI,
+      no persistence, no timeout.
+- [ ] Wire PolicyGate to settings/permissions -- **not started**: `_createPolicyStub()`
+      always returns `null` (allow-all), only logs.
+- [ ] Implement RunStore for persistence -- **not started**: `readonly runs = undefined`
+      in veldra-host.ts. ModelCatalog and CapabilityResolver are likewise undefined.
+- [ ] Build a real-time event stream (approval requests, tool progress, budget updates) a
+      UI could subscribe to -- **does not exist yet**. ApprovalPort.request() is a single
+      async call/response, not a subscribable stream; this needs new backend plumbing
+      (a WorkflowRun state machine driving planning->running->awaiting-approval->completed,
+      plus an emitter) before any approval/policy UI has real data to render. Audited
+      2026-08-15; do not attempt the UI before this exists, or it will show information
+      the runtime doesn't back up.
+- [ ] Test with feature flag enabled -- not yet; VELDRA_USE_ORCHESTRATOR is unset by
+      default, so production always takes the legacy SubagentService path today. The
+      orchestrator's spawnSubagentWithOrchestrator() IS reachable from the real request
+      path (mcpService.ts's spawnSubagent tool handler calls it), it's just gated off.
+- [ ] Collect evidence of correctness -- AgentRunner's per-invocation Evidence[] already
+      flows into subagentsStore via the legacy path (which populates it regardless of the
+      flag) and is what SubagentActivityWidget (app/components/chat/SubagentActivityWidget.tsx)
+      already surfaces. Extending that widget is a much smaller, lower-risk step than
+      building new orchestrator-specific UI.
 
 ### Phase 3: Migration (Future)
 - [ ] Enable by default (after validation)
@@ -383,25 +403,41 @@ development branch. Work directly on it; do not create new feature/integration/e
 branches unless explicitly requested. Other sessions/agents should also work on this same
 branch rather than splitting off parallel ones.
 **Recent Work**:
-- ✅ Orchestrator PoC implemented (23 tests passing)
+- ✅ Orchestrator PoC implemented (99 tests passing, all unit-level against mocks —
+  see Orchestrator Migration Strategy above for what that does/doesn't prove)
 - ✅ P0 agents integrated (code-reviewer, debugger, context-manager)
 - ✅ Android P0 stabilization: fixed the fallback-banner/toolbar overlap, an
   app-crashing production chunk-splitting bug, and the Workbench-always-full-screen bug
   (see `docs/ai-state/CURRENT_STATE.md` / `ROADMAP.md` / `DECISIONS.md` for full detail
   and the verification method)
+- ✅ Product evolution pass (2026-08-15): deterministic starter-code seeding for
+  Android's "Code Workspace"/"Project Overview" templates (previously only ever set a
+  layout preset, never real project files); fixed a real UI/runtime state-truth bug
+  where the Android bottom nav could disagree with what the Workbench panel was actually
+  showing; unified `UserMessage`'s two divergent layouts (array vs. string content) into
+  one; mounted `SubagentActivityWidget` (was built, wired to real data, never rendered);
+  continued the hardcoded-hex-to-design-token cleanup. See `docs/ai-state/DECISIONS.md`
+  and `current-session.md` for the full architecture findings and what was deliberately
+  deferred (orchestrator UI — no backend event stream exists yet; unifying desktop's
+  `StarterTemplates`/`/git`-route import path with the above — separate, larger change).
 - ✅ Lint errors fixed (0 errors, 2 pre-existing warnings)
 - ✅ TypeScript compilation clean (0 errors)
 - ✅ Ecosystem repositories linked
 
 **Next Priorities**:
-1. Product-quality pass across the whole app (not just Android): verify every
-   interactive element is genuinely wired end-to-end, no dead buttons/fake states —
-   see `docs/ai-state/ROADMAP.md` P1 for the known open items
-2. Wire orchestrator approvals/policy to UI
+1. Orchestrator UI: build the missing backend plumbing first (WorkflowRun state machine,
+   event emitter, real ApprovalPort/PolicyGate/RunStore) — there's no real data for a UI
+   to show yet, see Orchestrator Migration Strategy above.
+2. Unify desktop's StarterTemplates (`/git?url=` route, `GitUrlImport`) with the
+   getTemplates()-based project-creation contract used everywhere else — currently a
+   third, independent code path to the same curated starter repos.
 3. Real device / APK verification (blocked on Android SDK availability in this
    container; code is ready for it)
 4. Continue closing the gap between VELDRA and a generic AI-dashboard feel — distinct
    product identity, not a Bolt/ChatGPT/Lovable clone
+5. No headless browser available in this container for true visual/interaction
+   verification — all verification this round was typecheck/lint/build plus direct code
+   reading; a future session with browser access should visually confirm the UI changes
 
 ## Resources
 

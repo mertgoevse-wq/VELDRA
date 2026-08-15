@@ -1,9 +1,37 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-14 (block 3)
-Branch: `claude/veldra-android-recovery-85j8ws`
+Last updated: 2026-08-15 (block 4)
+Branch: `integration/veldra-bedrock-plus-claude-web` (single active branch — the
+`claude/veldra-android-recovery-85j8ws` branch referenced below was cherry-picked in;
+work directly on `integration/...` from here on, no new branches)
 
-## What's working (verified this block via real headless-Chromium screenshots + clicks
+## Block 4 (2026-08-15) — product evolution pass, no headless browser this block
+
+No Chromium/Playwright binary was available in this container (a fresh `npx playwright
+install chromium` timed out after 90s) — unlike block 3 below, this block's verification
+is typecheck/lint/build plus direct code reading and cross-referencing actual call sites,
+NOT visual/screenshot confirmation. Flagging this explicitly rather than silently
+skipping it. A future session with browser access should visually confirm:
+
+- Android: selecting the "Code Workspace" or "Project Overview" template now seeds real
+  Vite+React starter files (previously only switched tabs).
+- Android: the bottom nav no longer disagrees with the Workbench panel's actual visibility
+  when it's opened by an artifact-link click or AI file streaming (was: nav says "Chat",
+  screen shows Files).
+- `UserMessage` renders identically regardless of whether the AI SDK gave it string or
+  array content (previously: different alignment, avatar presence, image ordering).
+- `SubagentActivityWidget` actually appears in the chat when a subagent is running.
+
+What changed (see `DECISIONS.md`'s 2026-08-15 section and git log for full detail):
+deterministic starter-code seeding for Android's project-shaped templates
+(`app/lib/templates.ts`, `Chat.client.tsx`, `BaseChat.tsx`); the `activeTab`/
+`showWorkbench` state-truth fix (`AndroidShell.tsx`); `UserMessage.tsx` layout
+unification; a further hardcoded-hex-to-design-token sweep (`Preview.tsx`,
+`Workbench.client.tsx`, `ToolInvocations.tsx`, `SupabaseConnection.tsx`). Orchestrator
+UI and unifying desktop's `/git`-route starter import were investigated and explicitly
+deferred — see `DECISIONS.md` for why.
+
+## What's working (verified in block 3 via real headless-Chromium screenshots + clicks
 against the actual production `build/client` output, served with `vite preview`)
 - App boots without crashing and renders the Chat/Files/Preview/Settings tabs correctly.
 - Bottom-nav tab switching actually shows/hides the right content (was broken, see below).
