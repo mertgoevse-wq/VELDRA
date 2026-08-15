@@ -48,58 +48,70 @@ export function usePromptEnhancer() {
       requestBody.apiKeys = apiKeys;
     }
 
-    const response = androidRequest
-      ? await fetch(androidRequest.url, {
-          method: 'POST',
-          headers: { ...androidRequest.headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
-        })
-      : await fetch('/api/enhancer', {
-          method: 'POST',
-          body: JSON.stringify(requestBody),
-        });
-
-    const reader = response.body?.getReader();
-
     const originalInput = input;
 
-    if (reader) {
-      const decoder = new TextDecoder();
+    /*
+     * The whole request -- not just the stream-reading loop below -- must be inside this
+     * try/catch. It previously wasn't: a fetch() rejection (network down, CORS, an
+     * unreachable Android API Backend) had no handler at all, becoming an unhandled promise
+     * rejection with zero user-facing feedback, while ChatBox.tsx's caller showed
+     * "Prompt enhanced!" unconditionally and immediately on click regardless of outcome --
+     * a real fake-success bug this fixes at the source instead of papering over at the
+     * call site.
+     */
+    try {
+      const response = androidRequest
+        ? await fetch(androidRequest.url, {
+            method: 'POST',
+            headers: { ...androidRequest.headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+          })
+        : await fetch('/api/enhancer', {
+            method: 'POST',
+            body: JSON.stringify(requestBody),
+          });
 
-      let _input = '';
-      let _error;
-
-      try {
-        setInput('');
-
-        while (true) {
-          const { value, done } = await reader.read();
-
-          if (done) {
-            break;
-          }
-
-          _input += decoder.decode(value);
-
-          logger.trace('Set input', _input);
-
-          setInput(_input);
-        }
-      } catch (error) {
-        _error = error;
-        setInput(originalInput);
-      } finally {
-        if (_error) {
-          logger.error(_error);
-        }
-
-        setEnhancingPrompt(false);
-        setPromptEnhanced(true);
-
-        setTimeout(() => {
-          setInput(_input);
-        });
+      if (!response.ok) {
+        throw new Error(`Enhancer request failed: ${response.status} ${response.statusText}`);
       }
+
+      const reader = response.body?.getReader();
+
+      if (!reader) {
+        throw new Error('Enhancer response had no readable body.');
+      }
+
+      const decoder = new TextDecoder();
+      let _input = '';
+
+      setInput('');
+
+      while (true) {
+        const { value, done } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        _input += decoder.decode(value);
+
+        logger.trace('Set input', _input);
+
+        setInput(_input);
+      }
+
+      setPromptEnhanced(true);
+      toast.success('Prompt enhanced!');
+
+      setTimeout(() => {
+        setInput(_input);
+      });
+    } catch (error) {
+      logger.error(error);
+      setInput(originalInput);
+      toast.error('Could not enhance the prompt. Please try again.');
+    } finally {
+      setEnhancingPrompt(false);
     }
   };
 

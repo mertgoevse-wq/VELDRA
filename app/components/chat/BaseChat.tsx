@@ -524,6 +524,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   isListening={isListening}
                   startListening={startListening}
                   stopListening={stopListening}
+                  speechRecognitionSupported={!!recognition}
                   chatStarted={chatStarted}
                   exportChat={exportChat}
                   qrModalOpen={qrModalOpen}

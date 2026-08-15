@@ -330,3 +330,52 @@
   remaining reference. Added `BuildActivityFeed.spec.tsx` (first real test for this
   component) proving the rewrite renders real `buildActivityStore` data correctly.
   413 tests (was 408), typecheck clean, lint clean.
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 6)
+
+- **Audited every composer control** (`ChatBox.tsx` + its sub-components) for the mandate's
+  own bar: "each control must actually work, or be deliberately disabled with an
+  explanation — no dead buttons." Verified real and unchanged: prompt textarea (Enter to
+  send, Shift+Enter newline, IME-composing guard), send/stop (`SendButton`), provider/model
+  (`ModelSelector`), attachments/drag-drop (`FilePreview`, real image-file filtering and
+  `FileReader` processing), `McpTools` (real dialog, real `checkServersAvailabilities()`
+  with proper try/catch and a real error message, not a stub), `WebSearch` (already
+  correctly awaits before its success toast — see below), `ColorSchemeDialog`,
+  `SupabaseConnection`, `ExpoQrModal`, Discuss toggle, Model Settings toggle. "Skills" and
+  "agents" have no dedicated composer button — skills load via the `load_skill` MCP tool at
+  the LLM's own discretion, and subagent spawning is a tool call too (see `mcpService.ts`);
+  this is a legitimate design, not a missing composer control, so nothing was added for it.
+- **Found and fixed a real fake-success bug: "Enhance prompt" showed `toast.success('Prompt
+  enhanced!')` unconditionally and immediately on click**, before the actual (async,
+  network-dependent, streamed) enhancement had even started — not after it finished, and
+  not conditioned on whether it actually succeeded. Confirmed `enhancePrompt()` is a real
+  `fetch()` + streamed-response operation that can genuinely fail (network error, non-ok
+  status, a stream read error) — and confirmed the ONLY UI signal of real success/failure,
+  `promptEnhanced`, was tracked in state, threaded as a prop all the way to `BaseChat.tsx`,
+  and then never read there (`// promptEnhanced,` sat commented out) — so there was
+  genuinely no real feedback path anywhere before this. Also found the `fetch()` call
+  itself had no error handling at all (only the stream-reading loop was inside a
+  try/catch) — a network failure would have been an unhandled promise rejection with the
+  fake success toast having already fired. Fixed by moving the entire operation into one
+  try/catch in `usePromptEnhancer.ts` itself (the natural owner of this state) with real
+  success/error toasts tied to actual outcome, and removing the blind toast from
+  `ChatBox.tsx`'s click handler entirely. `promptEnhanced` is now only ever set `true` on
+  genuine success (previously set unconditionally in a `finally` block, which was itself
+  wrong regardless of the toast issue — a second, smaller instance of the same root
+  problem). New `usePromptEnhancer.spec.ts` (4 tests) covers the streamed-success path,
+  a rejected fetch, a non-ok response, and the in-flight `enhancingPrompt` state — the
+  first real test for this hook.
+- **Found and fixed a real, if narrower, dead-button case: the speech-recognition mic
+  button stayed enabled on browsers/WebViews without the Web Speech API.**
+  `BaseChat.tsx`'s `startListening()` already correctly no-ops when `recognition` is
+  `null` (the feature-detected `SpeechRecognition`/`webkitSpeechRecognition` instance) —
+  but the button's own `disabled` prop only ever reflected `isStreaming`, never whether the
+  API exists at all. On an unsupported browser (older Firefox, some Android WebViews),
+  clicking the mic did precisely nothing, with zero feedback of any kind — the literal
+  "dead button" case the mandate names. Threaded a new `speechRecognitionSupported`
+  boolean prop from `BaseChat.tsx` (`!!recognition`) through `ChatBox.tsx` to
+  `SpeechRecognitionButton`, which now disables itself and shows an honest native `title`
+  tooltip ("Speech recognition is not supported in this browser") instead of silently
+  doing nothing.
+- 417 tests (was 413), typecheck clean, lint clean (0 errors, the same 2 pre-existing
+  warnings baseline).

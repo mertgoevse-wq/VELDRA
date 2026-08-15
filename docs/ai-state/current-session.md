@@ -106,11 +106,36 @@ first real test. Full detail in `DECISIONS.md`'s Phase 5 entry.
 
 413 tests (was 408), typecheck clean, lint clean.
 
-## Phase 6+ — not started yet
-See the TaskList in this session for the remaining phases (composer audit, template
-unification, workbench state-truth audit, UX/motion/design-system passes, Android pass,
-docs refresh, security review, and a final APK block deliberately deferred until the core
-product blocks are done).
+## Phase 6 — Composer as real control surface (done)
+Audited every composer control against the mandate's own bar ("works, or deliberately
+disabled with an explanation — no dead buttons"). Most were already real (send/stop,
+provider/model, attachments/drag-drop, MCP tools dialog, web search, discuss/settings
+toggles); "skills"/"agents" have no dedicated composer button by design (both are MCP tool
+calls the LLM makes, not UI controls) rather than a gap.
+
+Found and fixed two real bugs:
+1. "Enhance prompt" showed a success toast unconditionally and immediately on click,
+   before the actual async/streamed enhancement had even started -- and the one real
+   completion signal (`promptEnhanced`) was tracked in state but never actually read
+   anywhere (`// promptEnhanced,` sat commented out in `BaseChat.tsx`). The underlying
+   `fetch()` also had no error handling at all. Moved the whole operation into one
+   try/catch in `usePromptEnhancer.ts` with real success/error toasts tied to actual
+   outcome; removed the blind toast from `ChatBox.tsx`. New `usePromptEnhancer.spec.ts`
+   (4 tests, first for this hook).
+2. The speech-recognition mic button stayed enabled on browsers without the Web Speech
+   API -- `startListening()` already correctly no-oped, but nothing disabled the button
+   itself, so it was a literal dead button with zero feedback on unsupported
+   browsers/WebViews. Threaded a real `speechRecognitionSupported` prop through and added
+   an honest disabled-state tooltip explaining why.
+
+Full detail in `DECISIONS.md`'s Phase 6 entry. 417 tests (was 413), typecheck clean, lint
+clean.
+
+## Phase 7+ — not started yet
+See the TaskList in this session for the remaining phases (template unification, workbench
+state-truth audit, UX/motion/design-system passes, Android pass, docs refresh, security
+review, and a final APK block deliberately deferred until the core product blocks are
+done).
 
 ---
 

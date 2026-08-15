@@ -79,6 +79,7 @@ interface ChatBoxProps {
   isListening: boolean;
   startListening: () => void;
   stopListening: () => void;
+  speechRecognitionSupported: boolean;
   chatStarted: boolean;
   exportChat?: () => void;
   qrModalOpen: boolean;
@@ -336,10 +337,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               title="Enhance prompt"
               disabled={props.input.length === 0 || props.enhancingPrompt}
               className={classNames('transition-all', props.enhancingPrompt ? 'opacity-100' : '')}
-              onClick={() => {
-                props.enhancePrompt?.();
-                toast.success('Prompt enhanced!');
-              }}
+              onClick={() => props.enhancePrompt?.()}
             >
               {props.enhancingPrompt ? (
                 <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-xl animate-spin"></div>
@@ -352,7 +350,8 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               isListening={props.isListening}
               onStart={props.startListening}
               onStop={props.stopListening}
-              disabled={props.isStreaming}
+              disabled={props.isStreaming || !props.speechRecognitionSupported}
+              unsupported={!props.speechRecognitionSupported}
             />
             {props.chatStarted && (
               <IconButton
