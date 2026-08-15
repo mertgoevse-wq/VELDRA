@@ -435,6 +435,92 @@ export const ChatImpl = memo(
       return attachments;
     };
 
+    /*
+     * Shared by the automatic first-message template auto-select below AND by an explicit
+     * template pick (e.g. Android's TemplatePicker) that already knows which starter it wants
+     * and shouldn't have to go through the LLM-based guess in selectStarterTemplate().
+     * Returns false (without side effects beyond the toast) if the fetch/import failed, so the
+     * caller can fall back to a normal blank-project message.
+     */
+    const seedFromResolvedTemplate = async (
+      templateName: string,
+      title: string,
+      displayMessage: string,
+    ): Promise<boolean> => {
+      const temResp = await getTemplates(templateName, title).catch((e) => {
+        if (e.message.includes('rate limit')) {
+          toast.warning('Rate limit exceeded. Skipping starter template\n Continuing with blank template');
+        } else {
+          toast.warning('Failed to import starter template\n Continuing with blank template');
+        }
+
+        return null;
+      });
+
+      if (!temResp) {
+        return false;
+      }
+
+      const { assistantMessage, userMessage } = temResp;
+      const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessage}`;
+
+      setMessages([
+        {
+          id: `1-${new Date().getTime()}`,
+          role: 'user',
+          content: userMessageText,
+          parts: createMessageParts(userMessageText, imageDataList),
+        },
+        {
+          id: `2-${new Date().getTime()}`,
+          role: 'assistant',
+          content: assistantMessage,
+        },
+        {
+          id: `3-${new Date().getTime()}`,
+          role: 'user',
+          content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userMessage}`,
+          annotations: ['hidden'],
+        },
+      ]);
+
+      const reloadOptions =
+        uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
+
+      reload(reloadOptions);
+      setInput('');
+      Cookies.remove(PROMPT_COOKIE_KEY);
+
+      setUploadedFiles([]);
+      setImageDataList([]);
+
+      resetEnhancer();
+
+      textareaRef.current?.blur();
+      setFakeLoading(false);
+
+      return true;
+    };
+
+    /*
+     * Explicit template pick with a known starter (VeldraTemplate.starterTemplateName) — bypasses
+     * the LLM-based auto-selection entirely since the user already told us exactly what they want.
+     */
+    const applyStarterTemplate = async (templateName: string, title: string) => {
+      if (chatStarted || isLoading) {
+        return;
+      }
+
+      runAnimation();
+      setFakeLoading(true);
+
+      const seeded = await seedFromResolvedTemplate(templateName, title, `Start a new project: ${title}`);
+
+      if (!seeded) {
+        setFakeLoading(false);
+      }
+    };
+
     const sendMessage = async (_event: React.UIEvent, messageInput?: string) => {
       const messageContent = messageInput || input;
 
@@ -474,57 +560,9 @@ export const ChatImpl = memo(
           });
 
           if (template !== 'blank') {
-            const temResp = await getTemplates(template, title).catch((e) => {
-              if (e.message.includes('rate limit')) {
-                toast.warning('Rate limit exceeded. Skipping starter template\n Continuing with blank template');
-              } else {
-                toast.warning('Failed to import starter template\n Continuing with blank template');
-              }
+            const seeded = await seedFromResolvedTemplate(template, title, finalMessageContent);
 
-              return null;
-            });
-
-            if (temResp) {
-              const { assistantMessage, userMessage } = temResp;
-              const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
-
-              setMessages([
-                {
-                  id: `1-${new Date().getTime()}`,
-                  role: 'user',
-                  content: userMessageText,
-                  parts: createMessageParts(userMessageText, imageDataList),
-                },
-                {
-                  id: `2-${new Date().getTime()}`,
-                  role: 'assistant',
-                  content: assistantMessage,
-                },
-                {
-                  id: `3-${new Date().getTime()}`,
-                  role: 'user',
-                  content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userMessage}`,
-                  annotations: ['hidden'],
-                },
-              ]);
-
-              const reloadOptions =
-                uploadedFiles.length > 0
-                  ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
-                  : undefined;
-
-              reload(reloadOptions);
-              setInput('');
-              Cookies.remove(PROMPT_COOKIE_KEY);
-
-              setUploadedFiles([]);
-              setImageDataList([]);
-
-              resetEnhancer();
-
-              textareaRef.current?.blur();
-              setFakeLoading(false);
-
+            if (seeded) {
               return;
             }
           }
@@ -699,6 +737,7 @@ export const ChatImpl = memo(
         enhancingPrompt={enhancingPrompt}
         promptEnhanced={promptEnhanced}
         sendMessage={sendMessage}
+        applyStarterTemplate={applyStarterTemplate}
         model={model}
         setModel={handleModelChange}
         provider={provider}

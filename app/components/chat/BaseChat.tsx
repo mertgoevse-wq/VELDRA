@@ -73,6 +73,7 @@ interface BaseChatProps {
   providerList?: ProviderInfo[];
   handleStop?: () => void;
   sendMessage?: (event: React.UIEvent, messageInput?: string) => void;
+  applyStarterTemplate?: (templateName: string, title: string) => void;
   handleInputChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   enhancePrompt?: () => void;
   importChat?: (description: string, messages: Message[]) => Promise<void>;
@@ -121,6 +122,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       // promptEnhanced,
       enhancePrompt,
       sendMessage,
+      applyStarterTemplate,
       handleStop,
       importChat,
       exportChat,
@@ -562,7 +564,10 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                       onSelect={(template) => {
                         applyTemplate(template);
 
-                        if (template.suggestedPrompt) {
+                        if (template.starterTemplateName) {
+                          // Explicit starter -- seed real project files deterministically, no LLM guess.
+                          applyStarterTemplate?.(template.starterTemplateName, template.name);
+                        } else if (template.suggestedPrompt) {
                           handleSendMessage?.(new Event('click') as unknown as React.UIEvent, template.suggestedPrompt);
                         }
                       }}

@@ -21,6 +21,17 @@ export interface VeldraTemplate {
   defaultModel?: string;
   suggestedPrompt?: string;
   panels: TemplatePanelConfig[];
+
+  /**
+   * Name of an entry in STARTER_TEMPLATES (app/utils/constants.ts) to seed as real project
+   * files the moment this template is selected -- via the same getTemplates()/boltArtifact
+   * pipeline the desktop auto-select-on-first-message flow uses, but deterministic (no LLM
+   * guess) since picking this template is already an explicit choice. Only set this on
+   * templates that represent "give me a project to build in" -- the AI-workflow-mode templates
+   * (ai-chat, agent-workspace, model-lab, prompt-studio, monitoring) are layout/mode presets,
+   * not project scaffolds, and must NOT get one.
+   */
+  starterTemplateName?: string;
 }
 
 export type TemplateCategory = 'ai' | 'development' | 'operations' | 'analysis';
@@ -46,6 +57,7 @@ export const VELDRA_TEMPLATES: VeldraTemplate[] = [
     description: 'Full development environment with editor and terminal',
     icon: 'i-ph:code',
     category: 'development',
+    starterTemplateName: 'Vite React',
     panels: [
       { type: 'chat', visible: true, position: 'sidebar' },
       { type: 'editor', visible: true, position: 'main' },
@@ -90,6 +102,7 @@ export const VELDRA_TEMPLATES: VeldraTemplate[] = [
     description: 'Dashboard view of project state and recent activity',
     icon: 'i-ph:squares-four',
     category: 'development',
+    starterTemplateName: 'Vite React',
     panels: [
       { type: 'chat', visible: true, position: 'main' },
       { type: 'editor', visible: true, position: 'sidebar' },
