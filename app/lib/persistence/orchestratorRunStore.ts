@@ -70,11 +70,21 @@ export async function listWorkflowRunIds(store: RunStore): Promise<string[]> {
 }
 
 /**
- * A run in one of these states has something left to continue -- 'completed' does
- * not, and there is no 'abandoned'/'cancelled' WorkflowState today (see
- * orchestrator/types.ts) so this list is exactly WorkflowState minus 'completed'.
+ * A run in one of these states has something left to continue. 'completed' and
+ * 'cancelled' don't: completed has nothing left to do, and cancelled was an explicit
+ * human decision to stop that a resume screen shouldn't second-guess by offering to
+ * pick it back up. 'failed' stays resumable -- that's exactly the "something went
+ * wrong, maybe worth retrying" case (previously covered by the single 'halted' state
+ * this replaced; see orchestrator/types.ts's 2026-08-15 WorkflowState note).
  */
-const RESUMABLE_STATES: ReadonlySet<WorkflowState> = new Set(['planning', 'running', 'awaiting-approval', 'halted']);
+const RESUMABLE_STATES: ReadonlySet<WorkflowState> = new Set([
+  'idle',
+  'planning',
+  'queued',
+  'running',
+  'awaiting-approval',
+  'failed',
+]);
 
 /**
  * The query a "continue where you left off" UI needs on app start: every persisted

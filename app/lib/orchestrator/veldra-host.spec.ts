@@ -59,10 +59,18 @@ describe('VeldraOrchestratorHost', () => {
       expect(host.policy).toBeDefined();
     });
 
-    it('initializes with optional ports as undefined', () => {
+    it('initializes runs as a safe no-op RunStore when no db handle is supplied, and leaves models/capabilities unimplemented', async () => {
       const host = VeldraOrchestratorHost.getInstance();
 
-      expect(host.runs).toBeUndefined();
+      /*
+       * runs is a real RunStore object even without a db -- OrchestratorHost's own contract
+       * says a host that can't persist is still valid, so this degrades rather than being undefined.
+       */
+      expect(host.runs).toBeDefined();
+      await expect(host.runs?.save('run-1', '{}')).resolves.toBeUndefined();
+      await expect(host.runs?.load('run-1')).resolves.toBeNull();
+      await expect(host.runs?.list()).resolves.toEqual([]);
+
       expect(host.models).toBeUndefined();
       expect(host.capabilities).toBeUndefined();
     });
@@ -133,8 +141,8 @@ describe('VeldraOrchestratorHost', () => {
     });
   });
 
-  describe('approvals port (stub)', () => {
-    it('auto-approves requests', async () => {
+  describe('approvals port (real handoff)', () => {
+    it('genuinely suspends until respond() is called, then resolves with the recorded decision', async () => {
       const host = VeldraOrchestratorHost.getInstance();
 
       const approval = {
@@ -145,32 +153,36 @@ describe('VeldraOrchestratorHost', () => {
         options: ['yes', 'no'],
       };
 
-      const response = await host.approvals.request(approval);
+      let settled = false;
+      const responsePromise = host.approvals.request(approval).then((response) => {
+        settled = true;
+        return response;
+      });
 
+      // Not resolved yet -- nothing has decided.
+      await Promise.resolve();
+      expect(settled).toBe(false);
+      expect(host.approvals.listPending()).toContainEqual(approval);
+
+      const responded = host.approvals.respond('test-approval', 'yes', 'looks fine');
+      expect(responded).toBe(true);
+
+      const response = await responsePromise;
       expect(response.requestId).toBe('test-approval');
       expect(response.chosen).toBe('yes');
-      expect(response.note).toContain('Auto-approved');
+      expect(response.note).toBe('looks fine');
+      expect(host.approvals.listPending()).toEqual([]);
     });
 
-    it('uses first option when multiple provided', async () => {
+    it('respond() returns false for an unknown or already-answered request id', () => {
       const host = VeldraOrchestratorHost.getInstance();
 
-      const approval = {
-        id: 'test-approval-2',
-        kind: 'destructive-action' as const,
-        question: 'Confirm deletion?',
-        context: 'About to delete files',
-        options: ['cancel', 'confirm'],
-      };
-
-      const response = await host.approvals.request(approval);
-
-      expect(response.chosen).toBe('cancel');
+      expect(host.approvals.respond('never-requested', 'yes')).toBe(false);
     });
   });
 
-  describe('policy port (stub)', () => {
-    it('allows all capabilities', async () => {
+  describe('policy port (real entitlement gate)', () => {
+    it("allows a capability string it does not recognize (not this gate's concern)", async () => {
       const host = VeldraOrchestratorHost.getInstance();
 
       const denial = await host.policy.check('premium-feature');
@@ -178,39 +190,39 @@ describe('VeldraOrchestratorHost', () => {
       expect(denial).toBeNull();
     });
 
-    it('logs capability checks', async () => {
+    it('allows a known capability the current (default FREE) tier does not include -- wait, denies it', async () => {
       const host = VeldraOrchestratorHost.getInstance();
 
-      const denial = await host.policy.check('expensive-model', {
-        model: 'gpt-4',
-        cost: 1000,
-      });
+      // Default tier (no entitlementTierStore override in this test) is FREE, which has zero capabilities.
+      const denial = await host.policy.check('mcp-servers');
 
-      expect(denial).toBeNull();
+      expect(denial).not.toBeNull();
+      expect(denial).toContain('mcp-servers');
     });
   });
 
   describe('integration scenarios', () => {
-    it('supports full agent execution flow', async () => {
+    it('supports a full agent execution flow with a real approval decision', async () => {
       const apiKeys = { OPENAI_API_KEY: 'sk-test' };
       const providerSettings = { OpenAI: { baseURL: 'test' } };
 
       const host = VeldraOrchestratorHost.getInstance(apiKeys, providerSettings);
 
-      // Check policy
+      // A capability this gate doesn't recognize is allowed by default.
       const policyDenial = await host.policy.check('spawn-agent');
-
       expect(policyDenial).toBeNull();
 
-      // Request approval
-      const approval = await host.approvals.request({
+      // Request approval, then actually decide it -- no auto-approval to lean on.
+      const approvalPromise = host.approvals.request({
         id: 'spawn-approval',
         kind: 'plan',
         question: 'Spawn agent?',
         context: 'Will spawn code reviewer',
         options: ['yes', 'no'],
       });
+      host.approvals.respond('spawn-approval', 'yes');
 
+      const approval = await approvalPromise;
       expect(approval.chosen).toBe('yes');
 
       // Run agent

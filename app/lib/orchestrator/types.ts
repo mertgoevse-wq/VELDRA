@@ -148,7 +148,17 @@ export interface FailureFingerprint {
   lastSeenAt: number;
 }
 
-export type WorkflowState = 'planning' | 'running' | 'awaiting-approval' | 'completed' | 'halted';
+/**
+ * 'idle' -> not yet dispatched. 'queued' -> waiting for a concurrency slot (a multi-run
+ * scheduler managing several WorkflowRuns at once is not built yet; single-run callers can
+ * transition straight past it). 'failed' and 'cancelled' are deliberately distinct terminal
+ * states (added 2026-08-15, replacing the previous single 'halted' catch-all): a run a human
+ * chose to stop is a different outcome than one that broke, exactly the same distinction
+ * TaskState already draws between 'abandoned' and 'failed'. See run-workflow.ts for the state
+ * machine that enforces valid transitions between these.
+ */
+export type WorkflowState =
+  'idle' | 'planning' | 'queued' | 'running' | 'awaiting-approval' | 'completed' | 'failed' | 'cancelled';
 
 export interface WorkflowRun {
   id: string;
@@ -167,7 +177,7 @@ export interface WorkflowRun {
 
   pendingApproval?: ApprovalRequest;
 
-  /** Set when state is 'halted', so a halt is never silent. */
+  /** Set when state is 'failed' or 'cancelled', so a stop is never silent. */
   haltReason?: string;
 }
 

@@ -148,9 +148,18 @@ describe('listResumableWorkflowRuns', () => {
     expect(await listResumableWorkflowRuns(store)).toEqual([]);
   });
 
-  it('excludes completed runs but keeps every other WorkflowState', async () => {
+  it('excludes completed and cancelled runs but keeps every other WorkflowState', async () => {
     const store = inMemoryRunStore();
-    const states = ['planning', 'running', 'awaiting-approval', 'completed', 'halted'] as const;
+    const states = [
+      'idle',
+      'planning',
+      'queued',
+      'running',
+      'awaiting-approval',
+      'failed',
+      'completed',
+      'cancelled',
+    ] as const;
 
     for (const state of states) {
       await saveWorkflowRun(store, exampleWorkflowRun({ id: `run-${state}`, state }));
@@ -158,8 +167,16 @@ describe('listResumableWorkflowRuns', () => {
 
     const resumable = await listResumableWorkflowRuns(store);
 
-    expect(resumable.map((run) => run.state).sort()).toEqual(['awaiting-approval', 'halted', 'planning', 'running']);
+    expect(resumable.map((run) => run.state).sort()).toEqual([
+      'awaiting-approval',
+      'failed',
+      'idle',
+      'planning',
+      'queued',
+      'running',
+    ]);
     expect(resumable.find((run) => run.state === 'completed')).toBeUndefined();
+    expect(resumable.find((run) => run.state === 'cancelled')).toBeUndefined();
   });
 
   it('preserves the full run, not just its state, for each resumable entry', async () => {
