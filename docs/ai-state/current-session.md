@@ -15,12 +15,34 @@ silently dropped on fallback) the deep test surfaced and fixed. Documented the f
 `.env.example` with a concrete dev/staging recommendation rather than silently changing
 any default-enablement behavior. 397/397 tests, typecheck clean.
 
-## Phase 2+ — not started yet
-See the TaskList in this session for the full 17-phase breakdown (event observability,
-approval flow UI, agent activity timeline, unified chat/workbench experience, composer
-audit, template unification, workbench state-truth audit, UX/motion/design-system passes,
-Android pass, docs refresh, security review, and a final APK block deliberately deferred
-until the core product blocks are done).
+## Phase 2 — Real event observability in UI (done)
+Wired `runWorkflow()`'s real `run.*`/`approval.*` events (emitted whenever the
+orchestrator path actually runs, still gated behind `VELDRA_USE_ORCHESTRATOR`) into the
+same `recentAgentActivityStore` `SubagentActivityWidget` already reads, instead of being
+captured internally and discarded. Did NOT attempt `tool.*`/`file.*`/`verification.*` --
+those event types have no real emit call site anywhere in the codebase yet (confirmed by
+reading every `emitter.emit`/`emit(...)` call site in `run-workflow.ts`); building UI for
+them would be exactly the "fake progress" the mandate explicitly forbids. That gap needs
+real instrumentation first (an `onStepFinish` hook in `subagentService.ts`), not attempted
+here -- same restraint Block B already documented for the same reason.
+
+Writing a rigorous end-to-end test (asserting exact event *counts*, not just presence, in
+`orchestrator-e2e.spec.ts`) caught a real design bug before it shipped: the orchestrator's
+own `Task.id` (a UUID) and `SubagentService`'s generated task id (`subagent-<ts>-<rand>`,
+what `subagentsStore`/the widget actually key on) are different id spaces. The first
+version of this change tagged forwarded events with the wrong one -- they would have been
+silently invisible in the real UI, which is worse than not building the feature at all
+(looks wired up, never renders). Fixed by buffering events and re-tagging with the real
+resolved id once known (from evidence, after `runWorkflow()` returns) — see
+`DECISIONS.md`'s "Phase 2" entry for the full detail. 397/397 tests, typecheck clean, lint
+clean.
+
+## Phase 3+ — not started yet
+See the TaskList in this session for the remaining phases (approval flow UI, agent
+activity timeline upgrade, unified chat/workbench experience, composer audit, template
+unification, workbench state-truth audit, UX/motion/design-system passes, Android pass,
+docs refresh, security review, and a final APK block deliberately deferred until the core
+product blocks are done).
 
 ---
 

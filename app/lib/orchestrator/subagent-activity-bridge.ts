@@ -32,10 +32,17 @@ export const AMBIENT_SUBAGENT_RUN_ID = 'ambient-subagents';
 
 const MAX_RECENT_EVENTS = 200;
 
-/** Bounded, most-recent-last log of every agent.* event the bridge has produced this session. */
+/**
+ * Bounded, most-recent-last log of real activity events this session -- both this
+ * bridge's own agent.* events (from subagentsStore, flag-independent) and, when the
+ * orchestrator path actually runs (integration.ts, VELDRA_USE_ORCHESTRATOR=true), the
+ * run.* and approval.* events runWorkflow() itself emits. One shared store rather than
+ * two, so a real activity UI has a single place to read from instead of merging sources.
+ */
 export const recentAgentActivityStore = atom<WorkflowEvent[]>([]);
 
-function pushRecent(event: WorkflowEvent): void {
+/** Records one real event into the shared activity log. Exported for integration.ts to reuse -- see the module doc comment above. */
+export function recordActivityEvent(event: WorkflowEvent): void {
   const next = [...recentAgentActivityStore.get(), event];
   recentAgentActivityStore.set(next.length > MAX_RECENT_EVENTS ? next.slice(next.length - MAX_RECENT_EVENTS) : next);
 }
@@ -80,7 +87,7 @@ export function startSubagentActivityBridge(emitter: WorkflowEventEmitter = crea
         changedKey,
       );
       emitter.emit(event);
-      pushRecent(event);
+      recordActivityEvent(event);
     } else if (task.status === 'completed') {
       const event = createWorkflowEvent(
         AMBIENT_SUBAGENT_RUN_ID,
@@ -89,11 +96,11 @@ export function startSubagentActivityBridge(emitter: WorkflowEventEmitter = crea
         changedKey,
       );
       emitter.emit(event);
-      pushRecent(event);
+      recordActivityEvent(event);
     } else if (task.status === 'failed') {
       const event = createWorkflowEvent(AMBIENT_SUBAGENT_RUN_ID, 'agent.failed', { error: task.error }, changedKey);
       emitter.emit(event);
-      pushRecent(event);
+      recordActivityEvent(event);
     }
   });
 

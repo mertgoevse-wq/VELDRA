@@ -7,20 +7,57 @@ import type { WorkflowEvent } from '~/lib/orchestrator/events';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
 
+/**
+ * Distinct labels for agent.* (from subagentsStore, always present) vs. run.* and
+ * approval.* (only present when this spawn actually went through the orchestrator's
+ * runWorkflow(), i.e. VELDRA_USE_ORCHESTRATOR=true -- see integration.ts) rather than
+ * collapsing them to the same words: they're genuinely different real events, not two
+ * views of one thing.
+ */
 function activityLabel(event: WorkflowEvent): string {
-  if (event.type === 'agent.started') {
-    return 'Started';
+  switch (event.type) {
+    case 'agent.started':
+      return 'Started';
+    case 'agent.completed':
+      return 'Completed';
+    case 'agent.failed':
+      return 'Failed';
+    case 'run.started':
+      return 'Orchestrator run started';
+    case 'run.completed':
+      return 'Orchestrator run completed';
+    case 'run.failed':
+      return 'Orchestrator run failed';
+    case 'run.cancelled':
+      return 'Orchestrator run cancelled';
+    case 'approval.requested':
+      return 'Approval requested';
+    case 'approval.granted':
+      return 'Approval granted';
+    case 'approval.denied':
+      return 'Approval denied';
+    default:
+      return event.type;
+  }
+}
+
+/** An optional second line of real, already-collected detail -- never fabricated. */
+function activityDetail(event: WorkflowEvent): string | null {
+  const data = event.data;
+
+  if ((event.type === 'run.failed' || event.type === 'run.cancelled') && typeof data.reason === 'string') {
+    return data.reason;
   }
 
-  if (event.type === 'agent.completed') {
-    return 'Completed';
+  if (event.type === 'approval.requested' && typeof data.question === 'string') {
+    return data.question;
   }
 
-  if (event.type === 'agent.failed') {
-    return 'Failed';
+  if ((event.type === 'approval.granted' || event.type === 'approval.denied') && typeof data.chosen === 'string') {
+    return `Chosen: ${data.chosen}`;
   }
 
-  return event.type;
+  return null;
 }
 
 function formatElapsed(milliseconds: number) {
@@ -237,18 +274,24 @@ export function SubagentActivityWidget() {
                             return (
                               <div>
                                 <div className="mb-1 font-medium text-bolt-elements-textSecondary">Activity</div>
-                                <ul className="space-y-0.5">
-                                  {taskActivity.map((event) => (
-                                    <li
-                                      key={event.id}
-                                      className="flex items-center justify-between gap-2 text-bolt-elements-textPrimary"
-                                    >
-                                      <span>{activityLabel(event)}</span>
-                                      <span className="text-bolt-elements-textTertiary">
-                                        {formatElapsed(Math.max(0, now - event.at))} ago
-                                      </span>
-                                    </li>
-                                  ))}
+                                <ul className="space-y-1">
+                                  {taskActivity.map((event) => {
+                                    const detail = activityDetail(event);
+
+                                    return (
+                                      <li key={event.id} className="text-bolt-elements-textPrimary">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span>{activityLabel(event)}</span>
+                                          <span className="text-bolt-elements-textTertiary">
+                                            {formatElapsed(Math.max(0, now - event.at))} ago
+                                          </span>
+                                        </div>
+                                        {detail && (
+                                          <p className="mt-0.5 truncate text-bolt-elements-textTertiary">{detail}</p>
+                                        )}
+                                      </li>
+                                    );
+                                  })}
                                 </ul>
                               </div>
                             );

@@ -7,6 +7,8 @@ import { checkBudget } from './budget';
 import { resolveBudgetPolicy } from './entitlement';
 import { entitlementTierStore } from '~/lib/stores/entitlement';
 import { getRuntimeEnvironment } from '~/lib/dev/runtime-environment';
+import { recordActivityEvent } from './subagent-activity-bridge';
+import type { WorkflowEvent } from './events';
 
 const logger = createScopedLogger('orchestrator-integration');
 
@@ -111,6 +113,22 @@ export async function spawnSubagentWithOrchestrator(
       dependsOn: [],
     };
 
+    /*
+     * run.* and approval.* events (runWorkflow()'s own state machine, policy and budget
+     * governance -- genuinely new information nothing else surfaces) can't be tagged with
+     * a real, UI-matchable id at emission time: run.started fires before SubagentService
+     * has even generated its own task id (format "subagent-<timestamp>-<random>"), which
+     * is the id subagentsStore/SubagentActivityWidget actually key on -- not this
+     * function's own orchestrator-internal Task.id (a UUID, a different id space
+     * entirely). Buffer them and re-tag with the real id once resolved from evidence
+     * below, instead of tagging with an id the UI can never match against a task row
+     * (silently invisible -- worse than not shown at all, since it would look wired up
+     * but never render). agent.* itself is deliberately never buffered here:
+     * subagent-activity-bridge.ts already produces those from the same underlying
+     * subagentsStore change, independently of this flag; forwarding them too would
+     * double them up in the activity UI.
+     */
+    const pendingActivityEvents: WorkflowEvent[] = [];
     let lastAgentOutput = '';
     const finishedRun = await runWorkflow(createWorkflowRun(goal, [task], budget), host, {
       taskToInvocation: () => ({
@@ -121,6 +139,10 @@ export async function spawnSubagentWithOrchestrator(
       requiredCapability: 'spawn-subagent',
       maxConcurrency: 1,
       onEvent: (event) => {
+        if (event.type.startsWith('run.') || event.type.startsWith('approval.')) {
+          pendingActivityEvents.push(event);
+        }
+
         if (event.type === 'agent.completed' || event.type === 'agent.failed') {
           const output = event.data.output;
 
@@ -131,6 +153,21 @@ export async function spawnSubagentWithOrchestrator(
       },
     });
 
+    // Resolve the real SubagentService task id from evidence, once (used for both the activity log and the return message below).
+    const taskIdEvidence = finishedRun.tasks[0]?.evidence.find((e) => e.source.startsWith('subagent:'));
+    const resolvedTaskId = taskIdEvidence?.source.replace('subagent:', '');
+
+    /*
+     * Flush regardless of outcome -- a run.failed/run.cancelled event is exactly the kind
+     * of real, non-fabricated information Phase 2 exists to surface, not just success.
+     * Events stay unattributed (no taskId) when no subagent id was ever assigned (e.g. a
+     * policy/budget denial before dispatch) -- there's no real task row to attach them to,
+     * and an honest "not shown yet" beats a fabricated association.
+     */
+    for (const event of pendingActivityEvents) {
+      recordActivityEvent(resolvedTaskId ? { ...event, taskId: resolvedTaskId } : event);
+    }
+
     if (finishedRun.state !== 'completed') {
       throw new Error(
         `Orchestrator workflow ended in state '${finishedRun.state}'` +
@@ -138,12 +175,8 @@ export async function spawnSubagentWithOrchestrator(
       );
     }
 
-    // Extract task ID from evidence or fall back to the captured agent output
-    const taskIdEvidence = finishedRun.tasks[0]?.evidence.find((e) => e.source.startsWith('subagent:'));
-
-    if (taskIdEvidence) {
-      const taskId = taskIdEvidence.source.replace('subagent:', '');
-      return `Subagent spawned via orchestrator. Task ID: ${taskId}`;
+    if (resolvedTaskId) {
+      return `Subagent spawned via orchestrator. Task ID: ${resolvedTaskId}`;
     }
 
     return `Subagent spawned via orchestrator. Output: ${lastAgentOutput.slice(0, 100)}...`;

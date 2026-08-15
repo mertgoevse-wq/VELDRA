@@ -148,3 +148,47 @@
   it in dev/staging deployments, not in your local test run), and the new e2e spec makes
   "is the flag-enabled path still healthy" a question `npm test` answers on every run,
   regardless of any deployment's actual flag setting.
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 2)
+
+- **Only wired UI observability for events that have a real emit call site.** Audited
+  every `emit(...)` call in `run-workflow.ts`: `run.*`, `agent.*`, and `approval.*` all
+  fire from real state transitions; `tool.*`/`file.*`/`verification.*` exist in
+  `events.ts`'s type union but have no emit call site anywhere in the codebase. Building
+  UI for those now would be exactly the fake-progress pattern `events.ts`'s own doc
+  comment forbids ("if a UI wants a phase that has no corresponding emit call anywhere,
+  that phase does not exist yet"). Left them alone; real instrumentation (an
+  `onStepFinish` hook in `subagentService.ts`) is a prerequisite, not attempted here, same
+  restraint the agent-activity-bridge round already documented for the identical reason.
+- **`run.*`/`approval.*` events were being emitted and thrown away.** `integration.ts`'s
+  `onEvent` callback (added when Phase 1 wired `spawnSubagentWithOrchestrator()` through
+  `runWorkflow()`) only used incoming events to capture `agent.completed`'s output
+  internally — nothing forwarded them anywhere a UI could read. Fixed by exporting
+  `recordActivityEvent()` from `subagent-activity-bridge.ts` (renamed from the
+  file-private `pushRecent`) so both the bridge and `integration.ts` write into the same
+  `recentAgentActivityStore` — one shared store, not two, per the same "no duplicate
+  competing stores" principle the mandate names explicitly for a later phase.
+- **Found and fixed a real bug via a rigorous test, not a passing-but-shallow one.** The
+  orchestrator's own `Task.id` (a `crypto.randomUUID()`, internal to `integration.ts`/
+  `run-workflow.ts`) and `SubagentService`'s generated task id (`subagent-<timestamp>-
+  <random>`, the id `subagentsStore` and `SubagentActivityWidget` actually key rows on)
+  are two unrelated id spaces. The first version of this change tagged forwarded
+  `run.*`/`approval.*` events with the orchestrator's `Task.id` — syntactically fine,
+  semantically wrong: those events would never match any `SubagentTask` row in the real
+  widget, so they'd be silently invisible despite "looking" wired up. An early version of
+  the e2e test's assertion (checking only *presence* via `arrayContaining`) didn't catch
+  this; only asserting exact *counts* per event type, filtered by the id the production
+  code path actually returns, surfaced the mismatch (count was 0, not 1). Fixed by
+  buffering `run.*`/`approval.*` events in `integration.ts` and re-tagging them with the
+  real `SubagentService` task id once resolved from `Evidence` after `runWorkflow()`
+  returns, rather than at emission time (when that id doesn't exist yet — `run.started`
+  fires before any subagent has been dispatched). Events with no resolvable subagent id
+  (e.g. a policy/budget denial before any dispatch happened) are recorded untagged rather
+  than force-attributed to a task — honest "not attributable to a row yet," not a
+  fabricated association.
+- **Test-writing lesson, not a code lesson**: three separate JSDoc/block comments in this
+  round's diff contained the literal substring `run.*/approval.*` as prose shorthand,
+  which is also valid JavaScript's block-comment-close token (`*/`) — each one silently
+  truncated its comment and turned the rest into a syntax error, caught immediately by
+  `tsc`. Avoid `X.*/Y.*` as comment shorthand for "these two event-name families";
+  spell out "and" instead.

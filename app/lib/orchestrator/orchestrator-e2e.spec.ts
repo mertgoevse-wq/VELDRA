@@ -4,6 +4,7 @@ import { spawnSubagentWithOrchestrator } from './integration';
 import { VeldraOrchestratorHost } from './veldra-host';
 import { entitlementTierStore } from '~/lib/stores/entitlement';
 import { subagentsStore } from '~/lib/stores/subagents';
+import { recentAgentActivityStore, startSubagentActivityBridge } from './subagent-activity-bridge';
 
 /**
  * Phase 1 of the "core product + runtime foundation" mandate's live-wiring goal: prove the
@@ -33,18 +34,27 @@ vi.mock('~/lib/execution/runtime-status', async (importOriginal) => {
 
 describe('Orchestrator end-to-end (real runtime, mocked only at the LLM + sandbox boundary)', () => {
   const originalTier = entitlementTierStore.get();
+  let stopBridge: () => void;
 
   beforeEach(() => {
     process.env.VELDRA_USE_ORCHESTRATOR = 'true';
     entitlementTierStore.set('PREMIUM');
     VeldraOrchestratorHost.resetInstance();
     vi.mocked(generateText).mockReset();
+    recentAgentActivityStore.set([]);
+
+    /*
+     * Real: this is the same bridge SubagentActivityWidget starts on mount, so a duplication
+     * check here is a genuine end-to-end proof, not a trivially-true absence-of-a-listener.
+     */
+    stopBridge = startSubagentActivityBridge().stop;
   });
 
   afterEach(() => {
     delete process.env.VELDRA_USE_ORCHESTRATOR;
     entitlementTierStore.set(originalTier);
     VeldraOrchestratorHost.resetInstance();
+    stopBridge();
   });
 
   it('drives a real subagent spawn all the way to a completed WorkflowRun', async () => {
@@ -68,6 +78,22 @@ describe('Orchestrator end-to-end (real runtime, mocked only at the LLM + sandbo
     const task = subagentsStore.get()[taskId as string];
     expect(task?.status).toBe('completed');
     expect(task?.result).toBe('Task complete: built the requested feature.');
+
+    /*
+     * Phase 2: runWorkflow()'s real run.* events must reach the shared activity store, not
+     * just get captured internally and discarded -- this is what a real UI reads. Counting
+     * occurrences (not just presence) is the actual proof of no double-emission: the bridge
+     * (started above, same as SubagentActivityWidget starts on mount) independently produces
+     * agent.started/agent.completed from this same subagentsStore change, and integration.ts
+     * must not also forward those -- only the genuinely new run.* and approval.* information.
+     */
+    const activity = recentAgentActivityStore.get().filter((event) => event.taskId === taskId);
+    const countByType = (type: string) => activity.filter((event) => event.type === type).length;
+
+    expect(countByType('run.started')).toBe(1);
+    expect(countByType('run.completed')).toBe(1);
+    expect(countByType('agent.started')).toBe(1);
+    expect(countByType('agent.completed')).toBe(1);
   }, 10000);
 
   it('falls back to the legacy path when the real LLM call fails, without hanging', async () => {

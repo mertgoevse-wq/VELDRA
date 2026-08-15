@@ -257,7 +257,13 @@ hadn't been refreshed yet. See `docs/ai-state/DECISIONS.md` for the full trail.
       `runWorkflow()`, the actual `WorkflowRun` state-machine driver that was previously
       missing entirely -- nothing anywhere built one before this). Every event type only
       fires from a real call site; no synthetic "make the timeline look busier" events.
-      **Still open**: no UI subscribes to it yet.
+      A UI now subscribes to the events that have real emit sites: `run.*`/`approval.*`
+      (from `runWorkflow()`, when the orchestrator path runs) and `agent.*` (from
+      `subagent-activity-bridge.ts`, always) both flow into `recentAgentActivityStore`,
+      rendered by `SubagentActivityWidget`. **Still open**: `tool.*`/`file.*`/
+      `verification.*` have no real emit call site anywhere yet -- would need an
+      `onStepFinish` hook in `subagentService.ts` first; not built, per the same
+      no-fake-progress rule this file already states.
 - [x] Give the live spawn path something real to drive -- `spawnSubagentWithOrchestrator()`
       (`app/lib/orchestrator/integration.ts`) now builds a single-task `WorkflowRun` and
       drives it through `runWorkflow()` (still gated behind `VELDRA_USE_ORCHESTRATOR`,
