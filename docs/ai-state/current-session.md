@@ -37,12 +37,35 @@ resolved id once known (from evidence, after `runWorkflow()` returns) — see
 `DECISIONS.md`'s "Phase 2" entry for the full detail. 397/397 tests, typecheck clean, lint
 clean.
 
-## Phase 3+ — not started yet
-See the TaskList in this session for the remaining phases (approval flow UI, agent
-activity timeline upgrade, unified chat/workbench experience, composer audit, template
-unification, workbench state-truth audit, UX/motion/design-system passes, Android pass,
-docs refresh, security review, and a final APK block deliberately deferred until the core
-product blocks are done).
+## Phase 3 — Real approval flow end-to-end (done)
+`ApprovalRequestWidget.tsx` (mounted in `Messages.client.tsx`, above `SubagentActivityWidget`)
+is a real, tested round-trip against the already-real `ApprovalPort` -- subscribes to
+`pendingApprovalsStore`, renders kind/question/context with progressive disclosure, calls
+`getVeldraHost().approvals.respond()` on click. Honest scope note carried into
+`DECISIONS.md`: no live call site can currently trigger a real approval request --
+Phase 1's own preflight budget check makes the only requestable kind
+(`'budget-exceeded'`) provably unreachable from today's single-task spawn shape. Built
+anyway, deliberately, since the gap here is "no caller yet," not "the mechanism is fake."
+
+Side effect worth flagging on its own: fixed a real, pre-existing test-infrastructure gap
+while writing this phase's component test -- `vite.config.ts` used `remixVitePlugin()`
+even under Vitest, and no test in this codebase had ever successfully imported a real
+`.tsx` component before (confirmed by checking every existing jsdom-environment test file
+existing beforehand). Fixed by swapping to plain `@vitejs/plugin-react` in test mode,
+extending the exact conditional pattern already used one line above for
+`remixCloudflareDevProxy()`. Verified the production plugin path is unaffected (code
+inspection + a `vite build --mode production` attempt that got past all plugin resolution
+before hitting the pre-existing, already-documented Miniflare/tcmalloc OOM this container
+is known to hit). This unblocks real component testing for the several UI-heavy phases
+still ahead (4-6, 8-12) -- see `QUALITY_GATES.md` for the reference pattern.
+397→400 tests, typecheck clean, lint clean.
+
+## Phase 4+ — not started yet
+See the TaskList in this session for the remaining phases (agent activity timeline
+upgrade, unified chat/workbench experience, composer audit, template unification,
+workbench state-truth audit, UX/motion/design-system passes, Android pass, docs refresh,
+security review, and a final APK block deliberately deferred until the core product
+blocks are done).
 
 ---
 

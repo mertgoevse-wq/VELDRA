@@ -1,4 +1,5 @@
 import { cloudflareDevProxyVitePlugin as remixCloudflareDevProxy, vitePlugin as remixVitePlugin } from '@remix-run/dev';
+import react from '@vitejs/plugin-react';
 import UnoCSS from 'unocss/vite';
 import { defineConfig, type ViteDevServer } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
@@ -51,15 +52,30 @@ export default defineConfig((config) => {
         },
       },
       config.mode !== 'test' && remixCloudflareDevProxy(),
-      remixVitePlugin({
-        ignoredRouteFiles: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx'],
-        future: {
-          v3_fetcherPersist: true,
-          v3_relativeSplatPath: true,
-          v3_throwAbortReason: true,
-          v3_lazyRouteDiscovery: true,
-        },
-      }),
+
+      /*
+       * Vitest has no real dev-server/HTML page to inject remixVitePlugin's Fast-Refresh
+       * "preamble" into, so any test that imports a .tsx component (not just one that
+       * calls render()) throws "Remix Vite plugin can't detect preamble. Something is
+       * wrong." -- confirmed no test in this codebase has ever imported a real component
+       * file before this. Plain @vitejs/plugin-react provides the same JSX/Fast-Refresh
+       * transform without that requirement; swapping to it in test mode only follows the
+       * same config.mode !== 'test' pattern remixCloudflareDevProxy() already uses one
+       * line above. Route-level Remix features (loaders, virtual:remix/server-build,
+       * routing) aren't needed by any current test -- if a future test needs them, that's
+       * a real, separate requirement to solve then, not assumed away here.
+       */
+      config.mode === 'test'
+        ? react()
+        : remixVitePlugin({
+            ignoredRouteFiles: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx'],
+            future: {
+              v3_fetcherPersist: true,
+              v3_relativeSplatPath: true,
+              v3_throwAbortReason: true,
+              v3_lazyRouteDiscovery: true,
+            },
+          }),
       UnoCSS(),
       tsconfigPaths(),
       chrome129IssuePlugin(),

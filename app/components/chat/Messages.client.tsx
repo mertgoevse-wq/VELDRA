@@ -12,6 +12,7 @@ import type { ForwardedRef } from 'react';
 import type { ProviderInfo } from '~/types/model';
 import { BuildActivityFeed } from './BuildActivityFeed';
 import { SubagentActivityWidget } from './SubagentActivityWidget';
+import { ApprovalRequestWidget } from './ApprovalRequestWidget';
 
 interface MessagesProps {
   id?: string;
@@ -95,6 +96,14 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
               );
             })
           : null}
+
+        {/*
+         * Independent of isStreaming, same reasoning as SubagentActivityWidget below: a
+         * pending approval blocks a background workflow whether or not the visible reply
+         * is still streaming, and rendered first since it's the more urgent of the two --
+         * something is actually waiting on the user, not just running in the background.
+         */}
+        <ApprovalRequestWidget />
 
         {/*
          * Independent of isStreaming: subagents are background tasks that can still be

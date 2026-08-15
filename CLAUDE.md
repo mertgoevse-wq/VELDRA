@@ -239,11 +239,20 @@ description of the *pre*-real-runtime stub state (`_createApprovalStub()`/
 implementations in the same round; the docs describing it as "not started" simply
 hadn't been refreshed yet. See `docs/ai-state/DECISIONS.md` for the full trail.
 
-- [x] Wire ApprovalPort to a real handoff -- `veldra-approvals.ts`'s `request()`
-      genuinely suspends until something calls `respond()`; `pendingApprovalsStore`
-      (nanostore) exists for a future UI to subscribe to. **Still open**: no UI calls
-      `respond()` yet, so a real approval request has nothing to answer it (see the
-      preflight-budget note below for why that matters).
+- [x] Wire ApprovalPort to a real handoff, and give it a real UI -- `veldra-approvals.ts`'s
+      `request()` genuinely suspends until something calls `respond()`; `pendingApprovalsStore`
+      (nanostore) is subscribed to by `ApprovalRequestWidget.tsx` (mounted in
+      `Messages.client.tsx`, above `SubagentActivityWidget`), which renders each pending
+      request's kind/question/context (progressive disclosure -- context hidden until
+      expanded) and calls `getVeldraHost().approvals.respond()` on click. Verified as a
+      genuine round-trip -- real DOM render, real click, real promise resolution -- in
+      `ApprovalRequestWidget.spec.tsx`. **Honest scope note**: no live call site can
+      currently produce a real approval request -- `spawnSubagentWithOrchestrator()`'s
+      single-task-per-run shape means its one budget check always runs against zero usage
+      (Phase 1's preflight check), so the only approval kind anything requests today
+      (`'budget-exceeded'`) can never actually fire from the live spawn path. This UI is
+      real and tested, just not yet reachable in production -- ready for whenever a future
+      multi-task workflow or destructive-action/plan check needs it.
 - [x] Wire PolicyGate to the entitlement system -- `veldra-policy.ts`, backed by
       `entitlement.ts`'s tier/capability model, not an always-allow stub. Documented as
       client-side/UX-only, not a security boundary (same limitation

@@ -192,3 +192,48 @@
   truncated its comment and turned the rest into a syntax error, caught immediately by
   `tsc`. Avoid `X.*/Y.*` as comment shorthand for "these two event-name families";
   spell out "and" instead.
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 3)
+
+- **Built the real approval UI, but was honest that nothing can trigger it yet.**
+  `ApprovalRequestWidget.tsx` subscribes to `pendingApprovalsStore` and calls
+  `getVeldraHost().approvals.respond()` — a genuine round-trip against the real
+  `ApprovalPort`, not a mock (proved in `ApprovalRequestWidget.spec.tsx` with a real DOM
+  render and click). But `spawnSubagentWithOrchestrator()`'s single-task-per-run shape
+  (Phase 1) means its one `checkBudget()` call always runs against zero usage — the exact
+  same computation Phase 1's own preflight check already performs before `runWorkflow()`
+  is even called. That makes a `'budget-exceeded'` approval request — the only kind
+  anything in the codebase currently requests — provably unreachable from today's one live
+  call site. Built the UI anyway, deliberately: unlike building UI for an event type with
+  no emit call site at all (rejected in Phase 2's DECISIONS.md entry), this UI is backed by
+  a real, already-tested port with a real, already-tested pending-request store — the gap
+  is "no current caller happens to trigger it," not "the mechanism doesn't exist." That's
+  a meaningfully different, and acceptable, kind of incompleteness: the next feature that
+  legitimately needs approval (a multi-task workflow, a destructive-action check) gets a
+  working UI for free instead of needing its own UI-wiring round.
+- **Fixed a real, pre-existing test-infrastructure gap while writing this round's
+  component test, not specific to the approval widget.** `vite.config.ts`'s `plugins`
+  array used `remixVitePlugin()` unconditionally, including under Vitest — but Vitest has
+  no real dev-server/HTML page for Remix's Fast-Refresh "preamble" injection to attach to,
+  so importing ANY real `.tsx` component from a test threw `Remix Vite plugin can't detect
+  preamble. Something is wrong.` at *import* time, not just when `render()` was called.
+  Checked: no test file anywhere in this codebase had ever imported a real component
+  file before — every existing `// @vitest-environment jsdom` test (`composer.spec.ts`,
+  `backend-config.spec.ts`, `workspaceFileImport.spec.ts`) tests plain functions, never
+  JSX. Root cause and fix were both cheap once diagnosed: `remixCloudflareDevProxy()` was
+  already conditionally skipped under `config.mode === 'test'` one line above the
+  unconditional `remixVitePlugin()` call — extending that exact same, already-proven
+  pattern to swap in plain `@vitejs/plugin-react` (already a devDependency, unused until
+  now) for test mode fixed it cleanly, with the non-test branch left byte-for-byte
+  identical to before. Verified the production branch is unaffected two ways: (1) the
+  non-test code path is unchanged, only relocated one level into a ternary guarded by a
+  condition already proven correct by the adjacent `remixCloudflareDevProxy()` line: dev
+  and build already work today, which only holds if `config.mode` correctly distinguishes
+  test from non-test in this exact codebase; (2) a `vite build --mode production` attempt
+  progressed past all plugin resolution/config validation (printed the Remix future-flags
+  startup banner) before hitting the pre-existing, already-documented Miniflare/tcmalloc
+  address-space OOM this container is known to hit on production builds — not a plugin
+  error, and not something this change could have caused since it doesn't run in
+  non-test mode. This unblocks real component testing for the several upcoming UI-heavy
+  phases (4-6, 8-12), not just this one widget — `ApprovalRequestWidget.spec.tsx` is the
+  reference pattern (see `QUALITY_GATES.md`).
