@@ -206,6 +206,25 @@ export default function AndroidShell() {
   }, [activeTab]);
 
   /*
+   * The sync above is one-directional (activeTab -> showWorkbench). But showWorkbench also has
+   * writers this shell doesn't control -- Artifact.tsx's chat-message toggle, and
+   * useMessageParser.ts auto-opening it the moment the AI starts streaming file content. When
+   * either of those flips it true while activeTab is still 'chat', the Workbench panel (which
+   * renders independent of activeTab, absolutely positioned over .android-main) visually slides
+   * over the screen, but the bottom nav still highlights "Chat" and .android-tab-active/-hidden
+   * still says the Chat pane is what's showing -- two state sources disagreeing about what's on
+   * screen. Close the loop: whenever showWorkbench becomes true for a reason other than this
+   * shell's own tab switch, follow it to the 'files' tab so nav/visibility/panel all agree.
+   */
+  const showWorkbench = useStore(workbenchStore.showWorkbench);
+
+  useEffect(() => {
+    if (showWorkbench && activeTab !== 'files' && activeTab !== 'preview') {
+      setActiveTab('files');
+    }
+  }, [showWorkbench, activeTab]);
+
+  /*
    * Android hardware back button: once a JS listener is registered, Capacitor stops applying
    * its own default behavior (WebView back / minimize) entirely -- every case must be handled
    * explicitly here, or back does nothing. Handles the two levels of navigation state this
