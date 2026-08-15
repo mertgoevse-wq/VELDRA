@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ApprovalRequestWidget } from './ApprovalRequestWidget';
 import { getVeldraHost, VeldraOrchestratorHost } from '~/lib/orchestrator/veldra-host';
@@ -17,6 +17,26 @@ describe('ApprovalRequestWidget', () => {
   beforeEach(() => {
     VeldraOrchestratorHost.resetInstance();
     pendingApprovalsStore.set({});
+
+    /*
+     * jsdom doesn't implement matchMedia; usePrefersReducedMotion.spec.ts covers that
+     * hook's own behavior in depth, this just satisfies it here so the widget can render.
+     * Both the modern (addEventListener) and legacy (addListener) MediaQueryList methods
+     * are stubbed -- framer-motion's own internal reduced-motion detection still uses the
+     * legacy pair, which a mock missing them makes throw at mount time.
+     */
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockReturnValue({
+        matches: false,
+        media: '(prefers-reduced-motion: reduce)',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      }),
+    });
   });
 
   afterEach(() => {

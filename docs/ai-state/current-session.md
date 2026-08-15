@@ -60,12 +60,35 @@ is known to hit). This unblocks real component testing for the several UI-heavy 
 still ahead (4-6, 8-12) -- see `QUALITY_GATES.md` for the reference pattern.
 397→400 tests, typecheck clean, lint clean.
 
-## Phase 4+ — not started yet
-See the TaskList in this session for the remaining phases (agent activity timeline
-upgrade, unified chat/workbench experience, composer audit, template unification,
-workbench state-truth audit, UX/motion/design-system passes, Android pass, docs refresh,
-security review, and a final APK block deliberately deferred until the core product
-blocks are done).
+## Phase 4 — Agent activity experience (SubagentActivityWidget upgrade) (done)
+The mandate's own example list for this phase (Planning/Tool/File/Execution/
+Verification/Waiting states) has no real data source for any of them -- confirmed by
+re-checking (not just recalling) that task decomposition/planning, tool.*/file.*/
+verification.* events, and a queued/pending SubagentTask status all still don't exist
+anywhere in the codebase. Declined to fabricate any of them, same restraint as Phase 2.
+Scoped to what's real: `usePrefersReducedMotion` (new hook, reactive to live OS changes,
+guards against `matchMedia` being unavailable) wired into both `SubagentActivityWidget`
+and `ApprovalRequestWidget`'s framer-motion transitions; and `SubagentActivityWidget.spec.tsx`,
+the first real component test for this widget, which exercises the widget's own
+`startSubagentActivityBridge()` against a genuine `subagentsStore` status transition
+(not a manually-seeded event) end to end.
+
+Three real test-authoring bugs found and fixed while writing these tests (full detail in
+`DECISIONS.md`'s Phase 4 entry, worth reading before writing more component tests): the
+`~/lib/hooks` barrel export crashes under Vitest via an unrelated hook's transitive
+`import.meta.hot` access (import the specific hook file instead); `matchMedia` mocks need
+both the modern and legacy MediaQueryList method pairs (framer-motion's own internal
+reduced-motion detection uses the legacy one); and `nanostore.listen()` only fires for
+changes made *after* subscribing, so a test must render the bridge-starting widget before
+seeding store state, not after.
+
+408 tests (was 400), typecheck clean, lint clean.
+
+## Phase 5+ — not started yet
+See the TaskList in this session for the remaining phases (unified chat/workbench
+experience, composer audit, template unification, workbench state-truth audit,
+UX/motion/design-system passes, Android pass, docs refresh, security review, and a final
+APK block deliberately deferred until the core product blocks are done).
 
 ---
 

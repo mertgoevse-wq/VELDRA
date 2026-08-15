@@ -6,6 +6,7 @@ import { recentAgentActivityStore, startSubagentActivityBridge } from '~/lib/orc
 import type { WorkflowEvent } from '~/lib/orchestrator/events';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
+import { usePrefersReducedMotion } from '~/lib/hooks/usePrefersReducedMotion';
 
 /**
  * Distinct labels for agent.* (from subagentsStore, always present) vs. run.* and
@@ -115,6 +116,8 @@ export function SubagentActivityWidget() {
   const [expanded, setExpanded] = useState(true);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const collapseTransition = prefersReducedMotion ? { duration: 0 } : { duration: 0.15, ease: cubicEasingFn };
 
   /*
    * Starts once per mount (this widget is always mounted in Messages.client.tsx, whether or
@@ -182,7 +185,7 @@ export function SubagentActivityWidget() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.15, ease: cubicEasingFn }}
+            transition={collapseTransition}
             className="flex flex-col gap-2 overflow-hidden"
           >
             {tasks.length > visibleTasks.length && (
@@ -248,7 +251,7 @@ export function SubagentActivityWidget() {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.15, ease: cubicEasingFn }}
+                        transition={collapseTransition}
                         className="overflow-hidden"
                         role="region"
                         aria-label={`${statusLabel(task.status)} subagent details`}

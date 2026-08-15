@@ -6,6 +6,7 @@ import { getVeldraHost } from '~/lib/orchestrator/veldra-host';
 import type { ApprovalKind } from '~/lib/orchestrator/types';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
+import { usePrefersReducedMotion } from '~/lib/hooks/usePrefersReducedMotion';
 
 /**
  * Phase 3 of the product-integration mandate: a real end-to-end approval UI, backed
@@ -54,6 +55,8 @@ export function ApprovalRequestWidget() {
   const requests = Object.values(pending);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const transition = prefersReducedMotion ? { duration: 0 } : { duration: 0.15, ease: cubicEasingFn };
 
   if (requests.length === 0) {
     return null;
@@ -87,7 +90,7 @@ export function ApprovalRequestWidget() {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.15, ease: cubicEasingFn }}
+              transition={transition}
               className="flex flex-col overflow-hidden rounded-lg border border-bolt-elements-item-contentAccent/40 bg-bolt-elements-item-backgroundAccent/20 shadow-sm"
             >
               <div className="flex items-start gap-3 p-3">
@@ -123,7 +126,7 @@ export function ApprovalRequestWidget() {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.15, ease: cubicEasingFn }}
+                        transition={transition}
                         className="mt-1 overflow-hidden whitespace-pre-wrap break-words text-xs text-bolt-elements-textSecondary"
                       >
                         {request.context}

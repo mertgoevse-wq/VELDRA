@@ -14,3 +14,4 @@ export { useGitLabAPI } from './useGitLabAPI';
 export { useSupabaseConnection } from './useSupabaseConnection';
 export { useConnectionTest } from './useConnectionTest';
 export { useBuildActivity } from './useBuildActivity';
+export { usePrefersReducedMotion } from './usePrefersReducedMotion';

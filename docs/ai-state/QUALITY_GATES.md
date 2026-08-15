@@ -5,8 +5,8 @@ Run after a coherent implementation block, not after every edit.
 ```bash
 npm run typecheck        # tsc --noEmit
 npm run lint              # eslint (must be 0 errors; 2 known warnings OK)
-npm test                  # vitest run — 400 passing as of 2026-08-15 (product integration
-                           # round, Phase 3); run this, don't just cite a stale count from
+npm test                  # vitest run — 408 passing as of 2026-08-15 (product integration
+                           # round, Phase 4); run this, don't just cite a stale count from
                            # a doc (see DECISIONS.md/current-session.md 2026-08-15: 9
                            # pre-existing failures across 2 files were sitting undiscovered
                            # before that round)
@@ -51,4 +51,12 @@ cd android && ./gradlew assembleDebug   # requires ANDROID_HOME — often unavai
   use it as the reference pattern for future component tests, including
   `// @vitest-environment jsdom` at the top of the file and importing
   `'@testing-library/jest-dom/vitest'` for the extended matchers (no global
-  setup file registers them).
+  setup file registers them). Three more gotchas found writing Phase 4's
+  `SubagentActivityWidget.spec.tsx` (full detail in `DECISIONS.md`'s Phase 4
+  entry): import hooks from their own file, not the `~/lib/hooks` barrel
+  (an unrelated hook's transitive import crashes under Vitest); a
+  `matchMedia` mock needs both `addEventListener`/`removeEventListener` AND
+  the legacy `addListener`/`removeListener` (framer-motion's own internal
+  reduced-motion check uses the legacy pair); and `nanostore.listen()` only
+  fires for changes made after subscribing, so render a store-watching
+  component before seeding the store, not after.

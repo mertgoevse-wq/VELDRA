@@ -237,3 +237,53 @@
   non-test mode. This unblocks real component testing for the several upcoming UI-heavy
   phases (4-6, 8-12), not just this one widget — `ApprovalRequestWidget.spec.tsx` is the
   reference pattern (see `QUALITY_GATES.md`).
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 4)
+
+- **Declined to build Planning/Tool/File/Verification/Waiting activity states** — the
+  mandate's own example list for the activity timeline upgrade. None have a real data
+  source: `Task` decomposition/planning is explicitly out of scope for `run-workflow.ts`
+  (see its own doc comment); `tool.*`/`file.*`/`verification.*` events have no emit call
+  site anywhere (Phase 2's finding, unchanged); and `SubagentTask.status` is exactly
+  `{running, completed, failed}` — no `'queued'`/`'pending'` state exists in the data
+  model at all, so "Waiting" has nothing real to represent either. Building any of these
+  now would be exactly the fake-progress pattern this project has repeatedly, explicitly
+  rejected (Block B, Phase 2). Scoped Phase 4 to what's real instead: reduced-motion
+  support (a mandate requirement with a genuine implementation path) and real component
+  test coverage proving the widget's existing real-data rendering actually works.
+- **`usePrefersReducedMotion` imports the specific file, not the `~/lib/hooks` barrel.**
+  Writing the first component test for `ApprovalRequestWidget` (importing the hook via
+  the barrel) crashed with `Cannot read properties of undefined (reading
+  'webcontainerContext')`, thrown from `app/lib/webcontainer/index.ts` — pulled in
+  transitively through some other hook the barrel re-exports (`useGit`/`useGitHubConnection`/etc.),
+  unrelated to anything this round touched. Root cause not fully chased down (would mean
+  auditing the whole barrel's transitive import graph for `import.meta.hot`-adjacent
+  module-load-time side effects under Vitest — out of scope here); side-stepped by
+  importing `usePrefersReducedMotion` directly from its own file in both widgets, which
+  has no import graph beyond `react`. The barrel export was still added for any future
+  consumer that doesn't hit this path.
+- **Widget mocks for `window.matchMedia` need both the modern and legacy MediaQueryList
+  method pairs.** `addEventListener`/`removeEventListener` alone crashed any test
+  rendering a `motion.*` element with `motionMediaQuery.addListener is not a function` —
+  framer-motion's own internal reduced-motion detection (`initPrefersReducedMotion`,
+  independent of this round's `usePrefersReducedMotion` hook) still uses the legacy
+  `addListener`/`removeListener` pair. Both widget spec files' mocks stub all four.
+- **Two real test-authoring bugs, not product bugs, caught while writing
+  `SubagentActivityWidget.spec.tsx`** (recorded so the next person reusing this pattern
+  doesn't repeat them): (1) the widget's task list starts expanded
+  (`useState(true)`) — clicking the outer section-toggle button in a test *collapses* it
+  instead of expanding it, intermittently hiding everything the test then tries to query
+  depending on animation/timing luck. (2) Several real, distinct pieces of state
+  legitimately render the same text in two places at once (a task's status badge and its
+  Activity-list entry both say "Completed"; the collapsed-row summary and the expanded
+  "Delegated task" paragraph both show `task.task`) — `getByText` correctly throws on
+  ambiguity in both cases; the fix is `getAllByText(...).length` assertions, not a
+  product change.
+- **`nanostore.listen()` only fires on changes made after subscribing, not for
+  already-existing state at subscribe time** — relevant to any future test of
+  `subagent-activity-bridge.ts`'s bridge: seed a task into `subagentsStore` *before*
+  rendering `SubagentActivityWidget` (which starts the bridge on mount) and the bridge
+  never sees that task's transition into `'running'`, since it happened before the
+  bridge ever subscribed. Render first, then mutate the store, to match how production
+  actually orders things (widget mounts once at chat-load time, long before any real
+  spawn happens).
