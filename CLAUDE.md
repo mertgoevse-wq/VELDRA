@@ -377,27 +377,38 @@ New skills should:
 
 ## Current Status
 
-**Date**: 2026-08-13  
-**Branch**: `main`  
+**Date**: 2026-08-15
+**Branch**: `integration/veldra-bedrock-plus-claude-web` — this is the single active
+development branch. Work directly on it; do not create new feature/integration/experiment
+branches unless explicitly requested. Other sessions/agents should also work on this same
+branch rather than splitting off parallel ones.
 **Recent Work**:
 - ✅ Orchestrator PoC implemented (23 tests passing)
 - ✅ P0 agents integrated (code-reviewer, debugger, context-manager)
-- ✅ Lint errors fixed (0 errors, 2 warnings)
+- ✅ Android P0 stabilization: fixed the fallback-banner/toolbar overlap, an
+  app-crashing production chunk-splitting bug, and the Workbench-always-full-screen bug
+  (see `docs/ai-state/CURRENT_STATE.md` / `ROADMAP.md` / `DECISIONS.md` for full detail
+  and the verification method)
+- ✅ Lint errors fixed (0 errors, 2 pre-existing warnings)
 - ✅ TypeScript compilation clean (0 errors)
 - ✅ Ecosystem repositories linked
 
 **Next Priorities**:
-1. Test runtime integration end-to-end
+1. Product-quality pass across the whole app (not just Android): verify every
+   interactive element is genuinely wired end-to-end, no dead buttons/fake states —
+   see `docs/ai-state/ROADMAP.md` P1 for the known open items
 2. Wire orchestrator approvals/policy to UI
-3. Verify subagent spawning works
-4. Audit and fix UI component functionality
-5. Test on Android (when feasible)
+3. Real device / APK verification (blocked on Android SDK availability in this
+   container; code is ready for it)
+4. Continue closing the gap between VELDRA and a generic AI-dashboard feel — distinct
+   product identity, not a Bolt/ChatGPT/Lovable clone
 
 ## Resources
 
 - **Stabilization Plan**: `project/research/VELDRA-STABILIZATION-PLAN-2026-08-13.md`
 - **Core Analysis**: `project/research/CORE-FUNCTIONALITY-ANALYSIS-2026-08-13.md`
 - **Session Summary**: `project/research/SESSION-SUMMARY-2026-08-13.md`
+- **Living Android/product state** (more current than the docs above): `docs/ai-state/CURRENT_STATE.md`, `ROADMAP.md`, `DECISIONS.md`, `QUALITY_GATES.md`, `current-session.md`
 
 ## Questions?
 
