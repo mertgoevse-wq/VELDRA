@@ -1,3 +1,29 @@
+# VELDRA Session Checkpoint — 2026-08-15 (product integration mandate, in progress)
+
+Read this section first. This supersedes the "recovery round" checkpoint below it (kept
+for context) — the recovery is done (fb2be44) and a large, explicit 17-phase product
+integration mandate is now underway, tracked via TaskCreate/TaskUpdate in-session. Update
+this section at each phase boundary rather than appending a new top section every time,
+since phases build on each other within one continuous mandate.
+
+## Phase 1 — Orchestrator end-to-end (done)
+Proved the real orchestrator runtime (built in the recovery round) actually works
+end-to-end through every VELDRA-authored layer, not just in isolated unit tests — see
+`app/lib/orchestrator/orchestrator-e2e.spec.ts` and `DECISIONS.md`'s "Phase 1" entry for
+the full detail, including a real dormant contract bug (`apiKeys`/`providerSettings`
+silently dropped on fallback) the deep test surfaced and fixed. Documented the flag in
+`.env.example` with a concrete dev/staging recommendation rather than silently changing
+any default-enablement behavior. 397/397 tests, typecheck clean.
+
+## Phase 2+ — not started yet
+See the TaskList in this session for the full 17-phase breakdown (event observability,
+approval flow UI, agent activity timeline, unified chat/workbench experience, composer
+audit, template unification, workbench state-truth audit, UX/motion/design-system passes,
+Android pass, docs refresh, security review, and a final APK block deliberately deferred
+until the core product blocks are done).
+
+---
+
 # VELDRA Session Checkpoint — 2026-08-15 (core product + runtime foundation, recovery round)
 
 Read this section first; everything below it is prior-session history, kept for context.

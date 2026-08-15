@@ -56,10 +56,23 @@ export async function spawnSubagentWithOrchestrator(
   apiKeys?: any,
   providerSettings?: any,
 ): Promise<string> {
+  /*
+   * options.apiKeys/providerSettings win if a caller already set them there (SpawnSubagentOptions
+   * carries both); otherwise fall back to the separate params. Without this merge, a caller that
+   * passes credentials only via the separate params (as the orchestrator path below already
+   * requires, for getVeldraHost) would silently lose them on either the disabled-flag path or the
+   * post-failure fallback -- degrading to an unauthenticated call instead of an equivalent one.
+   */
+  const legacyOptions: SpawnSubagentOptions = {
+    ...options,
+    apiKeys: options.apiKeys ?? apiKeys,
+    providerSettings: options.providerSettings ?? providerSettings,
+  };
+
   // Legacy path (default for now)
   if (!isOrchestratorFeatureEnabled()) {
     logger.debug('Using legacy SubagentService path (orchestrator disabled)');
-    return SubagentService.getInstance().spawnSubagent(options);
+    return SubagentService.getInstance().spawnSubagent(legacyOptions);
   }
 
   // Orchestrator path with fallback
@@ -138,7 +151,7 @@ export async function spawnSubagentWithOrchestrator(
     logger.error('Orchestrator path failed, falling back to legacy', error);
 
     // Fallback to legacy
-    return SubagentService.getInstance().spawnSubagent(options);
+    return SubagentService.getInstance().spawnSubagent(legacyOptions);
   }
 }
 

@@ -109,3 +109,42 @@
   denial, not a new failure mode. Whether `checkBudget`'s zero-allowance semantics need a
   real fix (or a UI that can actually answer an approval) is a good next-round question,
   not resolved here.
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 1)
+
+- **Proved the orchestrator path end-to-end instead of trusting the sum of its unit
+  tests.** Every existing spec touching `spawnSubagentWithOrchestrator()` mocks at least
+  one VELDRA-owned layer (the host, the agent runner, or the subagent service).
+  `orchestrator-e2e.spec.ts` mocks only the two boundaries this container genuinely
+  cannot provide — `ai`'s `generateText` and an active sandbox session — and lets every
+  VELDRA-authored layer run for real: `integration.ts` -> `runWorkflow()` ->
+  `VeldraAgentRunner` -> `SubagentService` -> `subagentsStore` -> back up through
+  `Evidence` -> a `completed` `WorkflowRun`. It passed on the first real attempt after
+  fixing one test-authoring mistake (`apiKeys` must be keyed by provider display name,
+  e.g. `{ Google: '...' }`, not the env-var token name — `BaseProvider.
+  getProviderBaseUrlAndKey()`'s own lookup key), which is itself a useful confirmation
+  that the wiring, not just the mocks, is what made it pass.
+- **A deep test found a real (if currently dormant) contract bug**, not a test-authoring
+  artifact: writing the failure-path test (`generateText` rejects) surfaced that
+  `spawnSubagentWithOrchestrator()`'s `apiKeys`/`providerSettings` parameters were
+  silently dropped by both the disabled-flag legacy call and the post-failure fallback
+  call — only the orchestrator-path's own `getVeldraHost(apiKeys, providerSettings)`
+  actually used them. `mcpService.ts`'s tool handler, the only real caller, never passes
+  them (relies on `serverEnv`/`process.env` instead), so this has never fired in
+  production — but the function's own signature invites a caller to pass credentials
+  this way, and a future one doing so would have silently gotten an unauthenticated
+  fallback instead of an equivalent one. Fixed by merging `apiKeys`/`providerSettings`
+  into the `SpawnSubagentOptions` object passed to `SubagentService` on both paths,
+  preferring anything already set directly on `options` (`SpawnSubagentOptions` carries
+  both fields itself).
+- **Rejected auto-enabling the orchestrator by runtime environment** (e.g. "on by
+  default outside production") as this round's "safe rollout" mechanism, even though the
+  mandate asked for one. The blast radius is untraceable: `getRuntimeEnvironment()`
+  returns `'test'` under Vitest, so that single change would have silently flipped the
+  default for every existing spec that calls into this code without explicitly setting
+  `VELDRA_USE_ORCHESTRATOR` — an audit scope far larger than what proving end-to-end
+  correctness required. Chose the lower-risk, still-genuinely-useful alternative
+  instead: `.env.example` now documents the flag with a concrete recommendation (enable
+  it in dev/staging deployments, not in your local test run), and the new e2e spec makes
+  "is the flag-enabled path still healthy" a question `npm test` answers on every run,
+  regardless of any deployment's actual flag setting.

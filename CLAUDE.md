@@ -272,10 +272,27 @@ hadn't been refreshed yet. See `docs/ai-state/DECISIONS.md` for the full trail.
       if a tier can't afford even one iteration, rather than attempting a run that can never
       resolve. 394→395 tests (integration.spec.ts rewritten for the real runWorkflow-driven
       contract, including a test for this deadlock guard specifically).
-- [ ] Test with feature flag enabled in a real environment -- still not done;
-      `VELDRA_USE_ORCHESTRATOR` stays unset by default, so production always takes the
-      legacy `SubagentService` path today. Everything above is unit-tested against mocks,
-      not exercised end-to-end with a live provider and the flag on.
+- [x] Test with the feature flag enabled, end-to-end, through every VELDRA-authored layer
+      -- `app/lib/orchestrator/orchestrator-e2e.spec.ts` (run by `npm test`, no separate
+      opt-in needed) drives a real spawn through `integration.ts` -> `runWorkflow()` ->
+      `VeldraAgentRunner` -> `SubagentService` -> `subagentsStore` -> back up through
+      `Evidence` -> a `completed` `WorkflowRun`, with nothing VELDRA-authored mocked --
+      only the two boundaries this container genuinely cannot provide (a live LLM call via
+      `ai`'s `generateText`, and a WebContainer sandbox session) are mocked. This is
+      different from every other spec touching this code, which mocks at least one
+      VELDRA-owned layer. Also found and fixed a real (if currently dormant) bug this test
+      surfaced: `spawnSubagentWithOrchestrator()`'s `apiKeys`/`providerSettings` params
+      were silently dropped on both the disabled-flag path and the post-failure fallback,
+      instead of merging into the `SpawnSubagentOptions` passed to `SubagentService` --
+      not yet hit in production (the only real caller, `mcpService.ts`, never passes them),
+      but a real correctness gap in the function's own contract. `VELDRA_USE_ORCHESTRATOR`
+      still stays unset by default in production; `.env.example` now documents it with a
+      concrete recommendation (enable in dev/staging to keep exercising the real runtime).
+      Deliberately did NOT change any default-enablement logic based on runtime
+      environment (e.g. auto-on outside production) -- that would silently change
+      `npm test`'s own behavior for every existing spec that doesn't explicitly set the
+      env var, an untraceable blast radius not justified by what this round needed to
+      prove. 397/397 tests (was 395).
 - [x] Collect evidence of correctness -- two independent paths now populate real activity
       data: (a) legacy-path `AgentRunner` Evidence[] flows into `subagentsStore` regardless
       of the flag, surfaced by `SubagentActivityWidget`; (b)
