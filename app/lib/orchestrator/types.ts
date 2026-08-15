@@ -110,7 +110,11 @@ export interface VerificationRequirement {
 }
 
 export type ApprovalKind =
-  'plan' | 'destructive-action' | 'budget-exceeded' | 'external-side-effect' | 'low-confidence';
+  | 'plan'
+  | 'destructive-action'
+  | 'budget-exceeded'
+  | 'external-side-effect'
+  | 'low-confidence';
 
 /**
  * A point where the workflow stops and waits for a human. Never auto-resolved
@@ -158,7 +162,14 @@ export interface FailureFingerprint {
  * machine that enforces valid transitions between these.
  */
 export type WorkflowState =
-  'idle' | 'planning' | 'queued' | 'running' | 'awaiting-approval' | 'completed' | 'failed' | 'cancelled';
+  | 'idle'
+  | 'planning'
+  | 'queued'
+  | 'running'
+  | 'awaiting-approval'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
 
 export interface WorkflowRun {
   id: string;

@@ -1,4 +1,4 @@
-# VELDRA Session Checkpoint — 2026-08-15 (product evolution pass)
+# VELDRA Session Checkpoint — 2026-08-15 (core product + runtime foundation, recovery round)
 
 Read this section first; everything below it is prior-session history, kept for context.
 
@@ -7,7 +7,51 @@ Branch `integration/veldra-bedrock-plus-claude-web` (single active branch, work 
 on it). See git log for the exact commit — this file isn't the place to hardcode a hash
 that goes stale the moment another commit lands.
 
-## What changed this session
+## Session recovery note
+The prior session crashed partway through a "core product + runtime foundation" mandate,
+after landing 4 commits (real orchestrator runtime, agent-activity event bridge, a chat
+tool-invocation visual connector, and a template file-seed-artifact unification) without
+writing any docs/ai-state update for them — this file's "product evolution pass" section
+below predates all four. Recovered entirely from `git log`/commit messages, not from
+docs, per this project's own stated practice of trusting git over stale docs. Continued
+the same mandate rather than re-auditing or starting new work; see CLAUDE.md's
+"Orchestrator Migration Strategy" Phase 2 and `DECISIONS.md`'s "core product + runtime
+foundation, later round" entry for the full detail of both the recovered work and what
+was added this round.
+
+## What changed this round (2026-08-15, after the crash)
+Wired the one call site that can actually reach the orchestrator from a live request —
+`spawnSubagentWithOrchestrator()` (`app/lib/orchestrator/integration.ts`) — through the
+real `runWorkflow()` state-machine driver the crashed session had built but nothing yet
+invoked, instead of calling `host.agents.run()` directly. Still gated behind
+`VELDRA_USE_ORCHESTRATOR` (off by default) — this is still foundation work, not a
+migration. Found and fixed a real bug while doing this: FREE tier's `maxCostMinor: 0`
+would have made the very first budget check inside `runWorkflow()` request an approval
+that nothing can currently answer (no approval UI exists yet), hanging the call forever.
+Added a preflight `checkBudget()` call in `integration.ts` that falls back to legacy
+immediately when a tier can't afford one iteration, same as an existing policy denial.
+Rewrote `integration.spec.ts`'s orchestrator-enabled tests for the new real-runWorkflow
+contract (including one asserting the deadlock guard specifically). 395/395 tests,
+typecheck clean, lint clean on changed files (pre-existing whole-repo lint drift on
+generated/config files is unrelated — see `QUALITY_GATES.md`). No UI work this round —
+still nothing for a UI to render correctly yet (no `ApprovalPort.respond()` caller
+exists), consistent with the mandate's "don't build UI on stubs, and don't build it
+before something can actually answer it" stance carried over from the prior round.
+
+## What changed in the prior (crashed) session, recovered from git log
+Real orchestrator runtime replacing the `ApprovalPort`/`PolicyGate`/`RunStore` stubs
+(`events.ts`, `run-workflow.ts`, `veldra-approvals.ts`, `veldra-policy.ts`) — the
+`WorkflowRun` state machine and typed event model didn't exist before this; agent-activity
+event bridge (`subagent-activity-bridge.ts`, mounted in `SubagentActivityWidget`) so real
+subagent state flows into the new event model even though nothing calls `runWorkflow()`
+for the legacy path; a visual connector between an assistant response and the tool
+invocation that produced it (`AssistantMessage.tsx`); a shared
+`buildFileSeedArtifactMessage()` used by both Android's template pipeline and desktop's
+`/git`-route import, which surfaced and fixed a real unescaped-`<boltArtifact>`-tag
+injection gap in the latter. Full detail in `git log` (commits `57f9029`, `b9e7a03`,
+`daeabc6`, `c998f16`) and `DECISIONS.md`.
+
+## What changed in the "product evolution pass" (earlier 2026-08-15 round, unchanged)
 1. **Deterministic starter-code seeding for Android templates** — "Code Workspace" and
    "Project Overview" now trigger the same `getTemplates()` GitHub-backed file-seeding
    pipeline desktop's auto-select-on-first-message already used, but deterministically

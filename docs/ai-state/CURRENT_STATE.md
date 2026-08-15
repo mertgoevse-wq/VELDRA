@@ -1,9 +1,24 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-15 (block 4)
+Last updated: 2026-08-15 (block 5)
 Branch: `integration/veldra-bedrock-plus-claude-web` (single active branch — the
 `claude/veldra-android-recovery-85j8ws` branch referenced below was cherry-picked in;
 work directly on `integration/...` from here on, no new branches)
+
+## Block 5 (2026-08-15) — core product + runtime foundation, session-crash recovery round
+
+A prior session landed the real orchestrator runtime (WorkflowRun state machine, typed
+events, real ApprovalPort/PolicyGate/RunStore — see `git log` commit `57f9029` and
+`DECISIONS.md`) then crashed before documenting it or finishing the mandate. Recovered
+from `git log`, not docs (none existed yet for that work). This block: wired
+`spawnSubagentWithOrchestrator()` — the only call site reachable from a live chat
+request — through the real `runWorkflow()` driver instead of bypassing it, and fixed a
+real approval-deadlock bug found while doing so (FREE tier's zero-cost budget would have
+hung the call forever on an unanswerable approval). See `current-session.md` and
+`DECISIONS.md` for full detail. No visual/UI work this block; no UI exists yet that could
+consume any of this (still gated behind `VELDRA_USE_ORCHESTRATOR`, off by default).
+Typecheck/lint (scoped)/test (395/395) verified; no headless browser used or needed since
+nothing user-visible changed.
 
 ## Block 4 (2026-08-15) — product evolution pass, no headless browser this block
 

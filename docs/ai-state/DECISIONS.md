@@ -75,3 +75,37 @@
   provider without `interactiveShell` report as available). All fixed;
   357/357 pass now. Added `npm test` to `QUALITY_GATES.md`'s documented gate
   list — it wasn't there before, which is plausibly why this went unnoticed.
+
+## 2026-08-15 additions, continued (core product + runtime foundation, later round)
+
+- **The real orchestrator runtime (events.ts, run-workflow.ts's WorkflowRun state
+  machine, veldra-approvals.ts, veldra-policy.ts) landed in this round, but nothing in
+  the live app called it yet** — `spawnSubagentWithOrchestrator()`
+  (`app/lib/orchestrator/integration.ts`), the one call site actually reachable from a
+  real chat request (`mcpService.ts`'s `spawn_subagent` tool), still called
+  `host.agents.run()` directly, bypassing `runWorkflow()` entirely. Fixed: it now builds
+  a single-task `Goal`/`Task`/`WorkflowRun` and drives it through `runWorkflow()`, so a
+  spawn taken this way exercises the real state machine, event emission, budget
+  enforcement and persistence, not just the `AgentRunner` call with all of that sitting
+  unused beside it. Still gated behind `VELDRA_USE_ORCHESTRATOR` (off by default) — this
+  is the mandate's own "foundation, not migration" stance, unchanged.
+- **Found a real deadlock while wiring the above in, not yet exercised by anything
+  before this round**: `entitlement.ts`'s `TIER_BUDGETS.FREE` sets `maxCostMinor: 0`, and
+  `budget.ts`'s `checkBudget()` treats a limit as violated on `used >= allowed` — so for
+  a FREE-tier run, the very first budget check (before any task has even dispatched, at
+  `usage.costMinor === 0`) trips a violation on `0 >= 0`. `runWorkflow()`'s response to a
+  violation is to call `host.approvals.request()`, and `veldra-approvals.ts`'s real
+  `ApprovalPort` genuinely suspends until something calls `respond()` — which nothing
+  does yet, no approval UI is wired up. Net effect: enabling the orchestrator for a
+  FREE-tier user would hang the calling request forever. This was never hit by Block A's
+  own test suite because it always used a hand-built `GENEROUS_BUDGET`, never a real tier
+  budget, through `runWorkflow()`. Chose not to touch `checkBudget()`/`TIER_BUDGETS`
+  themselves — that's shared, already-tested core state-machine code, and it's genuinely
+  ambiguous whether the fix belongs there (e.g. `>` instead of `>=`) or is correct as
+  policy (FREE tier arguably *should* be blocked from any cost-incurring orchestrator
+  run). Fixed at the call site instead: `integration.ts` now runs `checkBudget()` itself
+  against zero usage before ever calling `runWorkflow()`, and falls back to legacy
+  immediately if a tier can't afford one iteration — same fallback behavior as a policy
+  denial, not a new failure mode. Whether `checkBudget`'s zero-allowance semantics need a
+  real fix (or a UI that can actually answer an approval) is a good next-round question,
+  not resolved here.

@@ -30,7 +30,8 @@ interface AssistantMessageProps {
   model?: string;
   provider?: ProviderInfo;
   parts:
-    (TextUIPart | ReasoningUIPart | ToolInvocationUIPart | SourceUIPart | FileUIPart | StepStartUIPart)[] | undefined;
+    | (TextUIPart | ReasoningUIPart | ToolInvocationUIPart | SourceUIPart | FileUIPart | StepStartUIPart)[]
+    | undefined;
   addToolResult: ({ toolCallId, result }: { toolCallId: string; result: any }) => void;
 }
 
@@ -96,7 +97,8 @@ export const AssistantMessage = memo(
       totalTokens: number;
     } = filteredAnnotations.find((annotation) => annotation.type === 'usage')?.value;
     const resolvedModel = filteredAnnotations.find((annotation) => annotation.type === 'modelResolved')?.value as
-      { name: string; provider: string; automatic: boolean } | undefined;
+      | { name: string; provider: string; automatic: boolean }
+      | undefined;
 
     const toolInvocations = parts?.filter((part) => part.type === 'tool-invocation');
     const toolCallAnnotations = filteredAnnotations.filter(

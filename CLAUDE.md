@@ -232,29 +232,60 @@ The orchestrator is being integrated gradually:
 - **Commit**: `68e0b07`
 
 ### Phase 2: Integration (Current)
-- [ ] Wire ApprovalPort to UI confirmations -- **not started**: `_createApprovalStub()`
-      (veldra-host.ts) always auto-approves `options[0]` and only logs a warning. No UI,
-      no persistence, no timeout.
-- [ ] Wire PolicyGate to settings/permissions -- **not started**: `_createPolicyStub()`
-      always returns `null` (allow-all), only logs.
-- [ ] Implement RunStore for persistence -- **not started**: `readonly runs = undefined`
-      in veldra-host.ts. ModelCatalog and CapabilityResolver are likewise undefined.
-- [ ] Build a real-time event stream (approval requests, tool progress, budget updates) a
-      UI could subscribe to -- **does not exist yet**. ApprovalPort.request() is a single
-      async call/response, not a subscribable stream; this needs new backend plumbing
-      (a WorkflowRun state machine driving planning->running->awaiting-approval->completed,
-      plus an emitter) before any approval/policy UI has real data to render. Audited
-      2026-08-15; do not attempt the UI before this exists, or it will show information
-      the runtime doesn't back up.
-- [ ] Test with feature flag enabled -- not yet; VELDRA_USE_ORCHESTRATOR is unset by
-      default, so production always takes the legacy SubagentService path today. The
-      orchestrator's spawnSubagentWithOrchestrator() IS reachable from the real request
-      path (mcpService.ts's spawnSubagent tool handler calls it), it's just gated off.
-- [ ] Collect evidence of correctness -- AgentRunner's per-invocation Evidence[] already
-      flows into subagentsStore via the legacy path (which populates it regardless of the
-      flag) and is what SubagentActivityWidget (app/components/chat/SubagentActivityWidget.tsx)
-      already surfaces. Extending that widget is a much smaller, lower-risk step than
-      building new orchestrator-specific UI.
+
+**Updated 2026-08-15 (later round)** — the items below were rewritten from a stale
+description of the *pre*-real-runtime stub state (`_createApprovalStub()`/
+`_createPolicyStub()`/`runs = undefined`). All of that was replaced by real
+implementations in the same round; the docs describing it as "not started" simply
+hadn't been refreshed yet. See `docs/ai-state/DECISIONS.md` for the full trail.
+
+- [x] Wire ApprovalPort to a real handoff -- `veldra-approvals.ts`'s `request()`
+      genuinely suspends until something calls `respond()`; `pendingApprovalsStore`
+      (nanostore) exists for a future UI to subscribe to. **Still open**: no UI calls
+      `respond()` yet, so a real approval request has nothing to answer it (see the
+      preflight-budget note below for why that matters).
+- [x] Wire PolicyGate to the entitlement system -- `veldra-policy.ts`, backed by
+      `entitlement.ts`'s tier/capability model, not an always-allow stub. Documented as
+      client-side/UX-only, not a security boundary (same limitation
+      `entitlementTierStore` already states).
+- [x] Implement RunStore for persistence -- wired to the existing IndexedDB-backed
+      `orchestratorRunStore.ts` via an optional `db` handle in `veldra-host.ts`; degrades
+      to a safe no-op RunStore (still a valid host) when no `db` is supplied.
+      `ModelCatalog`/`CapabilityResolver` remain unimplemented (`undefined`).
+- [x] Build a real-time event stream -- `events.ts` (typed `WorkflowEvent` model +
+      dependency-free pub/sub emitter) and `run-workflow.ts` (`createWorkflowRun()` +
+      `runWorkflow()`, the actual `WorkflowRun` state-machine driver that was previously
+      missing entirely -- nothing anywhere built one before this). Every event type only
+      fires from a real call site; no synthetic "make the timeline look busier" events.
+      **Still open**: no UI subscribes to it yet.
+- [x] Give the live spawn path something real to drive -- `spawnSubagentWithOrchestrator()`
+      (`app/lib/orchestrator/integration.ts`) now builds a single-task `WorkflowRun` and
+      drives it through `runWorkflow()` (still gated behind `VELDRA_USE_ORCHESTRATOR`,
+      still off by default) instead of calling `host.agents.run()` directly -- closing the
+      exact gap the runtime-foundation round's own commit message flagged ("nothing in the
+      live chat/agent-spawn path creates a WorkflowRun yet"). Found and fixed one real bug
+      while wiring this in: `TIER_BUDGETS`'s FREE tier has `maxCostMinor: 0`, and
+      `checkBudget`'s `used >= allowed` trips on `0 >= 0` before any work has even
+      dispatched -- which would have called the (real, no-timeout) `ApprovalPort.request()`
+      for a decision nothing can currently answer, hanging the call forever. `integration.ts`
+      now preflights `checkBudget` against zero usage and falls back to legacy immediately
+      if a tier can't afford even one iteration, rather than attempting a run that can never
+      resolve. 394→395 tests (integration.spec.ts rewritten for the real runWorkflow-driven
+      contract, including a test for this deadlock guard specifically).
+- [ ] Test with feature flag enabled in a real environment -- still not done;
+      `VELDRA_USE_ORCHESTRATOR` stays unset by default, so production always takes the
+      legacy `SubagentService` path today. Everything above is unit-tested against mocks,
+      not exercised end-to-end with a live provider and the flag on.
+- [x] Collect evidence of correctness -- two independent paths now populate real activity
+      data: (a) legacy-path `AgentRunner` Evidence[] flows into `subagentsStore` regardless
+      of the flag, surfaced by `SubagentActivityWidget`; (b)
+      `subagent-activity-bridge.ts` watches that same store for real status transitions
+      and emits `agent.started`/`agent.completed`/`agent.failed` into the typed
+      `WorkflowEvent` model, so activity events flow through the new event model even
+      though nothing in the live app calls `runWorkflow()` for a multi-agent case yet.
+      Deliberately does not emit `tool.*`/`file.*` events -- `SubagentTask`'s status field
+      doesn't carry that granularity; getting it needs an `onStepFinish` hook in
+      `subagentService.ts` itself, a separate, higher-risk change not attempted blind.
 
 ### Phase 3: Migration (Future)
 - [ ] Enable by default (after validation)
@@ -423,21 +454,38 @@ branch rather than splitting off parallel ones.
 - ✅ Lint errors fixed (0 errors, 2 pre-existing warnings)
 - ✅ TypeScript compilation clean (0 errors)
 - ✅ Ecosystem repositories linked
+- ✅ Core product + runtime foundation round (2026-08-15, later, this file's prior update
+  went stale mid-round when the session crashed — recovered from git log/commit messages,
+  not from docs, since none had been written yet for this part): real orchestrator runtime
+  replacing the ApprovalPort/PolicyGate/RunStore stubs (events.ts, run-workflow.ts's
+  WorkflowRun state-machine driver, veldra-approvals.ts, veldra-policy.ts); bridged real
+  subagentsStore activity into the new typed event model
+  (subagent-activity-bridge.ts, mounted in SubagentActivityWidget); a visual connector
+  between a chat response and the tool call that produced it; extracted a shared
+  file-seed-artifact builder used by both Android's template pipeline and desktop's
+  `/git`-route import, which surfaced and fixed a real unescaped-tag injection gap in the
+  latter. Then, continuing the same mandate: wired the one live call site that can reach
+  the orchestrator (`spawnSubagentWithOrchestrator`) to actually drive a `WorkflowRun`
+  through `runWorkflow()` instead of bypassing it — see "Orchestrator Migration Strategy"
+  Phase 2 above for the full detail, including a real approval-deadlock bug found and
+  fixed while wiring it in. 395/395 tests, typecheck and lint clean (scoped to changed
+  files — see `docs/ai-state/QUALITY_GATES.md` on pre-existing whole-repo lint drift).
 
 **Next Priorities**:
-1. Orchestrator UI: build the missing backend plumbing first (WorkflowRun state machine,
-   event emitter, real ApprovalPort/PolicyGate/RunStore) — there's no real data for a UI
-   to show yet, see Orchestrator Migration Strategy above.
-2. Unify desktop's StarterTemplates (`/git?url=` route, `GitUrlImport`) with the
-   getTemplates()-based project-creation contract used everywhere else — currently a
-   third, independent code path to the same curated starter repos.
+1. Orchestrator: still needs (a) a UI that actually calls `ApprovalPort.respond()`/reads
+   `pendingApprovalsStore`, now that there's a real event stream and approval handoff to
+   build it on, and (b) an end-to-end run with `VELDRA_USE_ORCHESTRATOR=true` against a
+   live provider — everything so far is unit-tested against mocks only.
+2. Unify desktop's StarterTemplates (`/git?url=` route, `GitUrlImport`) further — the
+   file-seed-artifact builder is now shared, but `/git` still navigates to a whole new
+   chat rather than seeding into the current one; a deliberate, separate, larger change.
 3. Real device / APK verification (blocked on Android SDK availability in this
    container; code is ready for it)
 4. Continue closing the gap between VELDRA and a generic AI-dashboard feel — distinct
    product identity, not a Bolt/ChatGPT/Lovable clone
 5. No headless browser available in this container for true visual/interaction
-   verification — all verification this round was typecheck/lint/build plus direct code
-   reading; a future session with browser access should visually confirm the UI changes
+   verification — all verification this round was typecheck/lint/test plus direct code
+   reading; a future session with browser access should visually confirm UI changes
 
 ## Resources
 

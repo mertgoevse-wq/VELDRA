@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { spawnSubagentWithOrchestrator, isOrchestratorEnabled, getOrchestratorStatus } from './integration';
+import { entitlementTierStore } from '~/lib/stores/entitlement';
 import type { SpawnSubagentOptions } from '~/lib/services/subagentService';
 
 // Mock VeldraOrchestratorHost
@@ -13,6 +14,9 @@ vi.mock('./veldra-host', () => ({
     },
     policy: {
       check: mockPolicyCheck,
+    },
+    approvals: {
+      request: vi.fn(),
     },
   })),
   VeldraOrchestratorHost: vi.fn(),
@@ -46,6 +50,8 @@ describe('Orchestrator Integration', () => {
     initialPrompt: 'Test initial prompt',
   };
 
+  const originalTier = entitlementTierStore.get();
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -55,6 +61,7 @@ describe('Orchestrator Integration', () => {
 
   afterEach(() => {
     delete process.env.VELDRA_USE_ORCHESTRATOR;
+    entitlementTierStore.set(originalTier);
   });
 
   describe('spawnSubagentWithOrchestrator', () => {
@@ -75,9 +82,15 @@ describe('Orchestrator Integration', () => {
     describe('when orchestrator is enabled', () => {
       beforeEach(() => {
         process.env.VELDRA_USE_ORCHESTRATOR = 'true';
+
+        /*
+         * PREMIUM has a real, non-zero budget on every limit -- see entitlement.ts's
+         * TIER_BUDGETS. FREE's zero maxCostMinor is covered by its own preflight test below.
+         */
+        entitlementTierStore.set('PREMIUM');
       });
 
-      it('uses orchestrator path successfully', async () => {
+      it('drives the run through runWorkflow and returns the Task ID from evidence', async () => {
         mockPolicyCheck.mockResolvedValue(null); // Policy allows
         mockRun.mockResolvedValue([
           {
@@ -98,10 +111,10 @@ describe('Orchestrator Integration', () => {
         const result = await spawnSubagentWithOrchestrator(testOptions);
 
         expect(result).toContain('orch-task-123');
-        expect(mockPolicyCheck).toHaveBeenCalledWith('spawn-subagent', {
-          model: 'test-model',
-          prompt: 'Test initial prompt',
-        });
+        expect(mockPolicyCheck).toHaveBeenCalledWith(
+          'spawn-subagent',
+          expect.objectContaining({ goalId: expect.any(String) }),
+        );
         expect(mockRun).toHaveBeenCalledWith(
           [
             {
@@ -127,9 +140,34 @@ describe('Orchestrator Integration', () => {
         expect(mockSpawnSubagent).toHaveBeenCalledWith(testOptions);
       });
 
-      it('falls back to legacy when orchestrator returns no results', async () => {
+      it('falls back to legacy without ever calling agents.run when the tier cannot afford one iteration', async () => {
+        /*
+         * FREE tier's maxCostMinor: 0 would otherwise trip runWorkflow's very first budget
+         * check and call host.approvals.request(), which suspends forever with no UI to
+         * answer it (see veldra-approvals.ts) -- the preflight check in integration.ts
+         * must catch this before runWorkflow is ever invoked.
+         */
+        entitlementTierStore.set('FREE');
         mockPolicyCheck.mockResolvedValue(null);
-        mockRun.mockResolvedValue([]);
+        mockSpawnSubagent.mockResolvedValue('Task ID: legacy-fallback-free');
+
+        const result = await spawnSubagentWithOrchestrator(testOptions);
+
+        expect(result).toBe('Task ID: legacy-fallback-free');
+        expect(mockRun).not.toHaveBeenCalled();
+        expect(mockPolicyCheck).not.toHaveBeenCalled();
+        expect(mockSpawnSubagent).toHaveBeenCalledWith(testOptions);
+      });
+
+      it('falls back to legacy when the task has no evidence (not treated as verified)', async () => {
+        mockPolicyCheck.mockResolvedValue(null);
+        mockRun.mockResolvedValue([
+          {
+            role: 'subagent',
+            output: 'Some output without any evidence',
+            evidence: [],
+          },
+        ]);
         mockSpawnSubagent.mockResolvedValue('Task ID: legacy-fallback-456');
 
         const result = await spawnSubagentWithOrchestrator(testOptions);
@@ -149,13 +187,21 @@ describe('Orchestrator Integration', () => {
         expect(mockSpawnSubagent).toHaveBeenCalledWith(testOptions);
       });
 
-      it('generates fallback message when no evidence has task ID', async () => {
+      it('returns an output-based fallback message when evidence passes but carries no subagent: source', async () => {
         mockPolicyCheck.mockResolvedValue(null);
         mockRun.mockResolvedValue([
           {
             role: 'subagent',
             output: 'Some output without task ID in evidence',
-            evidence: [],
+            evidence: [
+              {
+                kind: 'command-output',
+                outcome: 'pass',
+                source: 'external-check',
+                summary: 'Subagent completed',
+                collectedAt: Date.now(),
+              },
+            ],
           },
         ]);
 

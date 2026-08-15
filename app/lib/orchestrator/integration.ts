@@ -1,7 +1,12 @@
 import { getVeldraHost } from './veldra-host';
 import { SubagentService, type SpawnSubagentOptions } from '~/lib/services/subagentService';
 import { createScopedLogger } from '~/utils/logger';
-import type { AgentInvocation } from './adapters';
+import type { Goal, Task } from './types';
+import { createWorkflowRun, runWorkflow } from './run-workflow';
+import { checkBudget } from './budget';
+import { resolveBudgetPolicy } from './entitlement';
+import { entitlementTierStore } from '~/lib/stores/entitlement';
+import { getRuntimeEnvironment } from '~/lib/dev/runtime-environment';
 
 const logger = createScopedLogger('orchestrator-integration');
 
@@ -35,6 +40,12 @@ function isOrchestratorFeatureEnabled(): boolean {
  * - Enables A/B testing of orchestrator vs legacy
  * - Maintains backward compatibility
  *
+ * As of the "real runtime foundation" round (see run-workflow.ts), the orchestrator
+ * path no longer calls host.agents.run() directly: it builds a single-task WorkflowRun
+ * and drives it through runWorkflow(), so a spawn taken this way actually exercises the
+ * real state machine, event emission and persistence that exist for it now, not just a
+ * bare AgentRunner call with the state machine sitting unused beside it.
+ *
  * @param options - Subagent spawn options
  * @param apiKeys - API keys for LLM providers
  * @param providerSettings - Provider-specific settings
@@ -56,48 +67,73 @@ export async function spawnSubagentWithOrchestrator(
     logger.info('Using orchestrator path for subagent spawn');
 
     const host = getVeldraHost(apiKeys, providerSettings);
+    const budget = resolveBudgetPolicy(entitlementTierStore.get(), getRuntimeEnvironment()).budget;
 
-    // Convert SubagentOptions to AgentInvocation
-    const invocation: AgentInvocation = {
-      role: 'subagent', // Generic role for now
-      prompt: options.initialPrompt,
-      requestedModel: options.model,
+    /*
+     * A budget that can't even afford one iteration before any work has happened (e.g.
+     * FREE tier's maxCostMinor: 0 -- checkBudget's `used >= allowed` trips on 0 >= 0
+     * immediately) would make runWorkflow's very first budget check request an approval
+     * via host.approvals.request(), which genuinely suspends until something calls
+     * respond() (see veldra-approvals.ts) -- and nothing does yet, no approval UI is
+     * wired up. That would hang this call forever instead of falling back. Treat "this
+     * tier can't afford a single iteration" the same as a policy denial: fall back to
+     * legacy immediately rather than attempt a run that can never resolve.
+     */
+    const zeroUsage = { elapsedMs: 0, tokens: 0, costMinor: 0, iterations: 0 };
+    const preflightViolation = checkBudget(budget, zeroUsage);
+
+    if (preflightViolation) {
+      throw new Error(`Tier budget cannot support even one orchestrator iteration: ${preflightViolation.message}`);
+    }
+
+    const goal: Goal = {
+      id: crypto.randomUUID(),
+      text: options.initialPrompt,
+      openQuestions: [],
+    };
+    const task: Task = {
+      id: crypto.randomUUID(),
+      goalId: goal.id,
+      title: `Spawn subagent (${options.model})`,
+      dependsOn: [],
     };
 
-    // Check policy gate
-    const policyDenial = await host.policy.check('spawn-subagent', {
-      model: options.model,
-      prompt: options.initialPrompt,
+    let lastAgentOutput = '';
+    const finishedRun = await runWorkflow(createWorkflowRun(goal, [task], budget), host, {
+      taskToInvocation: () => ({
+        role: 'subagent', // Generic role for now
+        prompt: options.initialPrompt,
+        requestedModel: options.model,
+      }),
+      requiredCapability: 'spawn-subagent',
+      maxConcurrency: 1,
+      onEvent: (event) => {
+        if (event.type === 'agent.completed' || event.type === 'agent.failed') {
+          const output = event.data.output;
+
+          if (typeof output === 'string') {
+            lastAgentOutput = output;
+          }
+        }
+      },
     });
 
-    if (policyDenial) {
-      logger.warn('Subagent spawn denied by policy', { reason: policyDenial });
-      throw new Error(`Policy denied subagent spawn: ${policyDenial}`);
+    if (finishedRun.state !== 'completed') {
+      throw new Error(
+        `Orchestrator workflow ended in state '${finishedRun.state}'` +
+          (finishedRun.haltReason ? `: ${finishedRun.haltReason}` : ''),
+      );
     }
 
-    // Run via orchestrator (max concurrency = 1 for single spawn)
-    const results = await host.agents.run([invocation], 1);
-
-    if (!results || results.length === 0) {
-      throw new Error('Orchestrator returned no results');
-    }
-
-    const result = results[0];
-
-    if (!result.output) {
-      throw new Error('Orchestrator result has no output');
-    }
-
-    // Extract task ID from evidence or generate fallback
-    const taskIdEvidence = result.evidence?.find((e) => e.source.startsWith('subagent:'));
+    // Extract task ID from evidence or fall back to the captured agent output
+    const taskIdEvidence = finishedRun.tasks[0]?.evidence.find((e) => e.source.startsWith('subagent:'));
 
     if (taskIdEvidence) {
       const taskId = taskIdEvidence.source.replace('subagent:', '');
       return `Subagent spawned via orchestrator. Task ID: ${taskId}`;
     }
 
-    // Fallback message if no task ID in evidence
-    return `Subagent spawned via orchestrator. Output: ${result.output.slice(0, 100)}...`;
+    return `Subagent spawned via orchestrator. Output: ${lastAgentOutput.slice(0, 100)}...`;
   } catch (error) {
     logger.error('Orchestrator path failed, falling back to legacy', error);
 
