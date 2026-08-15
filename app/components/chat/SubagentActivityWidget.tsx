@@ -2,8 +2,26 @@ import { useStore } from '@nanostores/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { subagentsStore, type SubagentTask } from '~/lib/stores/subagents';
+import { recentAgentActivityStore, startSubagentActivityBridge } from '~/lib/orchestrator/subagent-activity-bridge';
+import type { WorkflowEvent } from '~/lib/orchestrator/events';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
+
+function activityLabel(event: WorkflowEvent): string {
+  if (event.type === 'agent.started') {
+    return 'Started';
+  }
+
+  if (event.type === 'agent.completed') {
+    return 'Completed';
+  }
+
+  if (event.type === 'agent.failed') {
+    return 'Failed';
+  }
+
+  return event.type;
+}
 
 function formatElapsed(milliseconds: number) {
   const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
@@ -50,6 +68,7 @@ function statusClasses(status: SubagentTask['status']) {
 
 export function SubagentActivityWidget() {
   const subagents = useStore(subagentsStore);
+  const recentActivity = useStore(recentAgentActivityStore);
   const tasks = Object.values(subagents).sort((a, b) => b.createdAt - a.createdAt);
   const runningCount = tasks.filter((task) => task.status === 'running').length;
   const visibleTasks = [
@@ -59,6 +78,16 @@ export function SubagentActivityWidget() {
   const [expanded, setExpanded] = useState(true);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+
+  /*
+   * Starts once per mount (this widget is always mounted in Messages.client.tsx, whether or
+   * not it currently renders anything) so activity is captured from the very first subagent
+   * spawn, not just from whenever a user happens to expand a task detail.
+   */
+  useEffect(() => {
+    const { stop } = startSubagentActivityBridge();
+    return stop;
+  }, []);
 
   useEffect(() => {
     if (runningCount === 0) {
@@ -198,6 +227,32 @@ export function SubagentActivityWidget() {
                             <div className="mb-1 font-medium text-bolt-elements-textSecondary">Model</div>
                             <p className="break-all font-mono text-bolt-elements-textPrimary">{task.model}</p>
                           </div>
+                          {(() => {
+                            const taskActivity = recentActivity.filter((event) => event.taskId === task.taskId);
+
+                            if (taskActivity.length === 0) {
+                              return null;
+                            }
+
+                            return (
+                              <div>
+                                <div className="mb-1 font-medium text-bolt-elements-textSecondary">Activity</div>
+                                <ul className="space-y-0.5">
+                                  {taskActivity.map((event) => (
+                                    <li
+                                      key={event.id}
+                                      className="flex items-center justify-between gap-2 text-bolt-elements-textPrimary"
+                                    >
+                                      <span>{activityLabel(event)}</span>
+                                      <span className="text-bolt-elements-textTertiary">
+                                        {formatElapsed(Math.max(0, now - event.at))} ago
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          })()}
                           {task.error && (
                             <div>
                               <div className="mb-1 font-medium text-bolt-elements-icon-error">Error</div>
