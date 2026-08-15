@@ -218,8 +218,8 @@ const LogEntryItem = ({ log, isExpanded: forceExpanded, use24Hour, showTimestamp
       className={classNames(
         'flex flex-col gap-2',
         'rounded-lg p-4',
-        'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-        'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+        'bg-bolt-elements-background-depth-2',
+        'border border-bolt-elements-borderColor',
         style.bg,
         'transition-all duration-200',
       )}
@@ -809,8 +809,8 @@ export function EventLogsTab() {
             'group flex items-center gap-2',
             'rounded-lg px-3 py-1.5',
             'text-sm text-gray-900 dark:text-white',
-            'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-            'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+            'bg-bolt-elements-background-depth-2',
+            'border border-bolt-elements-borderColor',
             'hover:bg-accent-500/10 dark:hover:bg-accent-500/20',
             'transition-all duration-200',
           )}
@@ -833,9 +833,9 @@ export function EventLogsTab() {
                   onClick={() => handleFormatClick(format.handler)}
                   className={classNames(
                     'flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition-colors w-full text-left',
-                    'bg-white dark:bg-[#0A0A0A]',
-                    'border border-[#E5E5E5] dark:border-[#1A1A1A]',
-                    'hover:bg-accent-50 dark:hover:bg-[#1a1a1a]',
+                    'bg-bolt-elements-background-depth-1',
+                    'border border-bolt-elements-borderColor',
+                    'hover:bg-accent-50 dark:hover:bg-accent-500/20',
                     'hover:border-accent-200 dark:hover:border-accent-900/30',
                     'text-bolt-elements-textPrimary',
                   )}
@@ -869,8 +869,8 @@ export function EventLogsTab() {
                 'flex items-center gap-2',
                 'rounded-lg px-3 py-1.5',
                 'text-sm text-gray-900 dark:text-white',
-                'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-                'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+                'bg-bolt-elements-background-depth-2',
+                'border border-bolt-elements-borderColor',
                 'hover:bg-accent-500/10 dark:hover:bg-accent-500/20',
                 'transition-all duration-200',
               )}
@@ -886,7 +886,7 @@ export function EventLogsTab() {
 
           <DropdownMenu.Portal>
             <DropdownMenu.Content
-              className="min-w-[200px] bg-white dark:bg-[#0A0A0A] rounded-lg shadow-lg py-1 z-[250] animate-in fade-in-0 zoom-in-95 border border-[#E5E5E5] dark:border-[#1A1A1A]"
+              className="min-w-[200px] bg-bolt-elements-background-depth-1 rounded-lg shadow-lg py-1 z-[250] animate-in fade-in-0 zoom-in-95 border border-bolt-elements-borderColor"
               sideOffset={5}
               align="start"
               side="bottom"
@@ -946,8 +946,8 @@ export function EventLogsTab() {
               'group flex items-center gap-2',
               'rounded-lg px-3 py-1.5',
               'text-sm text-gray-900 dark:text-white',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
               'hover:bg-accent-500/10 dark:hover:bg-accent-500/20',
               'transition-all duration-200',
               { 'animate-spin': isRefreshing },
@@ -970,8 +970,8 @@ export function EventLogsTab() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className={classNames(
               'w-full px-4 py-2 pl-10 rounded-lg',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
               'text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400',
               'focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500',
               'transition-all duration-200',
@@ -989,8 +989,8 @@ export function EventLogsTab() {
             className={classNames(
               'flex flex-col items-center justify-center gap-4',
               'rounded-lg p-8 text-center',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
             )}
           >
             <span className="i-ph:clipboard-text text-4xl text-gray-400 dark:text-gray-600" />

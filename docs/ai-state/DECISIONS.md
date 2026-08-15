@@ -556,3 +556,115 @@
   visual-verification claim.
 - Full 422-test suite, typecheck, and scoped lint re-run after these changes (see
   `QUALITY_GATES.md` / `current-session.md` for the exact run confirmation).
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 13)
+
+- **README.md had a real overclaim, not just staleness**: "11 distinct visual languages...
+  each affects radius, shadow, blur, border, and motion" (two places) plus a matching
+  Roadmap checkbox. Checked against `app/lib/stores/skin.ts`'s own `SKINS` array and its
+  header comment: of the 11 total entries, `'veldra'` is an explicit no-op default (no CSS
+  override at all -- the comment says so directly) and `'obsidian'` is a dark-palette-only
+  variant (confirmed in `variables.scss`: its override block is
+  `[data-theme='dark'][data-skin='obsidian']`, palette values only, no radius/shadow/blur
+  override, unlike the other 9 which each have their own `--veldra-radius-*` block). So
+  only 9 of the 11 are genuinely "structurally distinct visual languages" in the sense the
+  README claimed for all of them. Fixed both README callouts and the Roadmap checkbox to
+  say "11 selectable skins: 9 structurally distinct ... plus the default look and a
+  dark-palette variant" -- precise rather than rounding up, per this mandate's own "no
+  marketing claims code doesn't back up" instruction, and consistent with this same
+  README's own stated principle one section above it ("Honest status, not aspirational").
+- **`project/STATUS.md`, which the README pointed readers to for verification detail, is
+  itself stale**: dated 2026-08-12, header cites branch `claude/veldra-integration-freebuff`
+  and commit `90522f3` -- a branch that predates the current single active branch
+  (`integration/veldra-bedrock-plus-claude-web`) entirely, per this file's own repeated
+  "single active branch" framing and CLAUDE.md's explicit note that `docs/ai-state/*` (not
+  `project/*`) is the current living-doc set. Rather than rewrite 598 lines of what is a
+  legitimate historical record of real past work, repointed the README's reference to
+  `docs/ai-state/CURRENT_STATE.md` (the doc this session and its predecessors have actually
+  kept current) and left `project/STATUS.md` as-is with a note in the README explaining
+  it's historical, not current.
+- Docs-only change -- no test/typecheck/lint implications (README.md and DECISIONS.md
+  aren't code). Deliberately did not attempt a line-by-line rewrite of every living doc in
+  this one slice -- `CURRENT_STATE.md`/`ROADMAP.md`/`QUALITY_GATES.md`/`current-session.md`
+  have all been kept current incrementally, per-phase, throughout this mandate already (see
+  each phase's own entry above); this slice targeted the one doc (README.md, the
+  externally-facing one) that had drifted, plus the one stale cross-reference it made.
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 11: design-token audit)
+
+- **Scope**: `app/components/@settings/**`, following up on Phase 9's fork finding. A grep
+  for `#[0-9a-fA-F]{3,8}` found 149 hardcoded hex-color occurrences across 19 files. 75
+  were tokenized to `bg-bolt-elements-*`/`border-bolt-elements-*` design tokens; 74 were
+  deliberately left as-is (see breakdown below). Files touched: `core/ControlPanel.tsx`,
+  `shared/components/SkinPicker.tsx`, `tabs/data/DataVisualization.tsx`,
+  `tabs/event-logs/EventLogsTab.tsx`, `tabs/github/components/GitHubConnection.tsx`,
+  `tabs/mcp/McpTab.tsx`, `tabs/netlify/NetlifyTab.tsx`,
+  `tabs/netlify/components/NetlifyConnection.tsx`, `tabs/notifications/NotificationsTab.tsx`,
+  `tabs/runtime/RuntimeModeTab.tsx`, `tabs/settings/SettingsTab.tsx`,
+  `tabs/supabase/SupabaseTab.tsx`, `tabs/vercel/VercelTab.tsx`,
+  `tabs/vercel/components/VercelConnection.tsx`.
+- **Established token mapping** (matched against already-tokenized sibling files like
+  `app/components/chat/SupabaseConnection.tsx`): a recurring "card/panel shell" pattern
+  (`bg-[#FAFAFA] dark:bg-[#0A0A0A]` + `border border-[#E5E5E5] dark:border-[#1A1A1A]`, and
+  a `bg-white`/depth-1 variant) appeared dozens of times identically across these files --
+  mapped to `bg-bolt-elements-background-depth-2` (or `-depth-1` for the white variant) +
+  `border-bolt-elements-borderColor`. An input-field pattern
+  (`bg-[#F8F8F8] dark:bg-[#1A1A1A]` + `border-[#E5E5E5] dark:border-[#333333]`) matched
+  `SupabaseConnection.tsx`'s existing input styling exactly -- same mapping. A
+  hover-surface pattern (`hover:bg-gray-50 dark:hover:bg-[#1A1A1A]`) had its dark hex half
+  replaced with `dark:hover:bg-bolt-elements-background-depth-3`, matching the existing
+  depth-2-resting/depth-3-hover convention already used in `SupabaseConnection.tsx`.
+- **Deliberately NOT tokenized (74 remaining), by category**:
+  - *Third-party brand colors*: GitLab orange (`#FC6D26`/`#E24329`), Netlify teal
+    (`#00AD9F`), Supabase green (`#3ECF8E`) -- consistent with the existing "When NOT to
+    tokenize" precedent from an earlier round.
+  - *Semantic/status colors*: log-level and notification-category color maps (error=red,
+    warning=amber, info=blue, debug=gray, etc.) in `EventLogsTab.tsx`/`NotificationsTab.tsx`
+    -- meant to stay recognizable regardless of skin, same reasoning as the existing
+    amber/green badge precedent.
+  - *A separate document context CSS variables can't reach*: `EventLogsTab.tsx`'s ~30
+    `doc.setFillColor()`/`setTextColor()`/`setDrawColor()` calls feeding jsPDF's PDF
+    export -- jsPDF has no relationship to the DOM/CSS custom-property system at all,
+    structurally identical to the existing `Preview.tsx` device-frame-mockup exemption.
+  - *A legitimate SSR-only fallback*: `DataVisualization.tsx`'s `getThemeColor()` already
+    resolves real `--bolt-elements-*` CSS variables via `getComputedStyle` at runtime; its
+    `#FFFFFF`/`#000000` fallback only fires when `document` is undefined (SSR), where
+    `getComputedStyle` cannot run by definition. Already correctly designed, not a bug.
+  - *A wholesale parallel non-token styling system, found but out of THIS pass's scope*:
+    `core/AvatarDropdown.tsx` (14 occurrences) and `shared/components/TabTile.tsx` (4) use
+    Tailwind's `dark:` variant with named grays (`dark:bg-gray-800`, `dark:text-gray-300`,
+    etc.) throughout, not just at the isolated hex literals the grep matched -- the same
+    pattern appears at smaller scale in `EventLogsTab.tsx`/`NotificationsTab.tsx` (both
+    already partially fixed above) and `ControlPanel.tsx`. Converting only the isolated hex
+    literals in these two files in isolation would leave them still fundamentally
+    non-skin-aware (e.g. `AvatarDropdown.tsx`'s `bg-white dark:bg-[#141414]` sits directly
+    beside untouched `border-gray-200/50 dark:border-gray-800/50`), a half-measure with a
+    real visual-mismatch risk (a token-driven dark value next to fixed-gray siblings for
+    the same visual role). Left fully as-is rather than a partial fix; flagging as a
+    genuine follow-up for a dedicated pass (convert `dark:`-gray Tailwind classes to
+    `bolt-elements` tokens, not just literal hex values).
+  - *Ambiguous, left unguessed*: a "Connect" CTA button (`bg-[#303030] text-white` +
+    `hover:bg-[#5E41D0]`) repeats identically across 8 files (`ConnectionForm.tsx`,
+    `GitHubAuthDialog.tsx`, `GitHubConnection.tsx`, `NetlifyTab.tsx`,
+    `NetlifyConnection.tsx`, `SupabaseTab.tsx`, `VercelTab.tsx`, `VercelConnection.tsx`).
+    Neither `--bolt-elements-button-primary-background` (a translucent low-opacity accent
+    tint) nor `--bolt-elements-cta-background` (light gray / translucent white) visually
+    matches this solid dark button with a saturated purple hover -- forcing either token
+    would likely change its appearance materially. Left as-is per this session's "don't
+    force a bad guess" rule; worth a deliberate design decision (is this meant to become
+    the token-driven primary button, or is it an intentional distinct CTA color?) rather
+    than a silent token swap.
+- **Dead-class-name bug found and fixed while doing this work** (2 occurrences, both
+  inside this pass's scope): `bg-bolt-elements-bg-depth-N`/`scrollbar-thumb-bolt-elements-bg-depth-N`
+  silently resolve to zero CSS -- the UnoCSS theme in `uno.config.ts` only generates
+  utility classes from the `background.depth.N` path (`bg-bolt-elements-background-depth-N`),
+  not `bg.depth` (`bg-depth` matches the underlying `--bolt-elements-bg-depth-N` CSS
+  variable's own name, not the generated utility class name -- an easy naming-convention
+  trap). Fixed in `DataVisualization.tsx:324` (a pre-existing bug, not introduced this
+  round) and `ControlPanel.tsx`'s scrollbar-thumb utility (introduced earlier in this same
+  round while fixing the scrollbar hex colors, caught before commit). A parallel session
+  working the same branch concurrently found and fixed 3 more occurrences of the identical
+  bug outside `@settings/**`.
+- Typecheck clean, scoped lint clean (0 errors after one prettier auto-fix for
+  line-wrap-length changes from the shorter token names), full suite still 422/422 passing
+  -- see `QUALITY_GATES.md`.

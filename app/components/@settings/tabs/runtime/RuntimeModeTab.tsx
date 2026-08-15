@@ -267,7 +267,10 @@ export default function RuntimeModeTab() {
     <div className="space-y-4">
       {/* Current Status */}
       <motion.div
-        className={classNames('rounded-lg shadow-sm dark:shadow-none p-4 space-y-3', 'bg-white dark:bg-[#0A0A0A]')}
+        className={classNames(
+          'rounded-lg shadow-sm dark:shadow-none p-4 space-y-3',
+          'bg-bolt-elements-background-depth-1',
+        )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
@@ -377,7 +380,10 @@ export default function RuntimeModeTab() {
 
       {/* Mode Selection */}
       <motion.div
-        className={classNames('rounded-lg shadow-sm dark:shadow-none p-4 space-y-3', 'bg-white dark:bg-[#0A0A0A]')}
+        className={classNames(
+          'rounded-lg shadow-sm dark:shadow-none p-4 space-y-3',
+          'bg-bolt-elements-background-depth-1',
+        )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -398,7 +404,7 @@ export default function RuntimeModeTab() {
                   'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all',
                   isSelected
                     ? 'border-accent-500 bg-accent-50 dark:bg-accent-950/20'
-                    : 'border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-accent-300 dark:hover:border-accent-700',
+                    : 'border-bolt-elements-borderColor hover:border-accent-300 dark:hover:border-accent-700',
                   !option.available && 'opacity-50 cursor-not-allowed',
                 )}
                 onClick={(e) => {
@@ -449,7 +455,7 @@ export default function RuntimeModeTab() {
       <motion.div
         className={classNames(
           'rounded-lg shadow-sm dark:shadow-none p-4 space-y-3',
-          'bg-white dark:bg-[#0A0A0A]',
+          'bg-bolt-elements-background-depth-1',
           runtime.mode !== 'remote' && 'opacity-60',
         )}
         initial={{ opacity: 0, y: 20 }}
@@ -476,8 +482,8 @@ export default function RuntimeModeTab() {
             disabled={runtime.mode !== 'remote'}
             className={classNames(
               'flex-1 px-3 py-2 rounded-lg text-sm',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
               'text-bolt-elements-textPrimary',
               'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
               'transition-all duration-200',
@@ -517,8 +523,8 @@ export default function RuntimeModeTab() {
               disabled={runtime.mode !== 'remote'}
               className={classNames(
                 'flex-1 px-3 py-2 rounded-lg text-sm',
-                'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-                'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+                'bg-bolt-elements-background-depth-2',
+                'border border-bolt-elements-borderColor',
                 'text-bolt-elements-textPrimary',
                 'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
                 'transition-all duration-200',
@@ -543,8 +549,8 @@ export default function RuntimeModeTab() {
               disabled={runtime.mode !== 'remote'}
               className={classNames(
                 'flex-1 px-3 py-2 rounded-lg text-sm',
-                'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-                'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+                'bg-bolt-elements-background-depth-2',
+                'border border-bolt-elements-borderColor',
                 'text-bolt-elements-textPrimary',
                 'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
                 'transition-all duration-200',
@@ -573,7 +579,7 @@ export default function RuntimeModeTab() {
           <button
             onClick={() => runSyncAction('push')}
             disabled={!canUseRemoteSync || syncingAction !== null}
-            className="px-3 py-2 rounded-lg text-xs font-medium border border-[#E5E5E5] dark:border-[#1A1A1A] text-bolt-elements-textPrimary hover:bg-gray-50 dark:hover:bg-[#1A1A1A] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="px-3 py-2 rounded-lg text-xs font-medium border border-bolt-elements-borderColor text-bolt-elements-textPrimary hover:bg-gray-50 dark:hover:bg-bolt-elements-background-depth-3 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             <div className={syncingAction === 'push' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:upload-simple-fill'} />
             <span>Sync workspace to Remote Runtime</span>
@@ -581,7 +587,7 @@ export default function RuntimeModeTab() {
           <button
             onClick={() => runSyncAction('pull')}
             disabled={!canUseRemoteSync || syncingAction !== null}
-            className="px-3 py-2 rounded-lg text-xs font-medium border border-[#E5E5E5] dark:border-[#1A1A1A] text-bolt-elements-textPrimary hover:bg-gray-50 dark:hover:bg-[#1A1A1A] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="px-3 py-2 rounded-lg text-xs font-medium border border-bolt-elements-borderColor text-bolt-elements-textPrimary hover:bg-gray-50 dark:hover:bg-bolt-elements-background-depth-3 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             <div className={syncingAction === 'pull' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:download-simple-fill'} />
             <span>Pull remote files</span>
@@ -589,7 +595,7 @@ export default function RuntimeModeTab() {
           <button
             onClick={() => runSyncAction('current-file')}
             disabled={!canUseRemoteSync || syncingAction !== null}
-            className="px-3 py-2 rounded-lg text-xs font-medium border border-[#E5E5E5] dark:border-[#1A1A1A] text-bolt-elements-textPrimary hover:bg-gray-50 dark:hover:bg-[#1A1A1A] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="px-3 py-2 rounded-lg text-xs font-medium border border-bolt-elements-borderColor text-bolt-elements-textPrimary hover:bg-gray-50 dark:hover:bg-bolt-elements-background-depth-3 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             <div
               className={syncingAction === 'current-file' ? 'i-ph:spinner-gap animate-spin' : 'i-ph:file-arrow-up-fill'}
@@ -627,7 +633,10 @@ export default function RuntimeModeTab() {
 
       {/* Capability Summary */}
       <motion.div
-        className={classNames('rounded-lg shadow-sm dark:shadow-none p-4 space-y-3', 'bg-white dark:bg-[#0A0A0A]')}
+        className={classNames(
+          'rounded-lg shadow-sm dark:shadow-none p-4 space-y-3',
+          'bg-bolt-elements-background-depth-1',
+        )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -681,9 +690,9 @@ export default function RuntimeModeTab() {
           onClick={handleReset}
           className={classNames(
             'w-full px-4 py-2 rounded-lg text-sm font-medium',
-            'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+            'border border-bolt-elements-borderColor',
             'text-bolt-elements-textSecondary',
-            'hover:bg-gray-50 dark:hover:bg-[#1A1A1A]',
+            'hover:bg-gray-50 dark:hover:bg-bolt-elements-background-depth-3',
             'transition-all duration-200',
           )}
         >

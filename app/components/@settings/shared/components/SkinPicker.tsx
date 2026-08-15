@@ -44,7 +44,7 @@ export function SkinPicker() {
               'flex flex-col gap-2 rounded-lg border p-2 text-left transition-theme',
               isActive
                 ? 'border-accent-500 bg-accent-500/5'
-                : 'border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-accent-500/40',
+                : 'border-bolt-elements-borderColor hover:border-accent-500/40',
             )}
             aria-pressed={isActive}
           >
