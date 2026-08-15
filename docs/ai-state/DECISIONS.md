@@ -683,3 +683,24 @@ or reset). Recovered by re-applying the 3 README edits from source and committin
 separately and correctly (`4de1155`). **Going forward: only the main session runs
 `git add`/`commit`/`push` on this branch; subagents analyze/implement but never touch the
 index** -- per the user's explicit instruction in the productization-block mandate.
+
+## 2026-08-15: Productization mandate Block 1 -- real tool/file event instrumentation
+
+`subagentService.ts`'s `generateText()` call (used by both the legacy and orchestrator
+spawn paths -- confirmed the only real execution point via `veldra-agent-runner.ts`) now
+has a real `onStepFinish` callback (`emitToolStepEvents`) that emits real
+`tool.completed`/`file.read`/`file.changed` `WorkflowEvent`s from the AI SDK's own
+per-step `toolResults`, into the same `recentAgentActivityStore` the activity UI reads.
+Failure attribution (`tool.failed`) only fires when the SDK's own `ToolExecutionError`
+identifies which tool threw (`ToolExecutionError.isInstance`) -- never guessed when a
+`generateText()` rejection isn't tool-specific (e.g. the LLM call itself failing).
+File-op classification (`subagent-tool-events.ts`) is a documented heuristic (name pattern
++ a real path arg, both required) since MCP tools are registered dynamically with no fixed
+name registry to check against -- no match means no `file.*` event, not a guess.
+**Deliberately not instrumented, no fabrication**: `verification.*` (no real evidence-mid-run
+producer exists -- `Evidence` is only ever populated once, at whole-task-completion, by
+`veldra-agent-runner.ts`), retry (no retry logic exists in the subagent path at all), and
+cancellation (no `AbortController` wired anywhere in this path). 14 new tests
+(`subagent-tool-events.spec.ts`, `subagentService.spec.ts` -- the latter is the first real
+test file for `subagentService.ts`, using the same mock-only-the-LLM-boundary pattern as
+`orchestrator-e2e.spec.ts`).

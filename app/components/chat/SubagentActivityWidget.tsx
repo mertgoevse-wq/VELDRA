@@ -37,6 +37,22 @@ function activityLabel(event: WorkflowEvent): string {
       return 'Approval granted';
     case 'approval.denied':
       return 'Approval denied';
+    case 'tool.completed': {
+      const toolName = event.data.toolName;
+      return typeof toolName === 'string' ? `Used ${toolName}` : 'Used a tool';
+    }
+    case 'tool.failed': {
+      const toolName = event.data.toolName;
+      return typeof toolName === 'string' ? `${toolName} failed` : 'Tool failed';
+    }
+    case 'file.read': {
+      const path = event.data.path;
+      return typeof path === 'string' ? `Read ${path}` : 'Read a file';
+    }
+    case 'file.changed': {
+      const path = event.data.path;
+      return typeof path === 'string' ? `Changed ${path}` : 'Changed a file';
+    }
     default:
       return event.type;
   }
@@ -56,6 +72,10 @@ function activityDetail(event: WorkflowEvent): string | null {
 
   if ((event.type === 'approval.granted' || event.type === 'approval.denied') && typeof data.chosen === 'string') {
     return `Chosen: ${data.chosen}`;
+  }
+
+  if (event.type === 'tool.failed' && typeof data.error === 'string') {
+    return data.error;
   }
 
   return null;

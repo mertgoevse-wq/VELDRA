@@ -1,10 +1,72 @@
 import { getActiveSandboxSession } from '~/lib/execution/runtime-status';
 import { createScopedLogger } from '~/utils/logger';
 import { LLMManager } from '~/lib/modules/llm/manager';
-import { generateText } from 'ai';
+import { generateText, ToolExecutionError, type StepResult, type ToolSet } from 'ai';
 import { subagentsStore } from '~/lib/stores/subagents';
+import { createWorkflowEvent } from '~/lib/orchestrator/events';
+import { AMBIENT_SUBAGENT_RUN_ID, recordActivityEvent } from '~/lib/orchestrator/subagent-activity-bridge';
+import { classifyFileToolCall, extractFilePath, summarizeForEvent } from './subagent-tool-events';
 
 const logger = createScopedLogger('subagent-service');
+
+/**
+ * Real per-step tool instrumentation, emitted into the same activity log
+ * SubagentActivityWidget already reads (see subagent-activity-bridge.ts). Only ever
+ * called with data the AI SDK actually produced for a real, completed tool call --
+ * never synthesized. onStepFinish fires once a step (LLM call + any tool calls within
+ * it) has already finished, so there is no honest "tool.started" moment available here
+ * -- only tool.completed, reported after the fact.
+ */
+function emitToolStepEvents(taskId: string, step: StepResult<ToolSet>): void {
+  for (const toolResult of step.toolResults) {
+    const { toolName, toolCallId, args, result } = toolResult as unknown as {
+      toolName: string;
+      toolCallId: string;
+      args: unknown;
+      result: unknown;
+    };
+
+    const toolEvent = createWorkflowEvent(
+      AMBIENT_SUBAGENT_RUN_ID,
+      'tool.completed',
+      { toolName, toolCallId, args: summarizeForEvent(args), result: summarizeForEvent(result) },
+      taskId,
+    );
+    recordActivityEvent(toolEvent);
+
+    const fileEventKind = classifyFileToolCall(toolName, args);
+
+    if (fileEventKind) {
+      const path = extractFilePath(args);
+      const fileEvent = createWorkflowEvent(AMBIENT_SUBAGENT_RUN_ID, fileEventKind, { path, toolName }, taskId);
+      recordActivityEvent(fileEvent);
+    }
+  }
+}
+
+/**
+ * Honest tool-failure attribution: only emitted when the AI SDK itself identifies which
+ * tool call threw (ToolExecutionError carries toolName/toolArgs/toolCallId) -- never
+ * guessed when the failure is ambiguous (e.g. the LLM call itself failed, not a tool).
+ */
+function emitToolFailureIfAttributable(taskId: string, error: unknown): void {
+  if (!ToolExecutionError.isInstance(error)) {
+    return;
+  }
+
+  const event = createWorkflowEvent(
+    AMBIENT_SUBAGENT_RUN_ID,
+    'tool.failed',
+    {
+      toolName: error.toolName,
+      toolCallId: error.toolCallId,
+      args: summarizeForEvent(error.toolArgs),
+      error: error.message,
+    },
+    taskId,
+  );
+  recordActivityEvent(event);
+}
 
 export interface SpawnSubagentOptions {
   model: string;
@@ -85,6 +147,7 @@ export class SubagentService {
         temperature: 0.1,
         tools,
         maxSteps: 5,
+        onStepFinish: (step) => emitToolStepEvents(taskId, step),
       })
         .then((result) => {
           logger.info(`Subagent ${taskId} completed task. Result:\n${result.text}`);
@@ -97,6 +160,7 @@ export class SubagentService {
         })
         .catch((error) => {
           logger.error(`Subagent ${taskId} execution failed`, error);
+          emitToolFailureIfAttributable(taskId, error);
           subagentsStore.setKey(taskId, {
             ...subagentsStore.get()[taskId],
             status: 'failed',

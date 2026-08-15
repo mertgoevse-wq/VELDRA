@@ -16,13 +16,14 @@ import {
  * _waitForCompletion also reads this same store, so this one bridge covers both the
  * legacy and orchestrator execution paths rather than needing two).
  *
- * Deliberately only agent.started/agent.completed/agent.failed: SubagentTask's status
- * field is exactly {running, completed, failed} (see subagents.ts) -- there is no real
- * per-tool-call or per-file granularity available from this store to honestly report
- * tool.* or file.* events. That would need onStepFinish-style instrumentation inside
- * subagentService.ts's generateText() call itself, which is a separate, higher-risk
- * change to an already-working execution path -- not done here, see
- * docs/ai-state/DECISIONS.md's 2026-08-15 entry for why.
+ * This bridge itself only watches SubagentTask's status field, so it only ever produces
+ * agent.started/agent.completed/agent.failed. tool.completed/tool.failed and
+ * file.read/file.changed ARE now real (subagentService.ts's generateText() onStepFinish
+ * callback emits them directly into recordActivityEvent() below, bypassing this bridge
+ * since they happen at sub-task granularity this store's status field can't represent --
+ * see subagent-tool-events.ts for the real classification logic and
+ * docs/ai-state/DECISIONS.md's 2026-08-15 Block 1 entry for what is/isn't covered
+ * (verification.*, retry, and cancellation still have no real signal to instrument).
  *
  * runId is the fixed sentinel 'ambient-subagents' rather than a real WorkflowRun id --
  * these events aren't produced by runWorkflow(), so there's no real run to attribute
