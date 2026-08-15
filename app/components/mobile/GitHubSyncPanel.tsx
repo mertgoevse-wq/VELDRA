@@ -281,7 +281,10 @@ export function GitHubSyncPanel() {
 
       {/* Configuration */}
       <motion.div
-        className={classNames('rounded-lg shadow-sm dark:shadow-none p-4 space-y-4', 'bg-white dark:bg-[#0A0A0A]')}
+        className={classNames(
+          'rounded-lg shadow-sm dark:shadow-none p-4 space-y-4',
+          'bg-bolt-elements-background-depth-1',
+        )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -301,8 +304,8 @@ export function GitHubSyncPanel() {
             placeholder="https://github.com/your-username/your-repo"
             className={classNames(
               'w-full px-3 py-2 rounded-lg text-sm',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
               'text-bolt-elements-textPrimary',
               'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
               'transition-all duration-200',
@@ -321,8 +324,8 @@ export function GitHubSyncPanel() {
             placeholder="main"
             className={classNames(
               'w-full px-3 py-2 rounded-lg text-sm',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
               'text-bolt-elements-textPrimary',
               'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
               'transition-all duration-200',
@@ -347,7 +350,10 @@ export function GitHubSyncPanel() {
 
       {/* Sync Status */}
       <motion.div
-        className={classNames('rounded-lg shadow-sm dark:shadow-none p-4 space-y-3', 'bg-white dark:bg-[#0A0A0A]')}
+        className={classNames(
+          'rounded-lg shadow-sm dark:shadow-none p-4 space-y-3',
+          'bg-bolt-elements-background-depth-1',
+        )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
@@ -404,7 +410,10 @@ export function GitHubSyncPanel() {
 
       {/* Git Operations */}
       <motion.div
-        className={classNames('rounded-lg shadow-sm dark:shadow-none p-4 space-y-4', 'bg-white dark:bg-[#0A0A0A]')}
+        className={classNames(
+          'rounded-lg shadow-sm dark:shadow-none p-4 space-y-4',
+          'bg-bolt-elements-background-depth-1',
+        )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -429,7 +438,7 @@ export function GitHubSyncPanel() {
             className={classNames(
               'px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border border-bolt-elements-borderColor transition-all duration-200',
               isGitActionDisabled || isLoading
-                ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-[#1A1A1A] text-gray-400 dark:text-gray-600'
+                ? 'opacity-50 cursor-not-allowed bg-bolt-elements-background-depth-3 text-gray-400 dark:text-gray-600'
                 : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2 active:scale-95',
             )}
           >
@@ -445,7 +454,7 @@ export function GitHubSyncPanel() {
             className={classNames(
               'px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border border-bolt-elements-borderColor transition-all duration-200',
               isGitActionDisabled || isLoading
-                ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-[#1A1A1A] text-gray-400 dark:text-gray-600'
+                ? 'opacity-50 cursor-not-allowed bg-bolt-elements-background-depth-3 text-gray-400 dark:text-gray-600'
                 : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2 active:scale-95',
             )}
           >
@@ -467,8 +476,8 @@ export function GitHubSyncPanel() {
             placeholder="feat: build remote git workflow..."
             className={classNames(
               'w-full px-3 py-2 rounded-lg text-xs',
-              'bg-[#FAFAFA] dark:bg-[#0A0A0A]',
-              'border border-[#E5E5E5] dark:border-[#1A1A1A]',
+              'bg-bolt-elements-background-depth-2',
+              'border border-bolt-elements-borderColor',
               'text-bolt-elements-textPrimary',
               'focus:outline-none focus:ring-1 focus:ring-accent-500',
               'transition-all duration-200',
@@ -485,7 +494,7 @@ export function GitHubSyncPanel() {
           className={classNames(
             'w-full px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200',
             isGitActionDisabled || isLoading || !commitMessage.trim()
-              ? 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-400 dark:text-gray-600 cursor-not-allowed'
+              ? 'bg-bolt-elements-background-depth-3 text-gray-400 dark:text-gray-600 cursor-not-allowed'
               : 'bg-accent-600 hover:bg-accent-700 text-white transform active:scale-95',
           )}
         >
@@ -501,7 +510,7 @@ export function GitHubSyncPanel() {
             className={classNames(
               'w-full px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200',
               isGitActionDisabled || isLoading
-                ? 'bg-gray-100 dark:bg-[#1A1A1A] text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                ? 'bg-bolt-elements-background-depth-3 text-gray-400 dark:text-gray-600 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700 text-white transform active:scale-95',
             )}
           >
@@ -523,7 +532,7 @@ export function GitHubSyncPanel() {
 
         {/* Git console logs output */}
         {(gitOutput || gitError) && (
-          <div className="flex flex-col gap-1.5 border border-[#E5E5E5] dark:border-[#1A1A1A] rounded-lg p-3 bg-black/40 font-mono text-[10px] leading-relaxed break-all">
+          <div className="flex flex-col gap-1.5 border border-bolt-elements-borderColor rounded-lg p-3 bg-black/40 font-mono text-[10px] leading-relaxed break-all">
             <div className="flex items-center justify-between text-bolt-elements-textSecondary border-b border-bolt-elements-borderColor/30 pb-1 mb-1.5">
               <span>Git Console Output</span>
               <button
@@ -568,8 +577,8 @@ export function GitHubSyncPanel() {
       <motion.div
         className={classNames(
           'rounded-lg p-3 flex items-start gap-2 text-xs',
-          'bg-gray-50 dark:bg-[#0A0A0A]',
-          'border border-gray-200 dark:border-[#1A1A1A]',
+          'bg-bolt-elements-background-depth-1',
+          'border border-bolt-elements-borderColor',
         )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -497,7 +497,7 @@ export default function AndroidSettingsPanel() {
                   setApiBackendState('not-configured');
                 }}
                 placeholder="https://api.example.com/android"
-                className="px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary"
+                className="px-3 py-1.5 rounded-lg text-xs bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary"
               />
             </div>
 
@@ -510,7 +510,7 @@ export default function AndroidSettingsPanel() {
                 value={apiBackendTokenInput}
                 onChange={(event) => setApiBackendTokenInput(event.target.value)}
                 placeholder="Backend token, not provider API key"
-                className="px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary"
+                className="px-3 py-1.5 rounded-lg text-xs bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary"
               />
             </div>
 
@@ -582,7 +582,7 @@ export default function AndroidSettingsPanel() {
                   onChange={(e) => setUrlInput(e.target.value)}
                   placeholder="https://runtime.example.com"
                   disabled={runtime.mode !== 'remote'}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   onClick={handleUrlSave}
@@ -612,7 +612,7 @@ export default function AndroidSettingsPanel() {
                   onChange={(e) => setTokenInput(e.target.value)}
                   placeholder="Bearer Auth Token"
                   disabled={runtime.mode !== 'remote'}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   onClick={handleTokenSave}
@@ -642,7 +642,7 @@ export default function AndroidSettingsPanel() {
                   onChange={(e) => setWorkspaceInput(e.target.value)}
                   placeholder="ws_xyz123"
                   disabled={runtime.mode !== 'remote'}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[#0A0A0A] border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor text-bolt-elements-textPrimary focus:outline-none focus:ring-1 focus:ring-accent-500 placeholder:text-bolt-elements-textTertiary disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   onClick={handleWorkspaceSave}
