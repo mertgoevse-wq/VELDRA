@@ -173,6 +173,38 @@ export function escapeBoltTags(input: string) {
   return escapeBoltArtifactTags(escapeBoltAActionTags(input));
 }
 
+/**
+ * Builds the <boltArtifact>/<boltAction> message body that seeds a set of files into the
+ * workspace as file-write actions. Shared by every "project creation" path that produces
+ * this exact wire format -- desktop's curated-template pipeline
+ * (app/utils/selectStarterTemplate.ts's getTemplates(), also used deterministically by
+ * Android's TemplatePicker via Chat.client.tsx's applyStarterTemplate) and the arbitrary-
+ * git-URL importer (GitUrlImport.client.tsx). Those two features are legitimately
+ * different in every other respect (curated catalog fetched via a proxy API vs. a real
+ * git clone of any URL; seeds into the current chat vs. creates a new one; template-authored
+ * `.bolt/prompt` instructions vs. generic detected setup commands) and should stay that
+ * way -- this only extracts the one piece of domain logic that was actually identical
+ * between them.
+ *
+ * Always escapes bolt tags in file content (a file whose source happens to contain literal
+ * text like "<boltArtifact>" -- e.g. in this project's own README, or any file documenting
+ * the bolt/VELDRA action protocol -- must not be able to inject a fake action into the
+ * message). GitUrlImport already did this; getTemplates() previously didn't, which was a
+ * real, if rare, gap this extraction closes rather than preserves.
+ */
+export function buildFileSeedArtifactMessage(files: Array<{ path: string; content: string }>, title: string): string {
+  return `<boltArtifact id="imported-files" title="${title}" type="bundled">
+${files
+  .map(
+    (file) =>
+      `<boltAction type="file" filePath="${file.path}">
+${escapeBoltTags(file.content)}
+</boltAction>`,
+  )
+  .join('\n')}
+</boltArtifact>`;
+}
+
 // We have this seperate function to simplify the restore snapshot process in to one single artifact.
 export function createCommandActionsString(commands: ProjectCommands): string {
   if (!commands.setupCommand && !commands.startCommand) {
