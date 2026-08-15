@@ -4,12 +4,19 @@ import type { AgentInvocation } from './adapters';
 import { subagentsStore } from '~/lib/stores/subagents';
 import { SubagentService } from '~/lib/services/subagentService';
 
-// Mock SubagentService
+/*
+ * Mock SubagentService. getInstance() must return the SAME object on every call --
+ * both VeldraAgentRunner's constructor and this file's own beforeEach() call it
+ * independently to grab spawnSubagent, and a factory that builds a fresh object per
+ * call (the previous version of this mock) hands them two disconnected mocks: the
+ * runner ends up calling one spawnSubagent, while the test configures a different one
+ * that never gets invoked, so every await resolves to undefined instead of the
+ * configured value.
+ */
+const mockSubagentServiceInstance = { spawnSubagent: vi.fn() };
 vi.mock('~/lib/services/subagentService', () => ({
   SubagentService: {
-    getInstance: vi.fn(() => ({
-      spawnSubagent: vi.fn(),
-    })),
+    getInstance: vi.fn(() => mockSubagentServiceInstance),
   },
 }));
 

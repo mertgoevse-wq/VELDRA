@@ -92,11 +92,18 @@ describe('execution provider status', () => {
   });
 
   it('does not pretend Remote Runtime is a registered sandbox provider', async () => {
+    /*
+     * EXECUTION_PROVIDER_BY_MODE now maps 'remote' -> 'remote-runtime' (see
+     * app/lib/execution/remote-runtime.ts's REMOTE_RUNTIME_PROVIDER_ID), so the
+     * implementation correctly looks that id up in the registry and, finding nothing
+     * registered under it here, reports the real id with the specific reason -- not the
+     * generic providerId:null message this test asserted before that lookup existed.
+     */
     await expect(getExecutionProviderStatus('remote')).resolves.toEqual({
       mode: 'remote',
-      providerId: null,
+      providerId: 'remote-runtime',
       state: 'unregistered',
-      reason: 'Remote Runtime is not registered in the sandbox registry yet.',
+      reason: 'No provider is registered for the selected runtime mode.',
     });
   });
 });

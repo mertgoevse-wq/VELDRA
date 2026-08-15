@@ -1,4 +1,5 @@
 import { getSandboxProvider, selectSandboxProvider } from './registry';
+import type { SandboxRequirements } from './registry';
 import type { SandboxCapabilities } from './types';
 
 export type ExecutionRuntimeMode = 'webcontainer' | 'android-fallback' | 'remote';
@@ -21,7 +22,13 @@ const EXECUTION_PROVIDER_BY_MODE: Record<ExecutionRuntimeMode, string | null> = 
   remote: 'remote-runtime',
 };
 
-const COMMAND_EXECUTION_REQUIREMENTS = {} as const;
+/*
+ * Omitted keys in SandboxRequirements mean "don't care" -- this was previously {}, so a
+ * provider registered without interactiveShell (e.g. can't actually run commands) still
+ * satisfied "requirements" and got reported as available. Command execution obviously
+ * needs an interactive shell; require it explicitly.
+ */
+const COMMAND_EXECUTION_REQUIREMENTS: SandboxRequirements = { interactiveShell: true };
 
 function timeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {

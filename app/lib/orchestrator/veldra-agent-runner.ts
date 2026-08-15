@@ -146,11 +146,13 @@ export class VeldraAgentRunner implements AgentRunner {
       const tasks = subagentsStore.get();
       const task = tasks[taskId];
 
-      if (!task) {
-        throw new Error(`Task ${taskId} not found in subagents store`);
-      }
-
-      if (task.status === 'completed' || task.status === 'failed') {
+      /*
+       * Spawning is async: the store entry can legitimately not exist yet on an early
+       * poll (spawnSubagent's promise can resolve before the task is registered). Treat
+       * "not found yet" the same as "found but still running" -- keep polling instead of
+       * failing fast -- and only give up via the timeout below.
+       */
+      if (task && (task.status === 'completed' || task.status === 'failed')) {
         return task;
       }
 
