@@ -668,3 +668,18 @@
 - Typecheck clean, scoped lint clean (0 errors after one prettier auto-fix for
   line-wrap-length changes from the shorter token names), full suite still 422/422 passing
   -- see `QUALITY_GATES.md`.
+
+## 2026-08-15: shared-index race incident, resolved
+
+A Phase 11 fork agent and the main session both ran `git add`/`git commit` against the
+same working tree/index concurrently (no worktree isolation). Result: one commit (`1547499`)
+landed with a misleading message ("docs: fix skin-count...") but actually containing the
+fork's 13 `@settings/**` token fixes instead -- the fork's own `git reset`+`add` cycle
+unstaged the main session's pending README.md change at the exact moment the main session
+ran `git commit`. The fork was then resumed to reconcile, hit an API session limit mid
+git-recovery, and in the process reverted README.md's working-tree edits (no history
+was rewritten -- `git reflog` confirms a clean linear commit sequence, nothing force-pushed
+or reset). Recovered by re-applying the 3 README edits from source and committing them
+separately and correctly (`4de1155`). **Going forward: only the main session runs
+`git add`/`commit`/`push` on this branch; subagents analyze/implement but never touch the
+index** -- per the user's explicit instruction in the productization-block mandate.
