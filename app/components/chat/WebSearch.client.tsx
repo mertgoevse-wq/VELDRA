@@ -116,7 +116,7 @@ export function WebSearch({ onSearchResult, disabled = false }: WebSearchProps) 
       {isOpen && (
         <div
           className={classNames(
-            'absolute bottom-full left-0 mb-2 flex items-center gap-2',
+            'absolute bottom-full left-0 mb-2 flex items-center gap-2 w-[min(360px,calc(100vw-1.5rem))]',
             'rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 p-2 shadow-lg',
           )}
         >
@@ -137,7 +137,7 @@ export function WebSearch({ onSearchResult, disabled = false }: WebSearchProps) 
             placeholder="https://example.com"
             disabled={isSearching}
             className={classNames(
-              'w-[300px] px-3 py-1.5 text-sm rounded-md',
+              'min-w-0 flex-1 px-3 py-1.5 text-sm rounded-md',
               'border border-bolt-elements-borderColor',
               'bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary',
               'placeholder-bolt-elements-textTertiary',
@@ -148,7 +148,7 @@ export function WebSearch({ onSearchResult, disabled = false }: WebSearchProps) 
             onClick={handleFetch}
             disabled={isSearching || !url.trim()}
             className={classNames(
-              'px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap',
+              'shrink-0 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap',
               'bg-bolt-elements-button-primary-background text-bolt-elements-button-primary-text',
               'hover:bg-bolt-elements-button-primary-backgroundHover',
               'disabled:opacity-50 disabled:cursor-not-allowed',

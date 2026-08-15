@@ -186,11 +186,48 @@ verification that didn't happen" instruction. Routed a broader hardcoded-hex-col
 (~19+ files, concentrated in `app/components/@settings/**`) to Phase 11, where it actually
 belongs. No code changes this phase. Full detail in `DECISIONS.md`'s Phase 9 entry.
 
-## Phase 10+ — not started yet
-See the TaskList in this session for the remaining phases (motion system, design-system
-audit, Android pass, docs refresh, security review, and a final APK block deliberately
-deferred
-until the core product blocks are done).
+## Phase 10 — Motion system pass (done)
+59 files import framer-motion; only 3 (Phases 3-5's widgets) had any
+`prefers-reduced-motion` awareness. Added one `<MotionConfig reducedMotion="user">`
+wrapper at each real app root instead of retrofitting ~56 files individually:
+`app/root.tsx`'s `App()` (web/desktop) and `src/android-main.tsx` (Android's separate
+entry point, which bypasses `app/root.tsx` entirely). Both needed -- confirmed via reading
+`android-main.tsx` that it mounts `AndroidShell` directly. Also fixed a pre-existing
+`@blitz/lines-around-comment` lint error in `android-main.tsx`, confirmed pre-existing via
+`git stash`. Full detail in `DECISIONS.md`'s Phase 10 entry. 422/422 tests still passing
+(config-only change, no new tests needed).
+
+## Phase 11 — Design system/skin token audit (in progress, split: fork + main thread)
+The `@settings/**` hardcoded-hex sweep (149 occurrences/19 files, flagged by Phase 9)
+was handed to a background fork agent as a large, mechanical, well-bounded task. This
+session's own thread stayed out of `@settings/**` while the fork works, and instead found
+and fixed a *different*, more concrete design-token bug while scoping the work: a dead
+UnoCSS class name, `bg-bolt-elements-bg-depth-N` (looks plausible -- matches the CSS
+variable's own name -- but the UnoCSS theme only generates classes from the
+`background.depth` path, not a `bg.depth` path, so this class resolves to zero CSS,
+silently). Fixed the 3 occurrences outside `@settings/**`
+(`ColorSchemeDialog.tsx`, `Dialog.tsx`, `RuntimeModeBanner.tsx`); left the 2 occurrences
+inside `@settings/**` (`ControlPanel.tsx`, `DataVisualization.tsx`) for the fork to pick up
+so there's exactly one writer per file. Full detail in `DECISIONS.md`.
+
+## Phase 12 — Responsive + Android first-class pass (done, this round's scope)
+Found and fixed a real anchored-popover viewport-overflow bug:
+`WebSearch.client.tsx`'s URL-fetch popover sits in a horizontally-scrollable composer
+toolbar row and had a hardcoded `w-[300px]` input with no viewport clamp -- its total
+footprint (~380-420px) exceeds an Android-width viewport (~360-412px) regardless of anchor
+position. Fixed with the same `w-[min(Npx,calc(100vw-Nrem))]` clamp idiom already
+established in `Workbench.client.tsx`. Swept the rest of the codebase's `absolute
+left-0`/`right-0` anchored popovers outside `@settings/**` (`PortDropdown.tsx`,
+`TabsWithSlider.tsx`, `Preview.tsx`, `Workbench.client.tsx`) -- no other instances found
+(all either already viewport-clamped or use `min-w` rather than a fixed `w`, which is
+safe). No headless browser available this round either (consistent with every prior
+round); this phase's verification is layout-math reasoning against concrete viewport/
+element widths, not a visual-verification claim. Full detail in `DECISIONS.md`.
+
+## Phase 13+ — not started yet
+See the TaskList in this session for the remaining phases (docs refresh, security review,
+testing gate, visual verification if a browser becomes available, and a final APK block
+deliberately deferred until the core product blocks are done).
 
 ---
 

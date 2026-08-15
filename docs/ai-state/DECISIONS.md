@@ -472,3 +472,87 @@
   to tokenize" rule requires, and the mandate already reserves exactly this as its own
   later phase. `app/components/@settings/` is the densest cluster and the concrete
   starting point for that phase. No code changes this phase.
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 10)
+
+- **Global reduced-motion support, not per-component.** 59 files import
+  `framer-motion`; before this phase only 3 (`SubagentActivityWidget`,
+  `BuildActivityFeed`, `ApprovalRequestWidget` -- all built/fixed in Phases 3-5) had any
+  `prefers-reduced-motion` awareness. Rather than retrofit the other ~56 files one by one,
+  added a single `<MotionConfig reducedMotion="user">` wrapper at BOTH real app roots:
+  `app/root.tsx`'s `App()` (wraps `<Layout><Outlet /></Layout>`, web/desktop) and
+  `src/android-main.tsx` (wraps `<MemoryRouter><AndroidShell /></MemoryRouter>`, Android's
+  separate entry point). Both were necessary -- Android bypasses `app/root.tsx` entirely
+  (mounts `AndroidShell` directly, confirmed by reading `android-main.tsx`), so a wrapper
+  in only one root would have left the other platform's ~56 files unmanaged. `MotionConfig
+  reducedMotion="user"` (framer-motion v11, confirmed in `package.json`) makes every
+  nested `motion.*` component respect the OS-level `prefers-reduced-motion` setting
+  automatically, without touching the 3 already-tested widgets' own explicit checks
+  (harmless redundancy, not a conflict).
+- **Found and fixed a pre-existing lint error while in `android-main.tsx`**: a missing
+  blank line before a block comment (`@blitz/lines-around-comment`), confirmed pre-existing
+  via `git stash` (present on the unmodified file, not introduced by this phase's edit,
+  just unmasked because the file was touched and the stale `.eslintcache` no longer
+  covered it). Fixed inline since it was a one-line, zero-risk, same-file change.
+- Config-only change (declarative wrapper, no new logic) -- no new tests written; full
+  422-test suite re-run to confirm no regression.
+
+## 2026-08-15 additions, continued (product-integration mandate, Phase 11 kickoff + Phase 12)
+
+- **Phase 11 (design-system/skin-token audit)**: the `app/components/@settings/**`
+  hardcoded-hex-color sweep flagged by Phase 9 (149 occurrences across 19 files) was
+  delegated to a background fork agent, since it's a large, mechanical,
+  well-bounded classification task (tokenize vs. leave-as-brand-color vs.
+  leave-as-semantic-status) well suited to parallel delegation -- see the fork's own
+  commit/report for what it changed. This session's own (non-fork) thread avoided
+  touching any file under `app/components/@settings/**` while that fork was in flight, to
+  prevent two writers touching the same files.
+- **Found a second, more concrete class of design-token bug while scoping Phase 11 (not
+  the same as the brand-color/hex-literal anti-pattern Phase 9 flagged): a genuinely dead
+  UnoCSS class name.** `uno.config.ts`'s theme only defines the color path
+  `colors.bolt.elements.background.depth.{1,2,3,4}` (-> generates classes like
+  `bg-bolt-elements-background-depth-2`, resolving to CSS var `--bolt-elements-bg-depth-2`
+  from `variables.scss`). There is no sibling `colors.bolt.elements.bg.depth.*` path, so
+  any class literally spelled `bg-bolt-elements-bg-depth-N` (a name that looks plausible --
+  it matches the *CSS variable's* own name, `--bolt-elements-bg-depth-N` -- but not the
+  UnoCSS theme's class-generating path) resolves to nothing: UnoCSS silently emits zero
+  CSS for it, so the element gets no background color at all, no error, no visual sign
+  other than "this element just isn't styled." Found via `grep -rln
+  "bolt-elements-bg-depth-"`: 5 files use it. Two (`ControlPanel.tsx`,
+  `DataVisualization.tsx`) are inside `@settings/**` and were left for the Phase 11 fork to
+  handle (same file-ownership reasoning as above). Fixed the other three directly this
+  round: `app/components/ui/ColorSchemeDialog.tsx` (9 occurrences),
+  `app/components/ui/Dialog.tsx` (4 occurrences), `app/components/mobile/RuntimeModeBanner.tsx`
+  (1 occurrence) -- all via a scoped `sed` replacing the `bg-`/`text-`/`border-`/
+  `scrollbar-thumb-` + `bolt-elements-bg-depth-` prefix combinations with
+  `...bolt-elements-background-depth-`, deliberately NOT touching the one legitimate
+  `var(--bolt-elements-bg-depth-3)` raw-CSS-var usage in `ColorSchemeDialog.tsx` (that one
+  is correct as-is; the bug is specifically in class-name usage, not the CSS var itself).
+- **Phase 12 (responsive/Android): found and fixed a real anchored-popover overflow bug.**
+  `app/components/chat/WebSearch.client.tsx`'s URL-fetch popover is `absolute left-0`
+  anchored off a small icon button that lives inside `ChatBox.tsx`'s composer toolbar row
+  (`custom-scrollbar flex ... overflow-x-auto` -- confirmed horizontally-scrollable, so the
+  anchor button can end up anywhere along that row on a narrow screen, not just near the
+  left edge). The popover's `<input>` had a hardcoded `w-[300px]` with no viewport clamp;
+  combined with the "Fetch" button, gaps, and padding, the popover's total footprint
+  (~380-420px) exceeds an Android-width viewport (~360-412px, matching the Galaxy A56
+  `mobile.scss` is written for) outright, independent of anchor position -- a real,
+  reproducible-by-reasoning horizontal-overflow bug. Fixed using the exact viewport-clamp
+  idiom already established elsewhere in this codebase (`Workbench.client.tsx`'s
+  `w-[min(20rem,calc(100vw-1.5rem))]` pattern): outer popover container is now
+  `w-[min(360px,calc(100vw-1.5rem))]`, the input is `min-w-0 flex-1` (fills available space
+  instead of forcing 300px), and the button got `shrink-0` so it can't be squeezed below
+  its content width. **Honest limitation, not silently overclaimed**: this bounds the
+  popover to never exceed the viewport width (fixes the page-level horizontal-overflow
+  failure mode, the most damaging one), but does not add anchor-aware collision detection
+  -- if the icon is scrolled far enough right in the toolbar, the popover can still render
+  partially past the right edge. That would need a Floating-UI-style positioning library,
+  which no other popover in this codebase uses either (same architecture limitation is
+  shared by every other icon-anchored popover in this toolbar); not attempted as a
+  drive-by scope expansion.
+- No headless browser was available this round either (same finding as every prior round
+  -- see Phase 9's entry); all Phase 12 work this round is static-analysis-plus-reasoning
+  about concrete, checkable layout math (viewport widths vs. element widths), not a
+  visual-verification claim.
+- Full 422-test suite, typecheck, and scoped lint re-run after these changes (see
+  `QUALITY_GATES.md` / `current-session.md` for the exact run confirmation).

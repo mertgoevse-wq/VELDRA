@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react';
 import type { LinksFunction } from '@remix-run/cloudflare';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
+import { MotionConfig } from 'framer-motion';
 import tailwindReset from '@unocss/reset/tailwind-compat.css?url';
 import { themeStore } from './lib/stores/theme';
 import { skinStore } from './lib/stores/skin';
@@ -197,8 +198,10 @@ export default function App() {
   }, []);
 
   return (
-    <Layout>
-      <Outlet />
-    </Layout>
+    <MotionConfig reducedMotion="user">
+      <Layout>
+        <Outlet />
+      </Layout>
+    </MotionConfig>
   );
 }

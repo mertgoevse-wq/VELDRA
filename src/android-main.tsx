@@ -13,9 +13,11 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
+import { MotionConfig } from 'framer-motion';
 import AndroidShell from '~/components/mobile/AndroidShell';
 
 import 'virtual:uno.css';
+
 /*
  * index.scss defines --header-height/--workbench-left/--workbench-inner-width/.z-workbench and
  * the terminal/code/editor/resize-handle component styles that Workbench.client.tsx and its
@@ -47,8 +49,10 @@ const root = createRoot(container);
 
 root.render(
   <React.StrictMode>
-    <MemoryRouter initialEntries={['/']} initialIndex={0}>
-      <AndroidShell />
-    </MemoryRouter>
+    <MotionConfig reducedMotion="user">
+      <MemoryRouter initialEntries={['/']} initialIndex={0}>
+        <AndroidShell />
+      </MemoryRouter>
+    </MotionConfig>
   </React.StrictMode>,
 );

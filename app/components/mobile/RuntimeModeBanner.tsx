@@ -66,7 +66,7 @@ export function RuntimeModeBanner() {
         exit={{ height: 0, opacity: 0 }}
         className={classNames(
           'relative overflow-hidden',
-          'bg-bolt-elements-bg-depth-2 backdrop-blur',
+          'bg-bolt-elements-background-depth-2 backdrop-blur',
           'border-b border-bolt-elements-borderColor',
         )}
       >
