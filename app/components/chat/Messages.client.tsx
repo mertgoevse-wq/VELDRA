@@ -11,6 +11,7 @@ import { forwardRef } from 'react';
 import type { ForwardedRef } from 'react';
 import type { ProviderInfo } from '~/types/model';
 import { BuildActivityFeed } from './BuildActivityFeed';
+import { SubagentActivityWidget } from './SubagentActivityWidget';
 
 interface MessagesProps {
   id?: string;
@@ -94,6 +95,14 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
               );
             })
           : null}
+
+        {/*
+         * Independent of isStreaming: subagents are background tasks that can still be
+         * running (or have just finished) after the message stream that spawned them has
+         * already ended. Gating this on isStreaming would hide in-progress/completed
+         * background work the moment the visible reply stops streaming.
+         */}
+        <SubagentActivityWidget />
         {isStreaming && (
           <>
             <BuildActivityFeed />
