@@ -557,7 +557,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
 
                     handleSendMessage?.(event, messageInput);
                   })}
-                {!chatStarted && !isCapacitor() && <StarterTemplates />}
+                {!chatStarted && !isCapacitor() && <StarterTemplates applyStarterTemplate={applyStarterTemplate} />}
                 {!chatStarted && isCapacitor() && (
                   <>
                     <ClientOnly>{() => <SetupGuide />}</ClientOnly>

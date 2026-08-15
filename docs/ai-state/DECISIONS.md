@@ -704,3 +704,25 @@ cancellation (no `AbortController` wired anywhere in this path). 14 new tests
 (`subagent-tool-events.spec.ts`, `subagentService.spec.ts` -- the latter is the first real
 test file for `subagentService.ts`, using the same mock-only-the-LLM-boundary pattern as
 `orchestrator-e2e.spec.ts`).
+
+## 2026-08-15: Productization mandate Blocks 2-4 (terse per the mandate's token-efficiency ask)
+
+- **Block 2**: `useBuildActivity.ts` guessed a specific cognitive phase ("Understanding
+  your request", "Planning project structure") from conversation bookkeeping alone, no
+  real signal -- fake progress. Replaced with one honest "Generating a response" entry.
+  See commit `c99bf72`.
+- **Block 3**: `action-runner.ts` started a real `BuildActivityFeed` entry per file/shell/
+  build/start action but never resolved it against the action's real outcome -- a failed
+  action showed as a false success (bulk-marked "done" when streaming ended, regardless
+  of success/failure). Now resolves precisely: `completeActivity()`/`errorActivity()` with
+  the real error. See commit `7d77929`.
+- **Block 4**: desktop's `StarterTemplates` navigated away via `<a href="/git?url=...">`
+  (a full-page nav to a brand-new chat) instead of seeding the curated template into the
+  CURRENT chat the way Android's `TemplatePicker` already does via `applyStarterTemplate`
+  -> `getTemplates()`. Rewired to reuse that exact existing pipeline (button + prop, no new
+  logic). `/git?url=...` (`GitUrlImport`) deliberately left untouched -- confirmed it's a
+  genuinely broader feature (arbitrary GitHub URL, real clone, new-chat-per-import) and,
+  per a repo-wide check, was already the ONLY thing pointing at that route (no in-app
+  navigation now missing) -- it remains reachable as a direct/shareable URL, its real
+  purpose. 3 new tests (first coverage for `StarterTemplates`).
+- 441 -> 444 tests across these three blocks; typecheck/lint clean throughout.
