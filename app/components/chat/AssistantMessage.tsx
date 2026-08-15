@@ -188,11 +188,25 @@ export const AssistantMessage = memo(
           {content}
         </Markdown>
         {toolInvocations && toolInvocations.length > 0 && (
-          <ToolInvocations
-            toolInvocations={toolInvocations}
-            toolCallAnnotations={toolCallAnnotations}
-            addToolResult={addToolResult}
-          />
+          <div className="mt-3">
+            {/*
+             * A thin connecting line rather than plain margin: without it, ToolInvocations'
+             * own bordered card reads as an unrelated floating block below the response
+             * instead of a continuation of it -- the two are always sequential parts of the
+             * same message, so the visual language should say so. True interleaving (a tool
+             * call rendered at its actual position within the surrounding text, matching
+             * `parts`' real order instead of content/toolInvocations being extracted and
+             * rendered as two separate blocks) is the more complete fix, but touches core
+             * streaming/rendering data flow this session can't visually verify -- see
+             * docs/ai-state/DECISIONS.md's 2026-08-15 entry.
+             */}
+            <div className="ml-4 h-3 w-px bg-bolt-elements-borderColor" aria-hidden="true" />
+            <ToolInvocations
+              toolInvocations={toolInvocations}
+              toolCallAnnotations={toolCallAnnotations}
+              addToolResult={addToolResult}
+            />
+          </div>
         )}
       </div>
     );
