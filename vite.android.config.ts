@@ -87,11 +87,31 @@ export default defineConfig({
             ) {
               return 'vendor-react';
             }
-            if (id.includes('@codemirror/')) return 'vendor-codemirror';
-            if (id.includes('shiki') || id.includes('@shikijs/')) return 'vendor-shiki';
-            if (id.includes('react-markdown') || id.includes('remark') || id.includes('rehype') || id.includes('unified') || id.includes('unist')) return 'vendor-markdown';
+
+            if (id.includes('@codemirror/')) {
+              return 'vendor-codemirror';
+            }
+
+            if (id.includes('shiki') || id.includes('@shikijs/')) {
+              return 'vendor-shiki';
+            }
+
+            if (
+              id.includes('react-markdown') ||
+              id.includes('remark') ||
+              id.includes('rehype') ||
+              id.includes('unified') ||
+              id.includes('unist')
+            ) {
+              return 'vendor-markdown';
+            }
           }
-          if (id.includes('/components/workbench/') || id.includes('/components/editor/')) return 'app-workbench';
+
+          if (id.includes('/components/workbench/') || id.includes('/components/editor/')) {
+            return 'app-workbench';
+          }
+
+          return undefined;
         },
       },
     },
@@ -133,12 +153,18 @@ export default defineConfig({
     alias: [
       // Point ~ to app/ for tsconfigPaths compat
       { find: '~', replacement: resolve(__dirname, 'app') },
+
       // Stub out Remix router hooks — Android SPA doesn't have a Remix server
       { find: '@remix-run/react', replacement: resolve(__dirname, 'src/shims/remix-react.tsx') },
+
       // Stub out Cloudflare-specific imports not needed in SPA
       { find: '@remix-run/cloudflare', replacement: resolve(__dirname, 'src/shims/remix-cloudflare.ts') },
+
       // Stub out server-only providers that use node:child_process
       { find: /.*providers\/external-cli/, replacement: resolve(__dirname, 'src/shims/external-cli-provider.ts') },
+
+      // Stub out the stdio MCP transport, which also uses node:child_process
+      { find: 'ai/mcp-stdio', replacement: resolve(__dirname, 'src/shims/mcp-stdio.ts') },
     ],
   },
 });
