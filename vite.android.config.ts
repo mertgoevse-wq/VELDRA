@@ -64,51 +64,35 @@ export default defineConfig({
       input: resolve(__dirname, 'android-index.html'),
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            /*
-             * react/react-dom must NOT be split into their own isolated chunk while other
-             * manual chunks (ai SDK hooks, framer-motion, Radix) also depend on them: Rollup's
-             * manualChunks resolves cross-chunk references by first-discoverer, which can
-             * produce a circular chunk reference -- e.g. a peer chunk ending up importing its
-             * React binding through another peer instead of directly, and reading it before
-             * that binding was initialized, throwing "Cannot read properties of undefined
-             * (reading 'useState')" on every load (100% reproducible, verified via headless
-             * Chromium against the built output -- a full white-screen crash, not a dev-only
-             * artifact). Fix: keep every react-consuming vendor lib in the same chunk as react
-             * itself so there is one evaluation unit and no cross-chunk ordering to get wrong.
-             */
-            if (
-              id.includes('node_modules/react/') ||
-              id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/ai/') ||
-              id.includes('@ai-sdk/') ||
-              id.includes('framer-motion') ||
-              id.includes('@radix-ui/')
-            ) {
-              return 'vendor-react';
-            }
-
-            if (id.includes('@codemirror/')) {
-              return 'vendor-codemirror';
-            }
-
-            if (id.includes('shiki') || id.includes('@shikijs/')) {
-              return 'vendor-shiki';
-            }
-
-            if (
-              id.includes('react-markdown') ||
-              id.includes('remark') ||
-              id.includes('rehype') ||
-              id.includes('unified') ||
-              id.includes('unist')
-            ) {
-              return 'vendor-markdown';
-            }
-          }
-
-          if (id.includes('/components/workbench/') || id.includes('/components/editor/')) {
-            return 'app-workbench';
+          /*
+           * Only ONE manual split survives: vendor-shiki. Everything else -- react/react-dom,
+           * ai SDK hooks, framer-motion, Radix, CodeMirror/lezer/uiw-codemirror,
+           * react-markdown/remark/rehype/unified/unist, and this app's own
+           * /components/workbench//components/editor code -- previously had its own manual
+           * chunk(s), and EVERY one of those splits turned out to depend on React somewhere in
+           * its graph. Rollup's manualChunks resolves cross-chunk references by
+           * first-discoverer, which can produce a circular chunk reference -- a peer chunk
+           * reading its React (or other shared) binding through another peer instead of
+           * directly, before that binding finished initializing.
+           *
+           * This was chased incrementally across this round's first-ever real Android
+           * build+screenshot verification and kept reproducing under a new name each time a
+           * split was "fixed" by merging one more package into vendor-react: "Cannot read
+           * properties of undefined (reading 'useState')" (original, react+ai+framer-motion+
+           * radix) -> "Cannot access 'L' before initialization" (codemirror, missing lezer/uiw)
+           * -> "Cannot access 'Fp' before initialization" (codemirror's own internal circularity
+           * even once fully isolated) -> "Cannot read properties of undefined (reading
+           * 'useLayoutEffect')" (app-workbench, once codemirror's split was removed and the
+           * chunk graph shifted again). Four confirmed crashes chasing four different manual
+           * chunk boundaries is a pattern, not a one-off -- this dependency graph is too
+           * interconnected for hand-picked splits to be reliably safe. Falling back to ONE
+           * shared chunk for everything React-adjacent is the correctness-first choice; if a
+           * genuine bundle-size need justifies re-splitting later, any new split must be
+           * verified with a real build+screenshot check, not assumed safe from the source
+           * import list alone.
+           */
+          if (id.includes('node_modules') && (id.includes('shiki') || id.includes('@shikijs/'))) {
+            return 'vendor-shiki';
           }
 
           return undefined;
