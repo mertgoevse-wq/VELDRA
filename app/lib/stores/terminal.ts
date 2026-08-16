@@ -11,7 +11,7 @@ export class TerminalStore {
   #boltTerminal = newBoltShellProcess();
   #isFallbackMode = false;
 
-  showTerminal: WritableAtom<boolean> = import.meta.hot?.data.showTerminal ?? atom(true);
+  showTerminal: WritableAtom<boolean> = import.meta.hot?.data?.showTerminal ?? atom(true);
 
   constructor(getSession: () => Promise<SandboxSession | null>) {
     this.#getSession = getSession;
@@ -25,7 +25,7 @@ export class TerminalStore {
       }
     }
 
-    if (import.meta.hot) {
+    if (import.meta.hot?.data) {
       import.meta.hot.data.showTerminal = this.showTerminal;
     }
   }

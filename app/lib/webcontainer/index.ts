@@ -8,11 +8,11 @@ interface WebContainerContext {
   loaded: boolean;
 }
 
-export const webcontainerContext: WebContainerContext = import.meta.hot?.data.webcontainerContext ?? {
+export const webcontainerContext: WebContainerContext = import.meta.hot?.data?.webcontainerContext ?? {
   loaded: false,
 };
 
-if (import.meta.hot) {
+if (import.meta.hot?.data) {
   import.meta.hot.data.webcontainerContext = webcontainerContext;
 }
 
@@ -35,7 +35,7 @@ if (!import.meta.env.SSR) {
   if (wcSupported && !isAndroid) {
     // Full WebContainer support — desktop browser or Electron
     webcontainer =
-      import.meta.hot?.data.webcontainer ??
+      import.meta.hot?.data?.webcontainer ??
       Promise.resolve()
         .then(() => {
           return WebContainer.boot({
@@ -74,7 +74,7 @@ if (!import.meta.env.SSR) {
           return webcontainer;
         });
 
-    if (import.meta.hot) {
+    if (import.meta.hot?.data) {
       import.meta.hot.data.webcontainer = webcontainer;
     }
 
