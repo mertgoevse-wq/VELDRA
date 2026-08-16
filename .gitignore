@@ -59,6 +59,14 @@ android/captures/
 android/local.properties
 android/app/src/main/assets/public/
 
+# Release signing credentials -- never committed, real values live only on a signer's
+# machine or in CI secrets. See android/app/build.gradle's keystore.properties handling.
+android/keystore.properties
+android/**/*.keystore
+android/**/*.jks
+android/**/*.p12
+android/app/google-services.json
+
 # Allow our documentation files through the *.md ignore
 !CLAUDE.md
 !README_ANDROID.md

@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true" />
+    <!--
+      Release/default posture: no cleartext HTTP anywhere. Debug builds get a permissive
+      override at src/debug/res/xml/network_security_config.xml (Android's standard
+      per-variant resource overlay: Gradle picks the debug-source-set copy automatically
+      for the debug build type, no manual step needed) so local dev-server testing over
+      plain HTTP keeps working without weakening what actually ships.
+    -->
+    <base-config cleartextTrafficPermitted="false" />
 </network-security-config>

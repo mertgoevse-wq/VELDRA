@@ -6,6 +6,7 @@ import {
   type DeveloperOverride,
   type EntitlementTier,
 } from '~/lib/orchestrator/entitlement';
+import { entitlementTierStore } from '~/lib/stores/entitlement';
 import { getRuntimeEnvironment } from './runtime-environment';
 
 /**
@@ -14,9 +15,16 @@ import { getRuntimeEnvironment } from './runtime-environment';
  * "kleiner Developer-Diagnostics-Punkt" the product owner asked for, not a
  * developer console -- a future console reads getBudgetPolicyDiagnostics()
  * and calls the setters below, nothing more is needed here yet.
+ *
+ * entitlementTierStore is re-exported from stores/entitlement.ts (not a separate
+ * atom of its own) -- that store is what integration.ts/veldra-host.ts actually read
+ * when deciding what the orchestrator enforces. A second, independent atom here used
+ * to exist with the same exported name; nothing wired it to any UI yet, but a future
+ * developer console built against it would have shown/changed a tier that had zero
+ * effect on real enforcement. Sharing the store closes that gap before it ships.
  */
 
-export const entitlementTierStore = atom<EntitlementTier>('FREE');
+export { entitlementTierStore };
 export const developerOverrideStore = atom<DeveloperOverride>(STANDARD_OVERRIDE);
 
 /**

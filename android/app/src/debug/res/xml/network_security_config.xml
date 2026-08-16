@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+      Debug-build-only override of src/main/res/xml/network_security_config.xml. Android's
+      resource overlay picks this file automatically for the debug build type. Permits
+      cleartext HTTP so a manually-configured local dev server (capacitor.config.ts's
+      commented-out server.url) works without touching the release-safe main config.
+    -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

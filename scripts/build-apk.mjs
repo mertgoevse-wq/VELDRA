@@ -62,10 +62,24 @@ if (!process.env.ANDROID_HOME && !process.env.ANDROID_SDK_ROOT) {
 
 // Step 1: Run Capacitor Sync
 console.log('\n[APK Build] Running Capacitor sync...');
+
+/*
+ * Tells capacitor.config.ts whether this is a debug/dev build -- it uses this to gate
+ * cleartext/mixed-content/WebView-debugging, which must never ship enabled in a release
+ * build. Only set for a debug build (isRelease === false); a release build gets the
+ * config's safe defaults.
+ */
+const syncEnv = { ...process.env };
+
+if (!isRelease) {
+  syncEnv.VELDRA_ANDROID_DEBUG_BUILD = 'true';
+}
+
 const syncResult = spawnSync('npm', ['run', 'android:sync'], {
   cwd: ROOT,
   stdio: 'inherit',
   shell: true,
+  env: syncEnv,
 });
 
 if (syncResult.status !== 0) {
