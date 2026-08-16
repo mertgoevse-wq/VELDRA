@@ -889,3 +889,59 @@ than "the API call works":
   no such trigger, so they could run against stale/empty remote files. New
   `#syncBeforeRemoteCommand()` pushes current files first, honestly reports a real sync
   failure without ever running the remote command. Commit `f495d4d`. 463/463 passing.
+
+## 2026-08-16, later: real end-to-end creation-loop proof + Live Preview/Terminal hardening
+
+Every piece of the Remote Runtime creation loop had unit coverage (sync, build/start,
+the Preview refresh signal) but nothing had ever proven they compose into the actual
+product loop a user experiences. Built `app/lib/runtime/creation-loop-e2e.spec.ts`
+specifically to close that gap, using the SAME wiring production uses rather than a
+hand-rolled harness: `workbenchStore.addArtifact()`'s real `ActionRunner`, real
+`FilesStore.saveFile` (which -- discovered while building this -- already persists to
+`androidFallbackStorage`'s IndexedDB-backed store whenever `#isFallbackMode` is true,
+which it is by default in this Node/jsdom environment since WebContainer isn't
+available), and the real, unmocked `RemoteWorkspaceSync.pushLocalWorkspaceToRemote`
+(previously always mocked in action-runner.spec.ts, appropriately for a unit test, but
+that meant no test ever exercised its real IndexedDB round-trip). Added `fake-indexeddb`
+as a devDependency specifically so that round-trip could be real instead of mocked --
+IndexedDB doesn't exist in this environment natively, the same category of boundary as
+WebContainer, so a real in-memory implementation is the right fix, not a stub. Only the
+Remote Runtime HTTP server and WebContainer are mocked/absent. Two tests: a full golden
+path (file → sync carrying that exact content → `npm run dev` → Preview signal → real
+iframe with the real URL → second edit → re-sync carries the new content → signal fires
+again) and a build-failure path proving the failure is represented honestly all the way
+through (failed action state, no Preview signal, Preview still says "Unavailable").
+
+While building this, discovered `Preview.tsx` had never had a single test written for
+it (confirmed via search -- no `Preview.spec.tsx` existed at all). Wrote one (7 tests)
+covering every state the component can render on Remote Runtime: not-configured,
+running-with-no-URL-yet (the component already correctly refuses to show an iframe in
+this case -- proven, not just trusted), failed, network/disconnect error, the
+agent-triggered refresh signal actually working, and config being cleared mid-session
+correctly dropping back to the honest fallback.
+
+Writing that test surfaced a real, unrelated latent bug: `import.meta.hot?.data.x` was
+unguarded across five files (`files.ts`, `editor.ts`, `terminal.ts`, `workbench.ts`,
+`webcontainer/index.ts`) -- the `?.` only protected `.hot`, not the `.data` access after
+it. This had never mattered before because nothing had transitively imported
+`~/lib/webcontainer/index.ts` from a `.tsx` component test until this one did, and it
+turns out Vitest + `@vitejs/plugin-react` sets `import.meta.hot` to a truthy value
+without a `.data` property -- a real environment where the old code would crash the
+entire app at module load, not a test-only artifact. Fixed with consistent `?.data?.`
+chaining in all five places.
+
+Separately, found and fixed a genuine Terminal/Preview state-consistency gap the
+mandate specifically called out: `TerminalTabs.tsx`'s `RemoteCommandPanel` (the Remote
+Runtime terminal fallback) let a user manually run `npm run dev`, but never told
+`Preview.tsx` -- only the agent's own `#runStartActionRemote()` did. Fixed
+symmetrically: a successful manual `*run dev` command now fires
+`triggerRemotePreviewRefresh()`, and so does any command's `exit` event (crash or
+manual stop), so Preview stops showing a stale "running" state once the real server is
+gone. `RemoteCommandPanel` was exported from `TerminalTabs.tsx` so it could be tested in
+isolation -- a full `<TerminalTabs />` render hit a real jsdom limitation
+(`react-resizable-panels`' `Panel` needs real `ResizeObserver`-driven layout measurement
+jsdom doesn't provide, throwing "Panel size not found" regardless of mocking); since
+`RemoteCommandPanel` itself has zero dependency on the `Panel` tree, isolating it is a
+strictly better test, not a workaround for the limitation.
+
+Commits `fa04fef`, `95f9b13`. 476 → 489 tests. Typecheck/lint clean.

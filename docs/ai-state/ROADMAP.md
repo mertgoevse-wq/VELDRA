@@ -91,6 +91,21 @@
       WebContainer and Remote Runtime are both Node.js-only, so full support
       (run/build/preview) stays JS/TS/HTML/CSS-only — not a gap to hide, a real
       architecture constraint until a genuinely different runtime is built.
+- [x] Real end-to-end creation-loop proof (2026-08-16,
+      `app/lib/runtime/creation-loop-e2e.spec.ts`) — files → real sync → Remote
+      Runtime start → real Preview URL → render → second edit → re-sync →
+      refresh, through genuine wiring (real `ActionRunner`/`FilesStore`, real
+      `pushLocalWorkspaceToRemote`, a real `fake-indexeddb`-backed persistence
+      round-trip), with only the HTTP server and WebContainer boundaries mocked.
+      Plus honest build-failure representation end-to-end. `Preview.tsx` also
+      got its first-ever test coverage (7 tests) proving it never invents
+      success. See DECISIONS.md/CURRENT_STATE.md block 7.
+- [x] Terminal/Preview shared runtime state (2026-08-16) — a user manually
+      running `npm run dev` from `RemoteCommandPanel` (Terminal's Remote
+      Runtime fallback UI), or a running command exiting/crashing, now
+      triggers the same real Preview refresh signal the agent's own start
+      path already did. Previously Preview only found out about agent-started
+      servers, not user-started ones, and never learned a server had crashed.
 
 ## P2 (future architecture, don't block P0/P1)
 - Local models (GGUF/safetensors/LoRA), media generation extension points.

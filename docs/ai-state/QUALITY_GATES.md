@@ -5,12 +5,11 @@ Run after a coherent implementation block, not after every edit.
 ```bash
 npm run typecheck        # tsc --noEmit
 npm run lint              # eslint (must be 0 errors; 2 known warnings OK)
-npm test                  # vitest run — 422 passing as of 2026-08-15 (product integration
-                           # round, Phase 7, re-confirmed still 422/422 through Phase 12);
-                           # run this, don't just cite a stale count from a doc (see
-                           # DECISIONS.md/current-session.md 2026-08-15: 9 pre-existing
-                           # failures across 2 files were sitting undiscovered before that
-                           # round)
+npm test                  # vitest run — 489 passing as of 2026-08-16 (real end-to-end
+                           # creation-loop round); run this yourself, don't just cite a
+                           # stale count from a doc (see DECISIONS.md/current-session.md
+                           # 2026-08-15: 9 pre-existing failures across 2 files were
+                           # sitting undiscovered before that round)
 npm run build:android     # Android SPA/Vite build
 npx cap sync android      # sync web build into the Capacitor Android project
 cd android && ./gradlew assembleDebug   # requires ANDROID_HOME — often unavailable in agent containers
@@ -61,3 +60,22 @@ cd android && ./gradlew assembleDebug   # requires ANDROID_HOME — often unavai
   reduced-motion check uses the legacy pair); and `nanostore.listen()` only
   fires for changes made after subscribing, so render a store-watching
   component before seeding the store, not after.
+- **Two more component-test gotchas** (2026-08-16, real end-to-end creation-loop round):
+  - `import.meta.hot?.data.x` (only `.hot` optional-chained, not `.data`) throws under
+    Vitest + `@vitejs/plugin-react` the first time a `.tsx` spec transitively imports
+    something that pattern touches (`~/lib/webcontainer/index.ts`, or any of
+    `files.ts`/`editor.ts`/`terminal.ts`/`workbench.ts`) — `import.meta.hot` is truthy
+    there but `.data` isn't. Already fixed everywhere in the codebase (`?.data?.`
+    throughout); if you see this error again from a NEW file, apply the same fix rather
+    than mocking around it.
+  - Rendering `TerminalTabs` (or anything using `react-resizable-panels`' `<Panel>`)
+    fails with `"Panel size not found"` / `"must be rendered within a PanelGroup"` in
+    jsdom — it needs real `ResizeObserver`-driven layout measurement jsdom can't provide,
+    and a `ResizeObserver` stub alone isn't enough. Don't chase this: if the component you
+    actually need to test doesn't itself depend on `Panel`, export it separately and
+    render it standalone (see `RemoteCommandPanel.spec.tsx` for the pattern — it's a
+    child of `TerminalTabs` with zero `Panel` dependency of its own).
+  - Testing real IndexedDB-backed persistence (`androidFallbackStorage.ts` and anything
+    that calls it, e.g. `RemoteWorkspaceSync.pushLocalWorkspaceToRemote`) needs the
+    `fake-indexeddb` devDependency (`import 'fake-indexeddb/auto'` at the very top of the
+    spec file) — jsdom has no native IndexedDB. See `creation-loop-e2e.spec.ts`.

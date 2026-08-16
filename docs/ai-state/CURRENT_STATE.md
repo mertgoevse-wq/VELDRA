@@ -1,9 +1,53 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-16 (block 6)
+Last updated: 2026-08-16 (block 7)
 Branch: `integration/veldra-bedrock-plus-claude-web` (single active branch — the
 `claude/veldra-android-recovery-85j8ws` branch referenced below was cherry-picked in;
 work directly on `integration/...` from here on, no new branches)
+
+## Block 7 (2026-08-16) — real end-to-end creation-loop proof, Live Preview hardening, Terminal/Preview state consistency
+
+**Honest gap this block closed**: every prior round proved the Remote Runtime build/start
+bridge piece-by-piece (action-runner.ts's sync/build/start unit tests, the Preview refresh
+signal's own unit test) but nothing had ever stitched them into one proof that the actual
+product loop — a user prompt turning into real files, a real remote dev server, and a real
+rendered preview — works end-to-end. `app/lib/runtime/creation-loop-e2e.spec.ts` (new) now
+does exactly that through genuine wiring: `workbenchStore.addArtifact()`'s real
+`ActionRunner`, real `FilesStore.saveFile`, the real (unmocked)
+`RemoteWorkspaceSync.pushLocalWorkspaceToRemote`, and a real `fake-indexeddb`-backed
+`androidFallbackStorage` round-trip (new devDependency — this environment has no native
+IndexedDB, matching the WebContainer boundary Node can't provide either). Only the Remote
+Runtime HTTP server and WebContainer are mocked. Proves: file action → real workbench file
+content → real sync carrying that exact content → real `npm run dev` → real Preview signal
+→ real rendered iframe with the real URL → a second edit → re-sync carries the *new* content
+→ signal fires again. A second test proves a real build failure is represented honestly
+end-to-end (failed action state, no Preview signal, Preview still shows "Unavailable").
+
+`Preview.tsx` had **zero** test coverage before this block (confirmed by search — first
+`.spec.tsx` for this file ever). `Preview.spec.tsx` (new, 7 tests) proves it never invents
+success: not-configured, running-with-no-URL-yet (never fabricates a URL), failed, network
+disconnect, agent-triggered refresh, config cleared mid-session.
+
+Terminal/Preview state consistency gap found and fixed: `TerminalTabs.tsx`'s
+`RemoteCommandPanel` (the manual "Terminal Unavailable" fallback UI on Remote Runtime,
+distinct from the agent's own start path) never told Preview when the user manually ran
+`npm run dev`, nor when a running command exited/crashed — Preview stayed stale until a
+manual refresh click. Fixed symmetrically: `triggerRemotePreviewRefresh()` now fires on a
+successful manual dev-server start AND on any command exit event. `RemoteCommandPanel`
+exported from `TerminalTabs.tsx` and tested in isolation (4 new tests) — rendering the full
+`TerminalTabs`/`Panel` tree hit a genuine jsdom limitation (`react-resizable-panels` needs
+real `ResizeObserver`-driven layout measurement jsdom doesn't provide); `RemoteCommandPanel`
+itself has no dependency on the `Panel` tree, so isolating it is strictly better, not a
+workaround.
+
+Real bug found and fixed while writing the first `.tsx` component test that transitively
+imports `~/lib/webcontainer`: `import.meta.hot?.data.x` was unguarded (`?.` only covered
+`.hot`, not `.data`) across `files.ts`/`editor.ts`/`terminal.ts`/`workbench.ts`/
+`webcontainer/index.ts`. Confirmed to actually throw under Vitest + `@vitejs/plugin-react`
+(where `import.meta.hot` is truthy but `.data` isn't) — any such environment would have
+crashed the whole app at module load. Fixed with consistent `?.data?.` chaining everywhere.
+
+489/489 tests (was 476), typecheck clean, lint clean. Commits: `fa04fef`, `95f9b13`.
 
 ## Block 6 (2026-08-16) — real visual verification, Android production build was fully broken
 

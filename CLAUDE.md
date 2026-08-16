@@ -460,6 +460,14 @@ New skills should:
 
 ## Current Status
 
+**Note (2026-08-16)**: the narrative below (through "Next Priorities") stopped being
+updated after the orchestrator round on 2026-08-15 and predates several since-completed
+rounds (Android P0 stabilization/production-build fixes, the Remote Runtime agent
+build/start bridge, the language capability matrix, the real end-to-end creation-loop
+proof). It's left as historical record rather than rewritten. For the actual current
+state, read `docs/ai-state/CURRENT_STATE.md` (top entry) and `docs/ai-state/ROADMAP.md`
+first — both are more current, per this file's own "Resources" section below.
+
 **Date**: 2026-08-15
 **Branch**: `integration/veldra-bedrock-plus-claude-web` — this is the single active
 development branch. Work directly on it; do not create new feature/integration/experiment
