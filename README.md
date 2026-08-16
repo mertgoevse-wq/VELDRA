@@ -34,7 +34,7 @@ Honest status, not aspirational — a feature is only marked "Complete" once it 
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| **Capacitor WebView Shell** | ✅ Complete | Loads a pure SPA build directly inside native APK assets; debug APK builds successfully (build-verified, see below) |
+| **Capacitor WebView Shell** | ⚠️ Partially verified | The web SPA bundle builds and renders correctly (verified via headless-Chromium screenshot against the real production output, 2026-08-16); the *native* Android APK (Capacitor/Gradle) has not been built or run in this development environment — no Android SDK available. See "APK Build Instructions" below for real status |
 | **LLM Chat & Prompting** | ✅ Works | Provider-agnostic: OpenAI, Anthropic, Google Gemini, Ollama, OpenRouter, DeepSeek, Mistral, and more |
 | **Mobile Provider/Model Selection** | ✅ Works | Native bottom sheets on mobile (search, keyboard-accessible, focus trap, Escape/backdrop close), dropdowns on desktop — same shared provider/model architecture underneath |
 | **File Editor (CodeMirror)** | ✅ Works | Touch editor controls, copy/paste, and auto-save |
@@ -46,7 +46,7 @@ Honest status, not aspirational — a feature is only marked "Complete" once it 
 | **Terminal** | ⚠️ Partial | Real WebSocket-based remote command runner exists (`RemoteCommandPanel`) with connection/status/error states — requires a configured Remote Runtime server; falls back to a clear "not configured" state otherwise, never a fake shell |
 | **Preview** | ⚠️ Partial | Local static HTML preview (Blob URL) works offline; Live Server preview requires a WebContainer (desktop browser) or a configured Remote Runtime, with an honest "Live Preview Unavailable" state and remote-preview status card otherwise |
 | **WebContainer Interception** | ✅ Safe | Intercepts commands (npm install, shell, start) and fails gracefully with toasts on platforms without WebContainer support |
-| **Automated APK Builds** | ✅ Scripted | Build debug APKs in one command; device runtime testing not yet performed (no physical device available during development) |
+| **Automated APK Builds** | 📋 Scripted, unverified | `pnpm run android:apk:debug` is wired end-to-end (web build → Capacitor sync → Gradle), but has not actually been run to completion in this development environment (no Android SDK) — the web-build half is verified (see above), the Gradle/native half is not |
 
 ---
 
@@ -143,7 +143,7 @@ Since standard Android WebViews do not support `SharedArrayBuffer` and WebContai
 - [ ] **Remote Runtime Server**: Implement a lightweight Node.js/Docker sandbox backend that `RemoteCommandPanel` and the Live Preview status card can connect to, so Terminal and Preview work beyond their current "not configured" fallback states.
 - [ ] **Native File Picker**: Hook Capacitor Filesystem API to export/import files into the phone's native storage.
 - [ ] **Signed APK Releases**: Add automatic workflow generation for production APK releases.
-- [ ] **Physical Device Testing**: Validate the debug APK on a real Android device or emulator (build-verified only so far — no device runtime testing has been performed during development).
+- [ ] **Native APK Build + Physical Device Testing**: Run the actual Gradle/Capacitor build and validate on a real Android device or emulator — blocked on Android SDK availability in the development environment; the web SPA half is verified (see Android Status Table above), the native packaging half is not.
 
 ---
 
