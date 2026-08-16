@@ -495,6 +495,36 @@ export const ModelSelector = ({
     }
   }, [providerList, provider, setProvider, modelList, setModel]);
 
+  /*
+   * Mirrors the provider-fallback effect above, but for the model itself: a persisted
+   * model name (e.g. a retired id from an earlier session, or one dropped from a
+   * provider's live catalog) can go missing from modelList while its provider stays
+   * valid. Without this, the render path below just falls back to the literal string
+   * "Select model" -- the stale name lives on in state/cookies and any request against
+   * it fails server-side instead of the UI self-correcting. Skip while this provider's
+   * dynamic fetch is still in flight (modelLoading) so an empty in-progress list doesn't
+   * get misread as "model no longer exists".
+   */
+  useEffect(() => {
+    if (!provider || !model || model === AUTO_MODEL) {
+      return;
+    }
+
+    if (modelLoading === 'all' || modelLoading === provider.name) {
+      return;
+    }
+
+    const modelsForProvider = modelList.filter((m) => m.provider === provider.name);
+
+    if (modelsForProvider.length === 0) {
+      return;
+    }
+
+    if (!modelsForProvider.some((m) => m.name === model)) {
+      setModel?.(modelsForProvider[0].name);
+    }
+  }, [provider, model, modelList, modelLoading, setModel]);
+
   if (providerList.length === 0) {
     return (
       <div className="mb-2 p-4 rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-prompt-background text-bolt-elements-textPrimary">
