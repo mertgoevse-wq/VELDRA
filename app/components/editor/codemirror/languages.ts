@@ -1,4 +1,21 @@
-import { LanguageDescription } from '@codemirror/language';
+import { LanguageDescription, LanguageSupport, StreamLanguage } from '@codemirror/language';
+
+/*
+ * Go/Rust/Shell/C/Java/Kotlin have no dedicated Lezer grammar package (unlike the
+ * @codemirror/lang-* entries below), but @codemirror/legacy-modes ships CodeMirror 5's
+ * stream-based parsers for them -- a real, official CodeMirror package, not a hack. Wrapped
+ * in StreamLanguage.define() + LanguageSupport since LanguageDescription.load() requires a
+ * Promise<LanguageSupport>, and a bare StreamLanguage doesn't satisfy that type.
+ */
+async function legacyLanguage(
+  loadMode: () => Promise<Record<string, unknown>>,
+  exportName: string,
+): Promise<LanguageSupport> {
+  const mod = await loadMode();
+  return new LanguageSupport(
+    StreamLanguage.define(mod[exportName] as import('@codemirror/language').StreamParser<unknown>),
+  );
+}
 
 export const supportedLanguages = [
   LanguageDescription.of({
@@ -94,9 +111,51 @@ export const supportedLanguages = [
   }),
   LanguageDescription.of({
     name: 'C++',
-    extensions: ['cpp'],
+    extensions: ['cpp', 'cc', 'cxx', 'hpp'],
     async load() {
       return import('@codemirror/lang-cpp').then((module) => module.cpp());
+    },
+  }),
+  LanguageDescription.of({
+    name: 'C',
+    extensions: ['c', 'h'],
+    async load() {
+      return legacyLanguage(() => import('@codemirror/legacy-modes/mode/clike'), 'c');
+    },
+  }),
+  LanguageDescription.of({
+    name: 'Java',
+    extensions: ['java'],
+    async load() {
+      return legacyLanguage(() => import('@codemirror/legacy-modes/mode/clike'), 'java');
+    },
+  }),
+  LanguageDescription.of({
+    name: 'Kotlin',
+    extensions: ['kt', 'kts'],
+    async load() {
+      return legacyLanguage(() => import('@codemirror/legacy-modes/mode/clike'), 'kotlin');
+    },
+  }),
+  LanguageDescription.of({
+    name: 'Go',
+    extensions: ['go'],
+    async load() {
+      return legacyLanguage(() => import('@codemirror/legacy-modes/mode/go'), 'go');
+    },
+  }),
+  LanguageDescription.of({
+    name: 'Rust',
+    extensions: ['rs'],
+    async load() {
+      return legacyLanguage(() => import('@codemirror/legacy-modes/mode/rust'), 'rust');
+    },
+  }),
+  LanguageDescription.of({
+    name: 'Shell',
+    extensions: ['sh', 'bash'],
+    async load() {
+      return legacyLanguage(() => import('@codemirror/legacy-modes/mode/shell'), 'shell');
     },
   }),
 ];
