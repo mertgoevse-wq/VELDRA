@@ -62,6 +62,22 @@ Honest status, not aspirational — a feature is only marked "Complete" once it 
 
 ---
 
+## Screenshots
+
+Real captures — Pixel 7 viewport (412×915), headless Chromium against the actual production Android build output, 2026-08-16. Not mockups.
+
+| Welcome / Composer | Settings — Runtime Mode |
+|---|---|
+| ![Chat welcome screen](docs/images/android-2026-08-16/chat-welcome.png) | ![Settings runtime mode panel](docs/images/android-2026-08-16/settings-runtime-mode.png) |
+
+| Workbench — Files | Preview — honest fallback state |
+|---|---|
+| ![Workbench files tab](docs/images/android-2026-08-16/workbench-files.png) | ![Preview unavailable fallback](docs/images/android-2026-08-16/preview-fallback.png) |
+
+These were taken in **Android Fallback Mode** (no Remote Runtime configured) — that's why the Runtime Mode / Preview panels show their honest "not configured" states rather than a live dev server. That's the intended, correct behavior for this mode, not a bug.
+
+---
+
 ## Quick Start & Web Preview
 
 ### Prerequisites

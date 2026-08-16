@@ -860,3 +860,18 @@ If re-splitting chunks is ever revisited for bundle-size reasons: any new manual
 boundary MUST be verified with a real build + headless-Chromium screenshot before being
 considered safe, not assumed correct from reading the import graph -- this block found
 4 real counterexamples to that assumption in a row.
+
+## 2026-08-16: Core Creation Loop -- agent build/start bridged to Remote Runtime
+
+Real gap, already self-documented in `runtime-mode.ts`: Remote Runtime mode's
+`commandExecution: false` blocked ALL of agent-issued shell/build/start uniformly, so an
+agent could never actually build or start a dev server for a user on Remote Runtime --
+only the manual Terminal panel worked. Split into two capabilities:
+`commandExecution` (raw shell, stays false -- Remote Runtime's server API only accepts a
+fixed safe-command-profile allowlist, not arbitrary LLM text) and new
+`agentBuildCommands` (true for remote -- 'build'/'start' are structured action types that
+map cleanly onto that same allowlist with no injection risk). `action-runner.ts`'s new
+`#runBuildActionRemote()`/`#runStartActionRemote()` bridge through
+`RemoteRuntimeClient.runCommand('npm run build'|'npm run dev')`, reusing the same
+workspace `RemoteWorkspaceSync.ts` already syncs to. Commit `6a02e3d`, 6 new tests,
+454/454 passing.
