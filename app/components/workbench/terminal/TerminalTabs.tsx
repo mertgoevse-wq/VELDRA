@@ -20,6 +20,7 @@ import {
   type RemoteCommandStatus,
   type RemoteRuntimeEvent,
 } from '~/lib/remote-runtime/RemoteRuntimeClient';
+import { triggerRemotePreviewRefresh } from '~/lib/stores/remotePreviewSignal';
 
 const logger = createScopedLogger('Terminal');
 
@@ -315,7 +316,7 @@ export const TerminalTabs = memo(() => {
   );
 });
 
-function RemoteCommandPanel({
+export function RemoteCommandPanel({
   runtime,
   showRemoteCommandPanel,
 }: {
@@ -400,6 +401,15 @@ function RemoteCommandPanel({
         appendOutput(`\n[remote] command ${status}${code}${error}\n`);
         setActiveCommandId(undefined);
         setRunningProfile(undefined);
+
+        /*
+         * Terminal/Preview must share real runtime state: if a command the user ran here
+         * (e.g. a dev server) just exited -- crashed or was stopped -- Preview needs to
+         * re-check and honestly drop a stale "running" state, not keep showing the last
+         * successful preview. A cheap idempotent GET regardless of which profile exited is
+         * simpler and safer than trying to guess "was this the dev server" from the event.
+         */
+        triggerRemotePreviewRefresh();
       }
     },
     [appendOutput, updateCommandSummary],
@@ -481,6 +491,16 @@ function RemoteCommandPanel({
           lastOutputAt: command.startedAt,
           exitCode: command.exitCode,
         });
+
+        /*
+         * A real dev server started from this manual panel is exactly as real as one the
+         * agent starts through action-runner.ts's #runStartActionRemote() -- Preview must
+         * learn about both the same way, or a user running "npm run dev" by hand here would
+         * still have to click "Refresh Preview" manually while the agent-driven path doesn't.
+         */
+        if (commandProfile.endsWith('run dev')) {
+          triggerRemotePreviewRefresh();
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to run remote command.';
         setLastError(message);
