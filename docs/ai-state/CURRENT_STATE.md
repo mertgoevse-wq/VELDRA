@@ -1,9 +1,30 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-15 (block 5)
+Last updated: 2026-08-16 (block 6)
 Branch: `integration/veldra-bedrock-plus-claude-web` (single active branch — the
 `claude/veldra-android-recovery-85j8ws` branch referenced below was cherry-picked in;
 work directly on `integration/...` from here on, no new branches)
+
+## Block 6 (2026-08-16) — real visual verification, Android production build was fully broken
+
+**Correction to this doc's own "What's working" section below (block 3, unchanged since
+2026-08-15)**: "App boots without crashing" was true when written but had gone stale --
+the Android production build had been completely broken (permanent splash screen, never
+rendered) since some point after block 3, and nobody had re-run a real
+build+screenshot check since, so it went undetected through several rounds of code-only
+verification (typecheck/lint/test, which a Vite chunk-splitting bug doesn't touch). Found
+and fixed via this block's first real Android build+screenshot pass since block 3 --
+environment now has a working headless Chromium (`playwright install-deps chromium`
+resolved a missing `libatk-1.0.so.0` system library that blocked every earlier attempt
+this session). Root cause and fix: commit `0daefef` -- four cross-chunk circular-reference
+crashes found in sequence (`ai/mcp-stdio`'s node:child_process import broke the build
+outright first, fixed separately as `e08e61e`; then three distinct "reading X before
+initialization" React/CodeMirror crashes chasing different `manualChunks` boundaries).
+Consolidated `vite.android.config.ts`'s manual chunking to one shared chunk for
+everything React-adjacent, keeping only `vendor-shiki` split (confirmed safe, no React
+dependency). Verified via real screenshot: welcome screen renders correctly (Guided
+Build, provider/model selectors, composer, honest "Android Fallback Mode" banner). See
+`DECISIONS.md`'s 2026-08-16 entry for the full crash-by-crash trail.
 
 ## Block 5 (2026-08-15) — core product + runtime foundation, session-crash recovery round
 

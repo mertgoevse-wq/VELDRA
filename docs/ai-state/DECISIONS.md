@@ -799,3 +799,64 @@ was observed; not yet confirmed either way. Phase 16 (screenshot verification) s
 blocked until either this succeeds or a lower-memory build strategy is found (e.g.
 disabling minification for the verification build only, or building on a less
 memory-constrained machine) -- not claiming visual verification happened.
+
+## 2026-08-16: Phase 16 resolved -- real visual verification, 3 more real crashes found+fixed
+
+Continuation of the entry above, across a session restart. `NODE_OPTIONS=--max-old-space-size=4096`
+did resolve the OOM (this container's default V8 old-space limit, ~2GB, was the actual
+ceiling, not physical RAM -- 7.2GB total with 8-11GB swap gave real headroom once V8 was
+told it could use more). Also needed `playwright install-deps chromium` (missing
+`libatk-1.0.so.0` and its transitive X11/font/GTK dependency chain) before the cached
+Chromium binary would launch at all -- resolved, first working headless browser this
+session.
+
+With the build actually completing, the FIRST real screenshot (Pixel 7 viewport,
+`vite preview` serving the real `build/client` output) immediately showed a genuine,
+100%-reproducible production crash: permanent splash screen, `PAGEERROR: Cannot access
+'L' before initialization`. Traced to `vite.android.config.ts`'s `manualChunks`:
+`@lezer/*` (11 resolved packages -- the parser/highlighting engine every
+`@codemirror/lang-*` package depends on) and `@uiw/codemirror-theme-*` fell outside the
+`vendor-codemirror` manual chunk's `id.includes('@codemirror/')` match, landing in a
+different chunk and reproducing the exact cross-chunk circular-reference hazard this
+file's own `vendor-react` comment already documents (Rollup's `manualChunks` resolves
+cross-chunk references by first-discoverer; a peer chunk can end up reading a shared
+binding through another peer before it's initialized).
+
+Fixing that (matching `@lezer/`/`@uiw/codemirror` into `vendor-codemirror`) traded one
+crash for a second, different one at the same splash screen: `Cannot access 'Fp' before
+initialization`, now originating from inside the (larger) `vendor-codemirror` chunk
+itself -- the CodeMirror package family has enough circular imports internally that even
+a single, self-contained manual chunk isn't safe. Removing the `vendor-codemirror` split
+entirely traded that for a THIRD crash: `Cannot read properties of undefined (reading
+'useLayoutEffect')`, now from `app-workbench` (the existing, pre-session manual chunk for
+`app/components/workbench//components/editor` app code) -- removing one split shifted
+Rollup's default chunk-graph decisions enough to expose a latent circular reference
+between `app-workbench` and `vendor-react` that the CodeMirror split had apparently been
+masking.
+
+**Four confirmed crashes across four different hand-picked chunk boundaries in one
+session is a pattern, not a one-off.** Rather than keep chasing individual packages,
+consolidated to the simplest, most robust structure: ONE shared chunk
+(`vendor-react`, name kept for continuity) for everything React-adjacent -- react,
+ai SDK, framer-motion, Radix (already there), plus CodeMirror/lezer/uiw-codemirror,
+react-markdown/remark/rehype/unified/unist, and this app's own workbench/editor code, all
+newly folded in. Kept only `vendor-shiki` split out (confirmed safe across all 4 build
+attempts -- no React dependency anywhere in its graph). This is a real, verified tradeoff:
+fewer parallel-downloadable chunks (worse for a fast CDN, e.g. first paint may wait on a
+larger single JS file) in exchange for a build that actually works -- correct behavior
+strictly outranks a bundle-size optimization that had apparently never been verified
+working in the first place (no evidence this Android build had been re-run since these
+dependencies were added). Commit `0daefef`. Final screenshot: real welcome screen render,
+confirmed via `page.evaluate(() => document.body.innerText)` and a visual screenshot both
+-- Guided Build flow, provider/model selectors (AmazonBedrock, matching this branch's
+name), composer with working toolbar icons, honest "Android Fallback Mode" banner exactly
+as documented elsewhere. Remaining console messages (`Error fetching configured
+providers: SyntaxError: Unexpected token '<'...`) are an expected artifact of `vite
+preview` having no real `/api/*` backend (a static file server returns `index.html`'s
+SPA fallback for any unmatched path) -- not a real bug, would not reproduce against the
+real Remix server or the Android app's actual configured runtime.
+
+If re-splitting chunks is ever revisited for bundle-size reasons: any new manual chunk
+boundary MUST be verified with a real build + headless-Chromium screenshot before being
+considered safe, not assumed correct from reading the import graph -- this block found
+4 real counterexamples to that assumption in a row.
