@@ -130,6 +130,17 @@
       in `docs/architecture/STORAGE_AND_SYNC.md`. Deliberately NOT built:
       any GitHub/Drive/iCloud provider (no OAuth/conflict-UI to back one
       yet), encryption at rest, real multi-project UI.
+- [x] Real project identity + per-project Android storage isolation
+      (2026-08-16, later) — `app/lib/identity/project.ts` (kept structurally
+      distinct from chat identity even though it derives from it today, per
+      explicit instruction not to conflate them at the type level).
+      `androidFallbackStorage.ts` went from one global IndexedDB workspace
+      shared by every chat to real per-project keys, with a deterministic
+      one-time migration (first project after upgrade inherits legacy data;
+      every other project starts genuinely empty; legacy record never
+      deleted). Found and fixed a real unbounded IndexedDB connection leak
+      in `openDb()` while building the migration tests. See
+      `docs/architecture/STORAGE_AND_SYNC.md`/`CURRENT_STATE.md` block 11.
 
 ## P2 (future architecture, don't block P0/P1)
 - Local models (GGUF/safetensors/LoRA), media generation extension points.
@@ -137,8 +148,6 @@
   once evidence of no regressions vs. legacy SubagentService path.
 - Entitlement enforcement moved fully server-side (client flags are UI-only
   today; do not treat them as security boundaries).
-- Real per-project isolation for `androidFallbackStorage.ts` (today: one
-  global workspace shared by every chat — see `docs/architecture/STORAGE_AND_SYNC.md`).
 - Encryption at rest for credentials/project files (real WebCrypto helper
   already exists at `app/lib/crypto.ts`, unused by anything today).
 - Unify `app/lib/stores/github.ts` (desktop, server-OAuth-proxied — token

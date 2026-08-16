@@ -1,8 +1,14 @@
 # VELDRA — Storage, Sync & Multi-Device Foundation
 
-Status as of 2026-08-16. This is the design/foundation doc for Block 6 of the
-productization mandate. It describes what exists **today** (verified against real code,
-not aspiration), the interfaces added this block, and what deliberately was NOT built.
+Status as of 2026-08-16 (updated in a later round -- see "Update" note below). This is
+the design/foundation doc for the storage/sync/identity mandate. It describes what
+exists **today** (verified against real code, not aspiration), the interfaces added, and
+what deliberately was NOT built.
+
+**Update (later round, same day)**: per-project Android storage isolation, called out
+below as an "honest limitation, not fixed this block," IS now real -- see "Project
+identity" below for the current state. The original limitation writeup is kept
+(struck through in spirit, not literally) so the historical reasoning stays visible.
 
 ## The six concerns, defined against real code
 
@@ -14,28 +20,40 @@ maps to in this codebase today:
 | **LOCAL STATE** | Files/state that exist only on this device, not yet confirmed anywhere else | `workbenchStore.files` (in-memory) + `androidFallbackStorage.ts` (IndexedDB) |
 | **REMOTE STATE** | Files/state as the Remote Runtime server actually has them | Whatever `GET /workspace/:id/files` on the configured Remote Runtime server returns |
 | **SYNC STATE** | The last-known relationship between local and remote (idle/syncing/synced/conflict/error) | `RemoteWorkspaceSync.ts`'s `RemoteWorkspaceSyncStatus`; now also exposed generically via `StorageProvider.getSyncState()` |
-| **PROJECT STATE** | Which project's files these are | See "Project identity" below — **honest limitation**: there is no real per-project isolation yet |
+| **PROJECT STATE** | Which project's files these are | `app/lib/identity/project.ts` + `androidFallbackStorage.ts`'s per-project IndexedDB keys — see "Project identity" below |
 | **AUTHENTICATION** | Credentials proving you're allowed to read/write a given backend | Remote Runtime bearer token, GitHub OAuth token — see "Threat model" below |
 | **STORAGE PROVIDER** | Which backend is actually being talked to | `app/lib/storage/types.ts`'s `StorageProvider` interface (new this block) |
 
-## Project identity — an honest limitation, not fixed this block
+## Project identity — real per-project isolation now, with a real migration
 
-There is **no stable "project" concept distinct from a chat** anywhere in the codebase.
-`getCurrentChatId()` (`app/utils/fileLocks.ts`) derives an ID from the URL
-(`/chat/:id`, falling back to the literal string `'default'`). Chat history/messages are
-correctly scoped by that ID in IndexedDB (`app/lib/persistence/db.ts`). But **Android
-fallback file storage is not** — `androidFallbackStorage.ts` stores exactly one global
-workspace under fixed keys (`'workspace'`/`'session'`), shared by every chat. Switching
-chats today does not switch which files you see in the fallback file store.
+`app/lib/identity/project.ts` provides `getCurrentProjectId()`/`getCurrentProject()`,
+kept structurally distinct from chat identity in the type system even though it derives
+from `getCurrentChatId()` (`app/utils/fileLocks.ts`, `/chat/:id` from the URL, falling
+back to `'default'`) -- there is still no broader "project" grouping construct than a
+chat, so this is the closest real 1:1 mapping that exists. Only this one function needs
+to change when a real project-grouping feature is built; no other call site does.
 
-This block's `ProjectIdentity` type (`app/lib/storage/types.ts`) formalizes what
-*should* be the unit of isolation — it does not retrofit real per-project isolation into
-`androidFallbackStorage.ts`, which would be a genuinely separate, larger change (a
-storage-key migration touching every read/write path, with a real data-migration story
-for existing users). `LocalStorageProvider` (this block's adapter) is explicit about this:
-its `project` parameter is accepted for interface conformance only; every call still
-operates on the one global local workspace. Flagging this honestly, not hiding it behind
-an interface that implies isolation that doesn't exist.
+**`androidFallbackStorage.ts` now genuinely isolates storage per project.** It used to
+store exactly one global workspace under a fixed key (`'workspace'`), shared by every
+chat -- switching chats didn't switch which files you saw. Now every project gets its
+own real IndexedDB record (`workspace:{projectId}`). Migration is deterministic (a
+persisted session-store marker, not load-order timing): the first project to load after
+upgrade inherits any pre-existing legacy global data; every other/new project starts
+genuinely empty rather than each re-claiming the same old files. The legacy record is
+never deleted -- append-only, so the original data stays recoverable if anything about
+the migration path ever needs to be revisited. `LocalStorageProvider`
+(`app/lib/storage/providers/local-provider.ts`) automatically inherited real isolation
+from this change with zero edits of its own, since it already threaded its `project`
+parameter through to `loadAndroidFallbackState`/`saveAndroidFallbackWorkspace` -- it was
+only ever a conformance no-op because the underlying storage was global; now that the
+underlying storage is real, the adapter's existing plumbing became real too.
+
+Found and fixed while building this: `androidFallbackStorage.ts`'s `openDb()` opened a
+brand-new `IDBDatabase` connection on every single call and never closed any of them --
+an unbounded connection leak present since this file was written, just never exercised
+by a test that opened/closed the database repeatedly in one process until the migration
+tests did. Fixed by caching one long-lived connection (the standard IndexedDB usage
+pattern) instead of open-per-call-and-forget.
 
 ## Device identity — new this block
 
@@ -116,18 +134,24 @@ localStorage/IndexedDB values at rest, keyed by a passphrase or platform keystor
 key — never a hardcoded key, never an invented cipher. That work is genuinely separate
 from the storage-provider abstraction this block adds and was not attempted here.
 
-## What's NOT in this block (explicitly, so it isn't assumed done)
+## What's still NOT built (explicitly, so it isn't assumed done)
 
-- No real multi-project UI (switching "projects" independent of chats).
+- No real multi-project UI (there's no UI action to switch the active project
+  independent of switching chats — the storage layer isolates correctly, but nothing
+  user-facing exposes "projects" as their own concept yet).
 - No real conflict-resolution UI (the `SyncState` type can report `'conflict'`;
   `RemoteWorkspaceSync.ts` already records conflict details — no UI surfaces them yet).
 - No encryption at rest.
 - No GitHub/Drive/iCloud provider implementation.
-- No migration of `androidFallbackStorage.ts` to real per-project keys.
+- Remote Runtime workspaces are still not project-scoped (`RemoteRuntimeProvider`'s
+  `project` parameter remains conformance-only, same honest caveat as before — the
+  Remote Runtime server has no per-project workspace concept; this round's migration
+  only touched local Android fallback storage).
 
-## Files added this block
+## Files added
 
 - `app/lib/identity/device.ts` (+ `.spec.ts`)
+- `app/lib/identity/project.ts` (+ `.spec.ts`)
 - `app/lib/storage/types.ts`
 - `app/lib/storage/providers/remote-runtime-provider.ts` (+ `.spec.ts`)
 - `app/lib/storage/providers/local-provider.ts` (+ `.spec.ts`)

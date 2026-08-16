@@ -1090,3 +1090,50 @@ which is also why its `capabilities.conflictDetection` is `false` (only
 real conflict).
 
 501 → 514 tests. Typecheck clean. Lint clean.
+
+## 2026-08-16, later still: security/secrets audit (no code changes -- a clean result)
+
+The repository is public; a fresh mandate specifically asked to verify no secrets were
+ever exposed rather than assume the existing `.gitignore`/CI setup was sufficient.
+Checked directly, not assumed: `.env.production` and `.env.example` (both tracked
+in git by design) contain only empty placeholders and safe public defaults (e.g.
+`VITE_GITLAB_URL=https://gitlab.com`) -- no real key ever committed to either. Searched
+the FULL git history (`git log --all -p -G'<secret-shaped-pattern>'`, covering
+Anthropic/OpenAI/GitHub/AWS/Google/Slack-style token prefixes) for anything ever added
+or removed across every commit, not just the current tree -- the only matches were this
+session's own `redactSecrets()` test fixtures (deliberately fake example values) and
+`ghp_xxxx...`-style placeholder text in an input `placeholder=` attribute and a commented
+env var. No real secret was ever committed, present or historical. `.env`/`.env.local`
+(the files that would hold real values) are correctly gitignored and have never been
+added in git history. A `secrets-scan` CI job (Trivy) already exists
+(`.github/workflows/security.yaml`), alongside CodeQL and dependency/SBOM scanning --
+nothing needed adding. Reviewed this round's newest code (the delete-propagation
+endpoint from the previous round, the StorageProvider adapters, device identity) for
+path traversal, command injection, and error-message leakage -- all clean, all reuse
+already-audited safe primitives (`resolveSafeFilePath`), no new attack surface.
+
+## 2026-08-16, later still: real project identity + per-project Android storage isolation
+
+See `docs/architecture/STORAGE_AND_SYNC.md`'s "Project identity" section for the full
+writeup (kept as the canonical source since this touches the same doc from the previous
+storage-foundation round). Short version: `app/lib/identity/project.ts` formalizes
+project identity as its own function rather than inlining `getCurrentChatId()` calls at
+every site that needs it, so a future real project-grouping feature only requires
+editing one function. `androidFallbackStorage.ts` moved from one global IndexedDB
+workspace to real per-project keys with a deterministic, append-only migration (a
+persisted marker decides which single project inherits pre-upgrade data, never
+timing-dependent, never re-triggered for later projects, and the legacy record is never
+deleted). `resetAndroidFallbackStorage()` was silently a whole-database wipe before this
+-- now correctly scoped to one project.
+
+Real bug found and fixed by the process of writing real migration tests (not found by
+reading the code in isolation): `openDb()` opened a fresh `IDBDatabase` connection on
+every call and never closed a single one of them. This was already true before this
+round -- nothing exercised it because no prior test opened/closed the database
+repeatedly within one process. The first migration test that did surfaced it
+immediately as a hang (a leaked connection blocking a subsequent `deleteDatabase()`
+call). Fixed by caching one long-lived connection instead of open-per-call-and-forget,
+the standard IndexedDB usage pattern anyway -- not just a test workaround.
+
+514 → 521 tests (project.spec.ts, new; 4 new tests in androidFallbackStorage.spec.ts).
+Typecheck clean. Lint clean.

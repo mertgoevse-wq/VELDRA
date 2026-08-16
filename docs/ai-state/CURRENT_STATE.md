@@ -1,6 +1,43 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-16 (block 10)
+Last updated: 2026-08-16 (block 11)
+Branch: `integration/veldra-bedrock-plus-claude-web`
+
+## Block 11 (2026-08-16) — real project identity + per-project Android storage isolation, with migration
+
+Full detail: `docs/architecture/STORAGE_AND_SYNC.md` (updated). Summary:
+
+- **`app/lib/identity/project.ts`** (new): `getCurrentProjectId()`/`getCurrentProject()`,
+  kept structurally distinct from chat identity even though today it derives from
+  `getCurrentChatId()` -- the mandate explicitly required not conflating the two at the
+  type level just because that's the only real mapping that exists yet. Only this one
+  function's body needs to change when a real project-grouping feature is built.
+- **`androidFallbackStorage.ts`**: real per-project workspace isolation. Was one single
+  global IndexedDB record (`key: 'workspace'`) shared by every chat; now keyed
+  `workspace:{projectId}`, one real record per project. Migration is deterministic (a
+  persisted marker, not timing): the first project to load after upgrade inherits any
+  pre-existing legacy global data; every other/new project starts genuinely empty, never
+  re-claiming already-migrated data. The legacy record is never deleted (append-only --
+  if anything about the migration goes wrong, the original data is untouched and
+  recoverable). `resetAndroidFallbackStorage()` now scopes to one project (was a
+  whole-database wipe -- resetting "my workspace" no longer nukes every other project).
+  Repurposed a previously-vestigial `activeWorkspace` session field (hardcoded to the
+  literal string `'default'` everywhere, never read) to genuinely track it.
+- **Real bug found and fixed while writing the migration tests**: `openDb()` opened a
+  brand-new `IDBDatabase` connection on every single call and never closed any of them --
+  a real, unbounded connection leak (present before this round too, just never exercised
+  by a test that opened/closed the database repeatedly in one process until now). Fixed
+  by caching a single long-lived connection, the standard IndexedDB usage pattern, rather
+  than open-per-call-and-forget.
+- All 10 existing call sites (`files.ts`, `workbench.ts`, `RemoteWorkspaceSync.ts`,
+  `local-provider.ts`, `android-adapter.ts`, 3 Settings components) needed zero changes --
+  the new `projectId` parameter defaults to `getCurrentProjectId()`, so existing callers
+  keep working unchanged while genuinely getting per-project storage.
+- New tests: `project.spec.ts` (first coverage for project identity), 4 new tests in
+  `androidFallbackStorage.spec.ts` covering isolation, migration (including the
+  "second project must NOT also inherit legacy data" case), and scoped reset.
+
+## Block 10 (2026-08-16)
 Branch: `integration/veldra-bedrock-plus-claude-web`
 
 ## Block 10 (2026-08-16) — evidence-based dead-code/dependency sweep

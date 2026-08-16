@@ -1,13 +1,36 @@
+import { getCurrentProjectId } from '~/lib/identity/project';
+
 export interface AndroidFallbackSessionState {
   key: 'session';
+
+  /**
+   * Historically hardcoded to the literal string 'default' everywhere it was set, never
+   * read back for any decision -- effectively dead. Now genuinely holds the current
+   * project's ID (see app/lib/identity/project.ts), reflecting which project's workspace
+   * record this session last touched.
+   */
   activeWorkspace: string;
+
+  /**
+   * Set once, the first time per-project workspace storage successfully determines
+   * whether pre-upgrade global workspace data existed. Either the project ID that
+   * inherited that legacy data, or NO_LEGACY_DATA_SENTINEL if there was nothing to
+   * migrate. Never re-checked once set, so a legacy record is claimed by exactly one
+   * project, and every other/new project starts genuinely empty rather than each
+   * repeatedly re-claiming the same old data.
+   */
+  migratedGlobalWorkspaceToProjectId?: string;
   lastOpenedFile?: string;
   currentView?: string;
   updatedAt: string;
 }
 
 export interface AndroidFallbackWorkspaceState {
-  key: 'workspace';
+  /**
+   * The full per-project storage key (see workspaceKeyFor) -- also IndexedDB's keyPath
+   *  for this record, so this field IS this record's primary key, not just a label.
+   */
+  key: string;
   files: Record<string, PersistedDirent>;
   deletedPaths: string[];
   updatedAt: string;
@@ -31,13 +54,30 @@ const DB_VERSION = 1;
 const WORKSPACE_STORE = 'workspace';
 const SESSION_STORE = 'session';
 
+/**
+ * The exact IndexedDB key every install used before per-project storage existed --
+ * pre-migration data lives here and ONLY here. Never written to again after this file
+ * introduced per-project keys; read-only, for one-time migration.
+ */
+const LEGACY_GLOBAL_WORKSPACE_KEY = 'workspace';
+
+/**
+ * Recorded in session state when a migration check found no legacy data to migrate,
+ *  so that check is never repeated for every subsequently-created project.
+ */
+const NO_LEGACY_DATA_SENTINEL = '__none__';
+
+function workspaceKeyFor(projectId: string): string {
+  return `workspace:${projectId}`;
+}
+
 function isIndexedDBAvailable(): boolean {
   return typeof window !== 'undefined' && typeof indexedDB !== 'undefined';
 }
 
-function createDefaultWorkspaceState(): AndroidFallbackWorkspaceState {
+function createDefaultWorkspaceState(key: string): AndroidFallbackWorkspaceState {
   return {
-    key: 'workspace',
+    key,
     files: {},
     deletedPaths: [],
     updatedAt: new Date().toISOString(),
@@ -67,7 +107,8 @@ export function isValidWorkspaceState(value: unknown): value is AndroidFallbackW
   const candidate = value as Partial<AndroidFallbackWorkspaceState>;
 
   return (
-    candidate.key === 'workspace' &&
+    typeof candidate.key === 'string' &&
+    (candidate.key === LEGACY_GLOBAL_WORKSPACE_KEY || candidate.key.startsWith('workspace:')) &&
     typeof candidate.files === 'object' &&
     candidate.files !== null &&
     Array.isArray(candidate.deletedPaths)
@@ -84,12 +125,24 @@ export function isValidSessionState(value: unknown): value is AndroidFallbackSes
   return candidate.key === 'session' && typeof candidate.activeWorkspace === 'string';
 }
 
+/**
+ * Cached across calls, deliberately -- opening a fresh IDBDatabase connection per
+ * operation and never closing it (the original shape of this function) leaks a
+ * connection every single call. Standard IndexedDB usage opens once per app session and
+ * keeps the connection alive; this does that instead of open-per-call-and-forget.
+ */
+let dbConnectionPromise: Promise<IDBDatabase | undefined> | undefined;
+
 function openDb(): Promise<IDBDatabase | undefined> {
   if (!isIndexedDBAvailable()) {
     return Promise.resolve(undefined);
   }
 
-  return new Promise((resolve) => {
+  if (dbConnectionPromise) {
+    return dbConnectionPromise;
+  }
+
+  dbConnectionPromise = new Promise((resolve) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = () => {
@@ -104,43 +157,132 @@ function openDb(): Promise<IDBDatabase | undefined> {
       }
     };
 
+    request.onsuccess = () => {
+      const db = request.result;
+
+      /*
+       * A connection can still be force-closed externally (e.g. deleteDatabase() from
+       * another tab/context) -- drop the cache so the next call reopens instead of
+       * reusing a dead handle forever.
+       */
+      db.onclose = () => {
+        dbConnectionPromise = undefined;
+      };
+
+      resolve(db);
+    };
+
+    request.onerror = () => {
+      dbConnectionPromise = undefined;
+      resolve(undefined);
+    };
+  });
+
+  return dbConnectionPromise;
+}
+
+/**
+ * Test-only: drops the cached connection so a fresh indexedDB.deleteDatabase() in a
+ *  test's setup isn't blocked waiting for this module's own long-lived connection to close.
+ */
+export async function __closeDbConnectionForTests(): Promise<void> {
+  const db = await dbConnectionPromise;
+  dbConnectionPromise = undefined;
+  db?.close();
+}
+
+function getRawWorkspaceRecord(db: IDBDatabase, key: string): Promise<unknown> {
+  return new Promise((resolve) => {
+    const transaction = db.transaction(WORKSPACE_STORE, 'readonly');
+    const store = transaction.objectStore(WORKSPACE_STORE);
+    const request = store.get(key);
+
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => resolve(undefined);
   });
 }
 
-async function getWorkspaceState(): Promise<AndroidFallbackWorkspaceState> {
-  const db = await openDb();
+function putRawWorkspaceRecord(db: IDBDatabase, state: AndroidFallbackWorkspaceState): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(WORKSPACE_STORE, 'readwrite');
+    const store = transaction.objectStore(WORKSPACE_STORE);
+    const request = store.put(state);
 
-  if (!db) {
-    return createDefaultWorkspaceState();
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error ?? new Error('Failed to save workspace state'));
+  });
+}
+
+/**
+ * Migrates pre-per-project data exactly once, deterministically, based on a persisted
+ * marker rather than timing -- see AndroidFallbackSessionState.migratedGlobalWorkspaceToProjectId's
+ * doc comment for why. Never deletes the legacy record (append-only: if anything here
+ * goes wrong, the original data is untouched and recoverable, not silently lost).
+ */
+async function migrateLegacyWorkspaceIfNeeded(
+  db: IDBDatabase,
+  projectId: string,
+): Promise<AndroidFallbackWorkspaceState | undefined> {
+  const session = await getSessionState();
+
+  if (session.migratedGlobalWorkspaceToProjectId !== undefined) {
+    /*
+     * Migration already resolved (either claimed by a project, or confirmed empty) --
+     * never re-claim legacy data for a second project.
+     */
+    return undefined;
   }
 
-  return new Promise((resolve) => {
-    const transaction = db.transaction(WORKSPACE_STORE, 'readonly');
-    const store = transaction.objectStore(WORKSPACE_STORE);
-    const request = store.get('workspace');
+  const legacyValue = await getRawWorkspaceRecord(db, LEGACY_GLOBAL_WORKSPACE_KEY);
+  const hasLegacyData =
+    isValidWorkspaceState(legacyValue) &&
+    (Object.keys(legacyValue.files).length > 0 || legacyValue.deletedPaths.length > 0);
 
-    request.onsuccess = () => {
-      const value: unknown = request.result;
+  if (!hasLegacyData) {
+    await updateAndroidFallbackSession({ migratedGlobalWorkspaceToProjectId: NO_LEGACY_DATA_SENTINEL });
+    return undefined;
+  }
 
-      if (value === undefined) {
-        resolve(createDefaultWorkspaceState());
-        return;
-      }
+  const legacy = legacyValue as AndroidFallbackWorkspaceState;
+  const migrated: AndroidFallbackWorkspaceState = {
+    key: workspaceKeyFor(projectId),
+    files: legacy.files,
+    deletedPaths: legacy.deletedPaths,
+    updatedAt: new Date().toISOString(),
+  };
 
-      if (!isValidWorkspaceState(value)) {
-        console.error('[androidFallbackStorage] Discarding corrupted workspace record', value);
-        resolve(createDefaultWorkspaceState());
+  await putRawWorkspaceRecord(db, migrated);
+  await updateAndroidFallbackSession({ migratedGlobalWorkspaceToProjectId: projectId, activeWorkspace: projectId });
 
-        return;
-      }
+  console.info(
+    `[androidFallbackStorage] Migrated pre-upgrade global workspace (${Object.keys(legacy.files).length} files) to project "${projectId}"`,
+  );
 
-      resolve(value);
-    };
+  return migrated;
+}
 
-    request.onerror = () => resolve(createDefaultWorkspaceState());
-  });
+async function getWorkspaceState(projectId: string): Promise<AndroidFallbackWorkspaceState> {
+  const db = await openDb();
+  const key = workspaceKeyFor(projectId);
+
+  if (!db) {
+    return createDefaultWorkspaceState(key);
+  }
+
+  const value = await getRawWorkspaceRecord(db, key);
+
+  if (value !== undefined) {
+    if (!isValidWorkspaceState(value)) {
+      console.error('[androidFallbackStorage] Discarding corrupted workspace record', value);
+      return createDefaultWorkspaceState(key);
+    }
+
+    return value;
+  }
+
+  const migrated = await migrateLegacyWorkspaceIfNeeded(db, projectId);
+
+  return migrated ?? createDefaultWorkspaceState(key);
 }
 
 async function getSessionState(): Promise<AndroidFallbackSessionState> {
@@ -177,13 +319,19 @@ async function getSessionState(): Promise<AndroidFallbackSessionState> {
   });
 }
 
-export async function loadAndroidFallbackState(): Promise<AndroidFallbackState> {
-  const [workspace, session] = await Promise.all([getWorkspaceState(), getSessionState()]);
+export async function loadAndroidFallbackState(
+  projectId: string = getCurrentProjectId(),
+): Promise<AndroidFallbackState> {
+  const [workspace, session] = await Promise.all([getWorkspaceState(projectId), getSessionState()]);
 
   return { workspace, session };
 }
 
-export async function saveAndroidFallbackWorkspace(files: Record<string, PersistedDirent>, deletedPaths: string[]) {
+export async function saveAndroidFallbackWorkspace(
+  files: Record<string, PersistedDirent>,
+  deletedPaths: string[],
+  projectId: string = getCurrentProjectId(),
+) {
   const db = await openDb();
 
   if (!db) {
@@ -191,20 +339,13 @@ export async function saveAndroidFallbackWorkspace(files: Record<string, Persist
   }
 
   const state: AndroidFallbackWorkspaceState = {
-    key: 'workspace',
+    key: workspaceKeyFor(projectId),
     files,
     deletedPaths,
     updatedAt: new Date().toISOString(),
   };
 
-  await new Promise<void>((resolve, reject) => {
-    const transaction = db.transaction(WORKSPACE_STORE, 'readwrite');
-    const store = transaction.objectStore(WORKSPACE_STORE);
-    const request = store.put(state);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error ?? new Error('Failed to save workspace state'));
-  });
+  await putRawWorkspaceRecord(db, state);
 }
 
 export async function updateAndroidFallbackSession(partial: Partial<AndroidFallbackSessionState>) {
@@ -232,31 +373,28 @@ export async function updateAndroidFallbackSession(partial: Partial<AndroidFallb
   });
 }
 
-export async function resetAndroidFallbackStorage() {
+/**
+ * Resets ONE project's workspace -- deliberately scoped, not a whole-database wipe.
+ * Deleting only this project's record (not calling store.clear()) means every other
+ * project's files are untouched, matching what a user resetting "my current workspace"
+ * actually expects; a global wipe would be a surprising, destructive side effect on
+ * unrelated projects.
+ */
+export async function resetAndroidFallbackStorage(projectId: string = getCurrentProjectId()) {
   const db = await openDb();
 
   if (!db) {
     return;
   }
 
-  await Promise.all([
-    new Promise<void>((resolve, reject) => {
-      const transaction = db.transaction(WORKSPACE_STORE, 'readwrite');
-      const store = transaction.objectStore(WORKSPACE_STORE);
-      const request = store.clear();
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(WORKSPACE_STORE, 'readwrite');
+    const store = transaction.objectStore(WORKSPACE_STORE);
+    const request = store.delete(workspaceKeyFor(projectId));
 
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error ?? new Error('Failed to clear workspace store'));
-    }),
-    new Promise<void>((resolve, reject) => {
-      const transaction = db.transaction(SESSION_STORE, 'readwrite');
-      const store = transaction.objectStore(SESSION_STORE);
-      const request = store.clear();
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error ?? new Error('Failed to clear session store'));
-    }),
-  ]);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error ?? new Error('Failed to reset workspace state'));
+  });
 }
 
 export async function getAndroidFallbackPersistenceStatus() {
