@@ -1,7 +1,39 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-16 (block 11)
+Last updated: 2026-08-16 (block 12)
 Branch: `integration/veldra-bedrock-plus-claude-web`
+
+## Block 12 (2026-08-16) — StorageProvider hardening: exists/getMetadata/rename, and a real gap closed
+
+Extended the `StorageProvider` contract (`app/lib/storage/types.ts`) with `exists()`,
+`getMetadata()`, and `rename()`, plus a new `capabilities.rename` flag -- following the
+same honesty pattern `capabilities.delete`/`conflictDetection` already established.
+`LocalStorageProvider` genuinely supports rename (composed from its own real
+read+write+delete primitives, atomic via one `saveAndroidFallbackWorkspace()` call).
+`RemoteRuntimeProvider` genuinely does NOT (`capabilities.rename: false`) -- Remote
+Runtime has no rename primitive server-side, and this provider's write/delete both
+re-sync the whole local workspace rather than targeting one path, so there's no
+well-defined "old path" to remove independent of local state; the method rejects with a
+clear error rather than faking a composed rename that would silently desync.
+
+**Real gap found and fixed in the same pass, not left for later**: `LocalStorageProvider`
+was still ignoring its own `project` parameter (`_project`, unused) and always operating
+on `getCurrentProjectId()`'s default, even though `androidFallbackStorage.ts` gained real
+per-project isolation earlier this session. Its own file header even still claimed "no
+per-project scoping today" -- stale the moment the isolation migration landed. Fixed:
+every method now passes `project.id` through explicitly, so the adapter genuinely
+respects whichever `ProjectIdentity` it's called with rather than silently defaulting to
+whatever the current URL happens to be. New test proves this at the adapter layer
+specifically (not just the underlying store).
+
+`local-provider.spec.ts`'s existing tests also had a real test-isolation bug this
+surfaced: `beforeEach` reset the DEFAULT project's storage while the tests themselves
+used a project ID of `'any-project'` -- harmless before this fix (the adapter ignored
+`project` anyway, so both always hit the same default-project storage), but would have
+silently leaked state between tests once the adapter started respecting `project.id`.
+Fixed alongside.
+
+521 → 529 tests (8 new StorageProvider tests). Typecheck clean. Lint clean.
 
 ## Block 11 (2026-08-16) — real project identity + per-project Android storage isolation, with migration
 

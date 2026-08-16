@@ -28,6 +28,20 @@ const CAPABILITIES: StorageProviderCapabilities = {
   write: true,
   delete: true,
   conflictDetection: true,
+
+  /*
+   * False, honestly: Remote Runtime has no rename primitive of its own (checked --
+   * RemoteRuntimeClient/the actual server in remote-runtime/src/server.ts have no rename
+   * endpoint), and this provider's write/delete both work by re-syncing the ENTIRE local
+   * workspace (pushLocalWorkspaceToRemote()), not by targeting one path -- there's no
+   * "old path" to remove server-side independent of whatever the local workspace already
+   * looks like. A real rename would need to happen in the local file store FIRST (which
+   * also has no rename today -- see the earlier dead-code sweep's finding) and then simply
+   * get picked up by the next push. Faking one here by composing readFile+writeFiles+
+   * deleteFiles would silently desync from that reality and produce two remote copies
+   * whenever the local rename hadn't actually happened.
+   */
+  rename: false,
 };
 
 function createClient(): RemoteRuntimeClient {
@@ -103,6 +117,40 @@ export class RemoteRuntimeProvider implements StorageProvider {
     }
 
     return { deletedCount: paths.length };
+  }
+
+  async exists(_project: ProjectIdentity, path: string): Promise<boolean> {
+    const response = await createClient().listFiles({ includeContent: false });
+    return response.files.some((file) => file.path === path);
+  }
+
+  async getMetadata(
+    _project: ProjectIdentity,
+    path: string,
+  ): Promise<Pick<StorageFileEntry, 'path' | 'type' | 'size' | 'modifiedAt' | 'isBinary'> | undefined> {
+    const response = await createClient().listFiles({ includeContent: false });
+    const file = response.files.find((item) => item.path === path);
+
+    if (!file) {
+      return undefined;
+    }
+
+    return {
+      path: file.path,
+      type: file.type === 'directory' ? 'folder' : 'file',
+      size: file.size,
+      modifiedAt: file.modifiedAt,
+      isBinary: file.isBinary,
+    };
+  }
+
+  /** Rejects -- see capabilities.rename's doc comment for why this must reject, not silently act. */
+  async rename(_project: ProjectIdentity, _fromPath: string, _toPath: string): Promise<void> {
+    throw new Error(
+      'RemoteRuntimeProvider does not support rename: Remote Runtime has no rename primitive, ' +
+        'and this provider re-syncs the whole workspace rather than targeting one path. ' +
+        'Rename the file locally first, then sync.',
+    );
   }
 
   getSyncState(_project: ProjectIdentity): SyncState {

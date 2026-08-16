@@ -141,6 +141,14 @@
       deleted). Found and fixed a real unbounded IndexedDB connection leak
       in `openDb()` while building the migration tests. See
       `docs/architecture/STORAGE_AND_SYNC.md`/`CURRENT_STATE.md` block 11.
+- [x] StorageProvider hardening (2026-08-16, later) — `exists()`/`getMetadata()`/
+      `rename()` added to the contract, with a new `capabilities.rename` flag.
+      `LocalStorageProvider` genuinely supports rename (real, atomic);
+      `RemoteRuntimeProvider` honestly rejects it (no server-side primitive
+      to build one from). Found and fixed a real gap in the same pass:
+      `LocalStorageProvider` was still ignoring its own `project` argument
+      after the per-project isolation migration landed — now genuinely
+      threads it through. See `CURRENT_STATE.md` block 12.
 
 ## P2 (future architecture, don't block P0/P1)
 - Local models (GGUF/safetensors/LoRA), media generation extension points.

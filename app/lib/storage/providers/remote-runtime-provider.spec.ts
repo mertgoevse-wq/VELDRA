@@ -54,7 +54,13 @@ describe('RemoteRuntimeProvider', () => {
 
   it('reports honest capabilities matching what Remote Runtime actually supports', () => {
     const provider = new RemoteRuntimeProvider();
-    expect(provider.capabilities).toEqual({ read: true, write: true, delete: true, conflictDetection: true });
+    expect(provider.capabilities).toEqual({
+      read: true,
+      write: true,
+      delete: true,
+      conflictDetection: true,
+      rename: false,
+    });
   });
 
   it('translates a real listFiles response into the neutral StorageFileEntry shape', async () => {
@@ -119,5 +125,39 @@ describe('RemoteRuntimeProvider', () => {
     await pushLocalWorkspaceToRemote();
 
     expect(provider.getSyncState(PROJECT)).toBe('synced');
+  });
+
+  it('exists reflects a real listFiles response', async () => {
+    vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockResolvedValue({
+      files: [{ path: 'index.html', type: 'file', size: 10 }],
+    });
+
+    const provider = new RemoteRuntimeProvider();
+    expect(await provider.exists(PROJECT, 'index.html')).toBe(true);
+    expect(await provider.exists(PROJECT, 'missing.html')).toBe(false);
+  });
+
+  it('getMetadata returns real metadata without fetching content, and undefined for a missing path', async () => {
+    const listFiles = vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockResolvedValue({
+      files: [{ path: 'index.html', type: 'file', size: 10, modifiedAt: '2026-08-16T00:00:00Z' }],
+    });
+
+    const provider = new RemoteRuntimeProvider();
+    const metadata = await provider.getMetadata(PROJECT, 'index.html');
+
+    expect(metadata).toEqual({
+      path: 'index.html',
+      type: 'file',
+      size: 10,
+      modifiedAt: '2026-08-16T00:00:00Z',
+      isBinary: undefined,
+    });
+    expect(listFiles).toHaveBeenCalledWith({ includeContent: false });
+    expect(await provider.getMetadata(PROJECT, 'missing.html')).toBeUndefined();
+  });
+
+  it('rename honestly rejects instead of silently no-op-ing or faking success, matching capabilities.rename === false', async () => {
+    const provider = new RemoteRuntimeProvider();
+    await expect(provider.rename(PROJECT, 'old.txt', 'new.txt')).rejects.toThrow(/does not support rename/);
   });
 });

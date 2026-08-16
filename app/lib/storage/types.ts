@@ -19,8 +19,9 @@
  *
  * See docs/architecture/STORAGE_AND_SYNC.md for the full LOCAL/REMOTE/SYNC/PROJECT/
  * AUTHENTICATION/STORAGE PROVIDER breakdown and the honest threat model (today: no
- * encryption at rest anywhere, credentials in plaintext localStorage/cookies, no real
- * multi-project isolation -- Android fallback storage is one single global workspace).
+ * encryption at rest anywhere, credentials in plaintext localStorage/cookies). Local
+ * (Android fallback) storage genuinely isolates per project as of a later round --
+ * Remote Runtime workspaces do not yet (see RemoteRuntimeProvider's own doc comment).
  */
 
 /** A project's identity, independent of which device or storage backend is being used. */
@@ -83,6 +84,13 @@ export interface StorageProviderCapabilities {
    *  rather than silently picking a winner.
    */
   conflictDetection: boolean;
+
+  /**
+   * Whether `rename()` is real for this provider, not just present on the interface.
+   * False for a provider with no real primitive to build one from -- see rename()'s own
+   * doc comment. A provider must never claim this true and then fake the result.
+   */
+  rename: boolean;
 }
 
 /**
@@ -105,6 +113,31 @@ export interface StorageProvider {
    *  report capabilities.delete === false so callers don't assume it worked.
    */
   deleteFiles(project: ProjectIdentity, paths: string[]): Promise<{ deletedCount: number }>;
+
+  /**
+   * Whether a path currently exists (as a file or folder). Must reflect the same real
+   *  state listFiles()/readFile() would -- not a separate, potentially-stale check.
+   */
+  exists(project: ProjectIdentity, path: string): Promise<boolean>;
+
+  /**
+   * Metadata only, no content -- for callers that don't need the (potentially large)
+   *  file body. Returns undefined if the path doesn't exist, same as readFile().
+   */
+  getMetadata(
+    project: ProjectIdentity,
+    path: string,
+  ): Promise<Pick<StorageFileEntry, 'path' | 'type' | 'size' | 'modifiedAt' | 'isBinary'> | undefined>;
+
+  /**
+   * Renames/moves a path. Real only when capabilities.rename is true -- a provider where
+   * it's false MUST reject the call, never silently no-op or report false success. See
+   * LocalStorageProvider vs. RemoteRuntimeProvider: the local provider composes a real
+   * rename from its own read+write+delete primitives in one atomic save; Remote Runtime
+   * has no rename primitive of its own to build one from (see
+   * RemoteRuntimeProvider.rename()'s doc comment for exactly why).
+   */
+  rename(project: ProjectIdentity, fromPath: string, toPath: string): Promise<void>;
 
   getSyncState(project: ProjectIdentity): SyncState;
 }

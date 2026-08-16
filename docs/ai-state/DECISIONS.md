@@ -1137,3 +1137,37 @@ the standard IndexedDB usage pattern anyway -- not just a test workaround.
 
 514 → 521 tests (project.spec.ts, new; 4 new tests in androidFallbackStorage.spec.ts).
 Typecheck clean. Lint clean.
+
+## 2026-08-16, later still: StorageProvider hardening (exists/getMetadata/rename)
+
+Extended `StorageProvider` with `exists()`, `getMetadata()`, `rename()`, and a new
+`capabilities.rename` flag, same honesty pattern as the existing `capabilities.delete`.
+`rename` specifically required judgment: neither `androidFallbackStorage.ts` (before
+this) nor `RemoteRuntimeClient`/the real remote-runtime server has ever had a rename
+primitive (confirmed by the earlier dead-code sweep's finding that rename doesn't exist
+as a feature anywhere). Implementing it as a naive composed delete+create at the
+StorageProvider layer for BOTH adapters would have been exactly the "fake capability"
+this mandate keeps warning against -- for `LocalStorageProvider` it's genuinely fine
+(one atomic `saveAndroidFallbackWorkspace()` call, real, not best-effort), but for
+`RemoteRuntimeProvider` it would be actively misleading: that provider's write/delete
+both work by re-syncing the ENTIRE local workspace, not by targeting one remote path, so
+a composed "rename" there would silently desync from local state whenever the local
+rename hadn't actually happened (there being no local rename to have happened). Resolved
+by making the capability honest per-provider instead of forcing symmetry: `true` for
+local (real), `false` for remote (rejects with a clear message explaining why, rather
+than silently no-op-ing or lying about success).
+
+Real gap found and fixed in the same pass: `LocalStorageProvider` was still ignoring its
+own `project` parameter after the per-project isolation migration landed earlier this
+session -- ironic timing, since the whole point of that migration was to make storage
+project-aware, and the adapter meant to expose it hadn't been updated to match. Its file
+header comment still said "no per-project scoping today," stale the moment the
+migration commit landed a few tests earlier in the same session. Fixed by threading
+`project.id` through every method instead of defaulting to `getCurrentProjectId()`
+internally; new adapter-level test proves genuine isolation, not just the underlying
+store's. `local-provider.spec.ts`'s existing tests had a latent isolation bug of their
+own this exposed (`beforeEach` reset a different project than the tests used -- harmless
+before this fix since the adapter ignored `project` anyway, would have started leaking
+state between tests the moment it didn't).
+
+521 → 529 tests. Typecheck clean. Lint clean.
