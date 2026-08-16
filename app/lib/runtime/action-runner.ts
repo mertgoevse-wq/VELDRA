@@ -11,6 +11,7 @@ import { runtimeModeStore, type RuntimeMode } from '~/lib/stores/runtime-mode';
 import { toast } from 'react-toastify';
 import { addActivity, completeActivity, errorActivity } from '~/lib/stores/buildActivity';
 import { RemoteRuntimeClient, type RemoteCommandResponse } from '~/lib/remote-runtime/RemoteRuntimeClient';
+import { triggerRemotePreviewRefresh } from '~/lib/stores/remotePreviewSignal';
 
 /**
  * File actions are already persisted by FilesStore on Android fallback and
@@ -775,6 +776,17 @@ export class ActionRunner {
         started.error || `Dev server exited immediately with code ${started.exitCode ?? 'unknown'}`,
       );
     }
+
+    /*
+     * Preview.tsx only checks the remote preview's real status on mount and on a manual
+     * "Refresh" click -- without this, a user would have no way to know the agent just
+     * started a real dev server for them except noticing nothing changed and clicking
+     * Refresh themselves. This doesn't fake readiness: Preview.tsx's own
+     * RemoteRuntimeClient.getPreviewUrl() call still decides the real status (possibly
+     * still 'starting' if the server hasn't bound a port yet) -- this only tells it when
+     * to go check.
+     */
+    triggerRemotePreviewRefresh();
   }
 
   async #pollRemoteCommand(

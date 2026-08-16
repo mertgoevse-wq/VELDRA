@@ -13,6 +13,7 @@ import { isCapacitor } from '~/lib/adapters/platform';
 import { toast } from 'react-toastify';
 import { RemoteRuntimeClient, type RemotePreviewResponse } from '~/lib/remote-runtime/RemoteRuntimeClient';
 import { buildStaticPreview } from '~/lib/preview/staticPreviewBundle';
+import { remotePreviewRefreshSignal } from '~/lib/stores/remotePreviewSignal';
 
 type ResizeSide = 'left' | 'right' | null;
 
@@ -209,6 +210,8 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
     [remotePreviewConfigured, runtime.remoteAuthToken, runtime.remoteRuntimeUrl, runtime.remoteWorkspaceId],
   );
 
+  const remotePreviewRefreshSignalValue = useStore(remotePreviewRefreshSignal);
+
   useEffect(() => {
     if (!remotePreviewConfigured) {
       setRemotePreview(null);
@@ -218,7 +221,12 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
     }
 
     void refreshRemotePreview({ quiet: true });
-  }, [refreshRemotePreview, remotePreviewConfigured]);
+
+    /*
+     * remotePreviewRefreshSignalValue: re-checks whenever action-runner.ts's remote 'start'
+     * bridge starts a real dev server, not just on mount/manual click -- see its own store file.
+     */
+  }, [refreshRemotePreview, remotePreviewConfigured, remotePreviewRefreshSignalValue]);
 
   const resizingState = useRef({
     isResizing: false,

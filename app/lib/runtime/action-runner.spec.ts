@@ -6,6 +6,7 @@ import { WORK_DIR } from '~/utils/constants';
 import type { FileHistory } from '~/types/actions';
 import { buildActivityStore, clearBuildActivity } from '~/lib/stores/buildActivity';
 import { RemoteRuntimeClient } from '~/lib/remote-runtime/RemoteRuntimeClient';
+import { remotePreviewRefreshSignal } from '~/lib/stores/remotePreviewSignal';
 
 describe('file action runtime policy', () => {
   const initialRuntime = runtimeModeStore.get();
@@ -343,5 +344,31 @@ describe('agent build/start actions on Remote Runtime (real bridge, not raw shel
     expect(runCommand).toHaveBeenCalledWith('npm run dev');
     expect(getCommandStatus).not.toHaveBeenCalled();
     expect(runner.actions.get()['start-action']?.status).toBe('complete');
+  });
+
+  it('triggers a real Preview refresh check once the remote dev server starts, not just on mount/manual click', async () => {
+    vi.spyOn(RemoteRuntimeClient.prototype, 'runCommand').mockResolvedValue({
+      commandId: 'cmd-4',
+      status: 'running',
+    } as any);
+
+    const before = remotePreviewRefreshSignal.get();
+
+    const runner = new ActionRunner(
+      () => Promise.reject(new Error('WebContainer unavailable')),
+      () => undefined as never,
+    );
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'start-refresh-action',
+      action: { type: 'start', content: '' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(remotePreviewRefreshSignal.get()).toBe(before + 1);
   });
 });
