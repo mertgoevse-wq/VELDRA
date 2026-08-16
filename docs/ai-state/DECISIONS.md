@@ -875,3 +875,17 @@ map cleanly onto that same allowlist with no injection risk). `action-runner.ts`
 `RemoteRuntimeClient.runCommand('npm run build'|'npm run dev')`, reusing the same
 workspace `RemoteWorkspaceSync.ts` already syncs to. Commit `6a02e3d`, 6 new tests,
 454/454 passing.
+
+## 2026-08-16, continued: Preview refresh + file sync closing out the Remote Runtime bridge
+
+Two follow-up gaps found while treating the build/start bridge as genuinely done rather
+than "the API call works":
+- **Preview never found out**: `Preview.tsx` only checked remote preview status on mount
+  and manual "Refresh" clicks. New `remotePreviewSignal.ts` (a minimal counter store)
+  bumped by a real successful `#runStartActionRemote()`, watched by `Preview.tsx`
+  alongside its existing effect. Commit `f2aad06`.
+- **Runtime didn't see the same files as the editor**: file writes only reach the remote
+  workspace via a manual "Sync" button in Settings -- the agent's build/start actions had
+  no such trigger, so they could run against stale/empty remote files. New
+  `#syncBeforeRemoteCommand()` pushes current files first, honestly reports a real sync
+  failure without ever running the remote command. Commit `f495d4d`. 463/463 passing.
