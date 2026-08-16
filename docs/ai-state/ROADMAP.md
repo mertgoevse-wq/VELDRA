@@ -14,9 +14,12 @@
 - [x] Back button / drawer state, undersized touch targets, hover-only controls,
       z-index below bottom-nav on 3 modals — audited and fixed.
 - [x] Live preview: multi-file relative-reference resolution + reactive regeneration
-      for the static/blob-URL path (still no real dev-server preview on Android —
-      that needs either Remote Runtime configured by the user, or a future
-      Service-Worker-backed virtual-FS interceptor, see DECISIONS.md/CURRENT_STATE.md).
+      for the static/blob-URL path. Real dev-server preview on Android now works when
+      a Remote Runtime is configured (2026-08-16): the agent can actually start it
+      (`#runStartActionRemote()`), files sync automatically first, and Preview checks
+      for it without a manual refresh. No dev-server preview exists yet with NO Remote
+      Runtime configured — that would need a future Service-Worker-backed virtual-FS
+      interceptor, see DECISIONS.md/CURRENT_STATE.md.
 - [ ] Real device / APK verification — blocked on Android SDK availability in this
       environment; code is ready for it.
 
@@ -76,10 +79,18 @@
       — previously only the user's manual Terminal panel could talk to a
       configured Remote Runtime server; the agent itself had no execution path
       at all on that mode. Now routes through the same safe command-profile
-      API (`npm run build`/`npm run dev`), not raw shell. See DECISIONS.md.
-      Still open: raw agent-issued 'shell' actions remain unavailable on
-      Remote Runtime by design (would mean executing unvalidated LLM text on
-      a real remote server).
+      API (`npm run build`/`npm run dev`), not raw shell, syncs current files
+      first, and triggers a real Preview refresh once a dev server starts. See
+      DECISIONS.md. Still open: raw agent-issued 'shell' actions remain
+      unavailable on Remote Runtime by design (would mean executing
+      unvalidated LLM text on a real remote server).
+- [x] Language capability matrix (2026-08-16, `app/lib/languages/capabilities.ts`)
+      — a tested, truthful map of editor/template/dependency/runtime/build/
+      preview support per language. Real editor syntax highlighting added for
+      Go/Rust/Java/Kotlin/C/Shell (`@codemirror/legacy-modes`). Honest finding:
+      WebContainer and Remote Runtime are both Node.js-only, so full support
+      (run/build/preview) stays JS/TS/HTML/CSS-only — not a gap to hide, a real
+      architecture constraint until a genuinely different runtime is built.
 
 ## P2 (future architecture, don't block P0/P1)
 - Local models (GGUF/safetensors/LoRA), media generation extension points.
