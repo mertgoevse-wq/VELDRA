@@ -5,6 +5,17 @@ import * as providers from './registry';
 import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('LLMManager');
+
+/**
+ * A 'retired' model id is one VELDRA knows is already dead (the provider's live API
+ * returns 404 for it), not merely deprecated. Filtering it here -- the single point every
+ * list-returning method funnels through -- means it can never reach the picker UI, whether
+ * it came from a static fallback list or (in principle) a stale dynamic response.
+ */
+function excludeRetired(models: ModelInfo[]): ModelInfo[] {
+  return models.filter((model) => model.status !== 'retired');
+}
+
 export class LLMManager {
   private static _instance: LLMManager;
   private _providers: Map<string, BaseProvider> = new Map();
@@ -56,7 +67,7 @@ export class LLMManager {
 
     logger.info('Registering Provider: ', provider.name);
     this._providers.set(provider.name, provider);
-    this._modelList = [...this._modelList, ...provider.staticModels];
+    this._modelList = excludeRetired([...this._modelList, ...provider.staticModels]);
   }
 
   getProvider(name: string): BaseProvider | undefined {
@@ -121,14 +132,14 @@ export class LLMManager {
     const filteredStaticModels = staticModels.filter((m) => !dynamicModelKeys.includes(`${m.name}-${m.provider}`));
 
     // Combine static and dynamic models
-    const modelList = [...dynamicModelsFlat, ...filteredStaticModels];
+    const modelList = excludeRetired([...dynamicModelsFlat, ...filteredStaticModels]);
     modelList.sort((a, b) => a.name.localeCompare(b.name));
     this._modelList = modelList;
 
     return modelList;
   }
   getStaticModelList() {
-    return [...this._providers.values()].flatMap((p) => p.staticModels || []);
+    return excludeRetired([...this._providers.values()].flatMap((p) => p.staticModels || []));
   }
   async getModelListFromProvider(
     providerArg: BaseProvider,
@@ -147,7 +158,7 @@ export class LLMManager {
     const staticModels = provider.staticModels || [];
 
     if (!provider.getDynamicModels) {
-      return staticModels;
+      return excludeRetired(staticModels);
     }
 
     const { apiKeys, providerSettings, serverEnv } = options;
@@ -179,7 +190,7 @@ export class LLMManager {
       });
     const dynamicModelsName = dynamicModels.map((d) => d.name);
     const filteredStaticList = staticModels.filter((m) => !dynamicModelsName.includes(m.name));
-    const modelList = [...dynamicModels, ...filteredStaticList];
+    const modelList = excludeRetired([...dynamicModels, ...filteredStaticList]);
     modelList.sort((a, b) => a.name.localeCompare(b.name));
 
     return modelList;
@@ -191,7 +202,7 @@ export class LLMManager {
       throw new Error(`Provider ${providerArg.name} not found`);
     }
 
-    return [...(provider.staticModels || [])];
+    return excludeRetired([...(provider.staticModels || [])]);
   }
 
   getDefaultProvider(): BaseProvider {

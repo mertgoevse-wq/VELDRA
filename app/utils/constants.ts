@@ -6,7 +6,16 @@ export const WORK_DIR = `/home/${WORK_DIR_NAME}`;
 export const MODIFICATIONS_TAG_NAME = 'bolt_file_modifications';
 export const MODEL_REGEX = /^\[Model: (.*?)\]\n\n/;
 export const PROVIDER_REGEX = /\[Provider: (.*?)\]\n\n/;
-export const DEFAULT_MODEL = 'claude-3-5-sonnet-latest';
+
+/*
+ * 'claude-3-5-sonnet-latest' was never a real Anthropic model id -- the API has no
+ * '-latest' alias scheme, only exact dated/versioned ids (see
+ * app/lib/modules/llm/providers/anthropic.ts). Every call site using this as a live
+ * fallback (stream-text.ts, create-summary.ts, select-context.ts, utils.ts's
+ * MODEL_REGEX fallback, Chat.client.tsx's new-chat default) was silently requesting a
+ * model that 404s. Set to the current balanced default.
+ */
+export const DEFAULT_MODEL = 'claude-sonnet-5';
 
 /** Sentinel selected by the UI to request capability-based model routing. */
 export const AUTO_MODEL = '__veldra_auto__';
