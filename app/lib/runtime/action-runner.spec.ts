@@ -5,6 +5,7 @@ import { ActionRunner } from './action-runner';
 import { WORK_DIR } from '~/utils/constants';
 import type { FileHistory } from '~/types/actions';
 import { buildActivityStore, clearBuildActivity } from '~/lib/stores/buildActivity';
+import { RemoteRuntimeClient } from '~/lib/remote-runtime/RemoteRuntimeClient';
 
 describe('file action runtime policy', () => {
   const initialRuntime = runtimeModeStore.get();
@@ -240,5 +241,107 @@ describe('file action runtime policy', () => {
     await runner.runAction(action);
 
     expect(writeFile).not.toHaveBeenCalled();
+  });
+});
+
+describe('agent build/start actions on Remote Runtime (real bridge, not raw shell)', () => {
+  const initialRuntime = runtimeModeStore.get();
+
+  beforeEach(() => {
+    runtimeModeStore.set({
+      ...initialRuntime,
+      mode: 'remote',
+      remoteRuntimeUrl: 'https://remote.example.com',
+      remoteAuthToken: 'token',
+      remoteWorkspaceId: 'workspace-1',
+      capabilities: { ...initialRuntime.capabilities, agentBuildCommands: true, commandExecution: false },
+    });
+    clearBuildActivity();
+  });
+
+  afterEach(() => {
+    runtimeModeStore.set(initialRuntime);
+    vi.restoreAllMocks();
+  });
+
+  it('runs a real build action through RemoteRuntimeClient.runCommand and reports success on real exit 0', async () => {
+    const runCommand = vi.fn().mockResolvedValue({ commandId: 'cmd-1', status: 'running' });
+    const getCommandStatus = vi.fn().mockResolvedValue({ commandId: 'cmd-1', status: 'exited', exitCode: 0 });
+    vi.spyOn(RemoteRuntimeClient.prototype, 'runCommand').mockImplementation(runCommand);
+    vi.spyOn(RemoteRuntimeClient.prototype, 'getCommandStatus').mockImplementation(getCommandStatus);
+
+    const runner = new ActionRunner(
+      () => Promise.reject(new Error('WebContainer unavailable')),
+      () => undefined as never,
+    );
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'build-action',
+      action: { type: 'build', content: '' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+
+    expect(runCommand).toHaveBeenCalledWith('npm run build');
+    expect(runner.actions.get()['build-action']?.status).not.toBe('failed');
+  });
+
+  it('reports a real remote build failure honestly, not as a false success', async () => {
+    vi.spyOn(RemoteRuntimeClient.prototype, 'runCommand').mockResolvedValue({
+      commandId: 'cmd-2',
+      status: 'running',
+    } as any);
+    vi.spyOn(RemoteRuntimeClient.prototype, 'getCommandStatus').mockResolvedValue({
+      commandId: 'cmd-2',
+      status: 'exited',
+      exitCode: 1,
+      error: 'npm ERR! build failed',
+    } as any);
+
+    const runner = new ActionRunner(
+      () => Promise.reject(new Error('WebContainer unavailable')),
+      () => undefined as never,
+    );
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'build-fail-action',
+      action: { type: 'build', content: '' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+
+    expect(runner.actions.get()['build-fail-action']?.status).toBe('failed');
+  });
+
+  it('resolves a start action once the remote dev server enters "running", without waiting for it to exit', async () => {
+    const runCommand = vi.fn().mockResolvedValue({ commandId: 'cmd-3', status: 'running' });
+    vi.spyOn(RemoteRuntimeClient.prototype, 'runCommand').mockImplementation(runCommand);
+
+    const getCommandStatus = vi.spyOn(RemoteRuntimeClient.prototype, 'getCommandStatus');
+
+    const runner = new ActionRunner(
+      () => Promise.reject(new Error('WebContainer unavailable')),
+      () => undefined as never,
+    );
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'start-action',
+      action: { type: 'start', content: '' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+
+    // give the non-blocking .then()/.catch() chain a tick to settle
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(runCommand).toHaveBeenCalledWith('npm run dev');
+    expect(getCommandStatus).not.toHaveBeenCalled();
+    expect(runner.actions.get()['start-action']?.status).toBe('complete');
   });
 });

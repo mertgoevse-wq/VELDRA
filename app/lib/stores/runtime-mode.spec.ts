@@ -8,7 +8,7 @@ describe('runtime mode capabilities', () => {
     runtimeModeStore.set(initialState);
   });
 
-  it('keeps commandExecution false for Remote Runtime -- ActionRunner has no code path to route shell/build/start to RemoteRuntimeClient', () => {
+  it('keeps commandExecution false for Remote Runtime -- raw shell text must not reach a real remote server unvalidated', () => {
     setRuntimeMode('remote');
 
     expect(runtimeModeStore.get().capabilities.commandExecution).toBe(false);
@@ -26,5 +26,28 @@ describe('runtime mode capabilities', () => {
     const { capabilities } = runtimeModeStore.get();
     expect(capabilities.fileSystem).toBe(true);
     expect(capabilities.preview).toBe(true);
+  });
+
+  it('reports agentBuildCommands true for Remote Runtime -- build/start bridge to the safe command-profile allowlist (action-runner.ts)', () => {
+    setRuntimeMode('remote');
+
+    expect(runtimeModeStore.get().capabilities.agentBuildCommands).toBe(true);
+  });
+
+  it('reports agentBuildCommands true for WebContainer', () => {
+    const state = runtimeModeStore.get();
+
+    if (!state.webContainerAvailable) {
+      return;
+    }
+
+    setRuntimeMode('webcontainer');
+    expect(runtimeModeStore.get().capabilities.agentBuildCommands).toBe(true);
+  });
+
+  it('reports agentBuildCommands false for Android fallback -- no bridge exists, must not silently claim one', () => {
+    setRuntimeMode('android-fallback');
+
+    expect(runtimeModeStore.get().capabilities.agentBuildCommands).toBe(false);
   });
 });

@@ -46,6 +46,18 @@ export interface RuntimeModeState {
     fileSystem: boolean;
     terminal: boolean;
     commandExecution: boolean;
+
+    /**
+     * Whether an agent-issued 'build'/'start' action (a structured action type, not
+     * arbitrary 'shell' text) can actually execute. Distinct from commandExecution: Remote
+     * Runtime's server API only accepts a fixed allowlist of safe command profiles
+     * (npm/pnpm install/dev/build -- see RemoteRuntimeClient.REMOTE_COMMAND_PROFILES), not
+     * arbitrary shell text, so bridging raw 'shell' actions to it would mean executing
+     * unvalidated LLM-generated strings on a real remote server -- a real security
+     * regression. 'build'/'start' map cleanly onto that fixed allowlist with no such risk,
+     * so they can be bridged safely even where commandExecution (raw shell) stays false.
+     */
+    agentBuildCommands: boolean;
     packageInstall: boolean;
     devServer: boolean;
     preview: boolean;
@@ -91,6 +103,7 @@ function getCapabilitiesForMode(mode: RuntimeMode, webContainerAvailable: boolea
       fileSystem: true,
       terminal: true,
       commandExecution: true,
+      agentBuildCommands: true,
       packageInstall: true,
       devServer: true,
       preview: true,
@@ -101,18 +114,21 @@ function getCapabilitiesForMode(mode: RuntimeMode, webContainerAvailable: boolea
   if (mode === 'remote') {
     /*
      * File sync, the manual RemoteCommandPanel (safe predefined command profiles), and preview
-     * status genuinely work end-to-end against a configured Remote Runtime server today. Agent-
-     * issued shell/build/start actions do not: ActionRunner has no code path that routes them to
-     * RemoteRuntimeClient -- ActionRunner only knows how to talk to the WebContainer-backed
-     * BoltShell terminal, which doesn't exist on Android. commandExecution must stay false until
-     * that session bridge exists, or ActionRunner's capability gate (action-runner.ts) lets
-     * agent-issued commands fall through to a terminal that was never there, failing without even
-     * the graceful onAlert path the gate itself provides for genuinely unsupported runtimes.
+     * status genuinely work end-to-end against a configured Remote Runtime server today.
+     * Agent-issued raw 'shell' actions do not, and must not: Remote Runtime's server API only
+     * accepts a fixed allowlist of safe command profiles, not arbitrary shell text, so
+     * commandExecution stays false to keep the honest "Command Execution Unavailable" gate
+     * (action-runner.ts) rather than letting an LLM-generated string reach a real remote shell.
+     * Agent-issued structured 'build'/'start' actions now DO have a real bridge
+     * (#runBuildActionRemote/#runStartActionRemote in action-runner.ts, routing through
+     * RemoteRuntimeClient.runCommand with the safe 'npm run build'/'npm run dev' profiles) --
+     * agentBuildCommands reflects that.
      */
     return {
       fileSystem: true,
       terminal: true,
       commandExecution: false,
+      agentBuildCommands: true,
       packageInstall: true,
       devServer: true,
       preview: true,
@@ -125,6 +141,7 @@ function getCapabilitiesForMode(mode: RuntimeMode, webContainerAvailable: boolea
     fileSystem: true, // in-memory
     terminal: false,
     commandExecution: false,
+    agentBuildCommands: false,
     packageInstall: false,
     devServer: false,
     preview: false,

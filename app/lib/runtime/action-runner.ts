@@ -10,6 +10,7 @@ import type { BoltShell } from '~/utils/shell';
 import { runtimeModeStore, type RuntimeMode } from '~/lib/stores/runtime-mode';
 import { toast } from 'react-toastify';
 import { addActivity, completeActivity, errorActivity } from '~/lib/stores/buildActivity';
+import { RemoteRuntimeClient, type RemoteCommandResponse } from '~/lib/remote-runtime/RemoteRuntimeClient';
 
 /**
  * File actions are already persisted by FilesStore on Android fallback and
@@ -194,9 +195,20 @@ export class ActionRunner {
 
     // Intercept WebContainer actions on Android Fallback Mode
     const runtimeState = runtimeModeStore.get();
+
+    /*
+     * 'shell' is arbitrary LLM-generated text and needs full commandExecution. 'build'/'start'
+     * are structured action types that can run through Remote Runtime's safe command-profile
+     * bridge (agentBuildCommands) even where raw commandExecution is false -- see
+     * runtime-mode.ts's capabilities doc comment for why that split is safe.
+     */
+    const isStructuredCommand = action.type === 'build' || action.type === 'start';
+    const commandCapable = isStructuredCommand
+      ? runtimeState.capabilities.agentBuildCommands
+      : runtimeState.capabilities.commandExecution;
     const needsWebContainer = ['shell', 'build', 'start'].includes(action.type);
 
-    if (needsWebContainer && !runtimeState.capabilities.commandExecution) {
+    if (needsWebContainer && !commandCapable) {
       const errorMsg = 'Command execution requires WebContainer or Remote Runtime';
       this.#updateAction(actionId, {
         status: 'failed',
@@ -277,6 +289,12 @@ export class ActionRunner {
           break;
         }
         case 'build': {
+          if (runtimeModeStore.get().mode === 'remote') {
+            // Remote builds aren't a local artifact -- nothing to store for deployment.
+            await this.#runBuildActionRemote();
+            break;
+          }
+
           const buildOutput = await this.#runBuildAction(action);
 
           // Store build output for deployment
@@ -286,7 +304,10 @@ export class ActionRunner {
         case 'start': {
           // making the start app non blocking
 
-          this.#runStartAction(action)
+          const runStart =
+            runtimeModeStore.get().mode === 'remote' ? this.#runStartActionRemote() : this.#runStartAction(action);
+
+          runStart
             .then(() => {
               this.#updateAction(actionId, { status: 'complete' });
 
@@ -703,6 +724,79 @@ export class ActionRunner {
 
     return buildResult;
   }
+
+  /**
+   * Real bridge for agent-issued 'build' actions on Remote Runtime, routed through
+   * RemoteRuntimeClient's safe, fixed command-profile allowlist (not arbitrary shell) -- see
+   * runtime-mode.ts's agentBuildCommands doc comment for why this split from raw shell is safe.
+   * Reuses the same workspace RemoteWorkspaceSync.ts already syncs files to/from (same
+   * remoteRuntimeUrl/remoteAuthToken/remoteWorkspaceId from runtimeModeStore), so this is the
+   * same runtime instance the user's manual Terminal/Preview already talk to, not a second one.
+   */
+  async #runBuildActionRemote(): Promise<void> {
+    const runtime = runtimeModeStore.get();
+    const client = new RemoteRuntimeClient(
+      runtime.remoteRuntimeUrl,
+      runtime.remoteAuthToken,
+      runtime.remoteWorkspaceId,
+    );
+
+    const started = await client.runCommand('npm run build');
+    const result = await this.#pollRemoteCommand(client, started.commandId);
+
+    if (result.status !== 'exited' || result.exitCode !== 0) {
+      throw new ActionCommandError(
+        'Remote Build Failed',
+        result.error || `Command exited with code ${result.exitCode ?? 'unknown'}`,
+      );
+    }
+  }
+
+  /**
+   * Real bridge for agent-issued 'start' actions on Remote Runtime -- same rationale as
+   * #runBuildActionRemote. A dev server is long-running by design, so this resolves once the
+   * command has genuinely started (not exited) rather than waiting for it to finish; Preview.tsx's
+   * own existing getPreviewUrl() polling independently discovers the running server and its real
+   * preview URL once it's up, so there's no need to duplicate that logic here.
+   */
+  async #runStartActionRemote(): Promise<void> {
+    const runtime = runtimeModeStore.get();
+    const client = new RemoteRuntimeClient(
+      runtime.remoteRuntimeUrl,
+      runtime.remoteAuthToken,
+      runtime.remoteWorkspaceId,
+    );
+
+    const started = await client.runCommand('npm run dev');
+
+    if (started.status === 'error' || started.status === 'exited') {
+      throw new ActionCommandError(
+        'Remote Dev Server Failed',
+        started.error || `Dev server exited immediately with code ${started.exitCode ?? 'unknown'}`,
+      );
+    }
+  }
+
+  async #pollRemoteCommand(
+    client: RemoteRuntimeClient,
+    commandId: string,
+    timeoutMs = 300_000,
+  ): Promise<RemoteCommandResponse> {
+    const start = Date.now();
+
+    while (Date.now() - start < timeoutMs) {
+      const status = await client.getCommandStatus(commandId);
+
+      if (status.status === 'exited' || status.status === 'error' || status.status === 'timed-out') {
+        return status;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+
+    throw new ActionCommandError('Remote Build Timed Out', `Command did not finish within ${timeoutMs}ms`);
+  }
+
   async handleSupabaseAction(action: SupabaseAction) {
     const { operation, content, filePath } = action;
     logger.debug('[Supabase Action]:', { operation, filePath, content });
