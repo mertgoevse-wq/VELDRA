@@ -945,3 +945,92 @@ jsdom doesn't provide, throwing "Panel size not found" regardless of mocking); s
 strictly better test, not a workaround for the limitation.
 
 Commits `fa04fef`, `95f9b13`. 476 → 489 tests. Typecheck/lint clean.
+
+## 2026-08-16, later still: multi-file consistency audit
+
+Ran two parallel investigation agents (file rename/delete propagation; dirty-state and
+editor-sync races) plus direct code tracing, per the mandate's "audit the complete file
+lifecycle" directive. Two real bugs found and fixed, both previously untested.
+
+**Critical: unsaved edits silently reverted.** `Workbench.client.tsx`'s
+`useEffect(() => workbenchStore.setDocuments(files), [files])` fires on every change to
+`workbenchStore.files` -- a nanostore `map`, which produces a new top-level object
+reference on ANY `setKey`, including one for a totally unrelated file. `EditorStore
+.setDocuments` rebuilt every open document's `value` unconditionally from
+`dirent.content` (the last-*saved* content), so typing in file A while an agent writes
+file B in the background silently discarded A's in-progress edit -- while
+`unsavedFiles` kept claiming A was still modified, since nothing cleared it. Root cause:
+`setDocuments` had no way to know which open documents had a real pending edit versus
+which should refresh to reflect an external change (e.g. the agent editing a file the
+user has open but hasn't touched -- that case must still refresh, and already did
+correctly before this fix, so the fix could not simply "never overwrite an existing
+document"). Fixed by threading `unsavedFiles` (already tracked on `WorkbenchStore`)
+into `EditorStore.setDocuments(files, unsavedFiles)`; a document only keeps its
+in-memory `value` when its path is in that set. `editor.spec.ts` and
+`workbench.spec.ts` (both new -- neither store had ANY test coverage before this) prove
+both directions: an unsaved edit survives an unrelated file change, and a genuinely
+untouched document still refreshes normally.
+
+**Delete never reached Remote Runtime, and pull could resurrect a deleted file.**
+`RemoteWorkspaceSync.pushLocalWorkspaceToRemote` only ever sent the file-write map to
+`RemoteRuntimeClient.syncFiles` -- deletions tracked locally (`FilesStore
+.#deletedPaths`) were never communicated. Checking the actual server
+(`remote-runtime/src/server.ts` -- this repo contains the real Remote Runtime server,
+not just a client SDK), `PUT /workspace/:id/files` had no delete capability at all, so
+this wasn't just a missed client call, the server genuinely couldn't have honored one.
+Added `deleteWorkspaceFiles()` to `remote-runtime/src/files.ts` (same
+path-traversal-safe `resolveSafeFilePath` every other file op already uses, idempotent
+-- an already-missing path is not an error, since local/remote delete state can
+legitimately race), wired through an optional `deletedPaths` field on the existing PUT
+endpoint rather than adding a whole new endpoint (keeps sync as one atomic-ish
+operation, matching how the client already thinks about "push"). Extended
+`RemoteRuntimeClient.syncFiles(files, deletedPaths?)` and
+`pushLocalWorkspaceToRemote` to pass it through.
+
+Second half of the same root cause: `pullRemoteWorkspaceToLocal`'s merge only treated a
+remote file as a conflict when its content differed from an EXISTING local file -- a
+deleted file has no local file to differ from, so a stale remote copy (which, until the
+fix above, always existed for anything ever deleted) would silently repopulate
+`nextFiles`, resurrecting a file the user explicitly removed while `deletedPaths` kept
+claiming it was gone -- `workbenchStore.files` and `deletedPaths` left in direct
+contradiction. Fixed by checking the local `deletedPaths` set before merging any remote
+file; a match is now recorded as a real conflict ("File was deleted locally. Remote
+copy was not restored.") rather than silently overwritten, consistent with how a
+content mismatch is already handled. New `remote-runtime/src/files.spec.ts` (real
+filesystem, same convention as `security.spec.ts`) and
+`app/lib/remote-runtime/RemoteWorkspaceSync.spec.ts` (new -- first coverage for this
+file at all -- real fake-indexeddb round-trip, only the HTTP client spied) cover both
+directions plus the no-deletions/no-regression case.
+
+**Also fixed the same round**: a real stale-response race in `Preview.tsx`'s
+`refreshRemotePreview` -- no request-ordering guard meant two overlapping refreshes
+(e.g. a manual click landing while the agent-start signal also fires one, now a
+realistic scenario after the last two rounds' work) could have an older, slower
+response resolve after a newer one and clobber state back to stale data. Fixed with a
+request-ID ref; only the latest in-flight request may ever write state. Regression test
+added to `Preview.spec.tsx`.
+
+**Investigated, deliberately not changed** (real findings, deferred on evidence, not
+oversight): file rename does not exist as a feature anywhere in the codebase (no
+`renameFile` method, no rename UI) -- not a bug, just unbuilt, flagging for a future
+block rather than inventing one now. `files.ts`'s chat-ID-switch `MutationObserver`
+only reloads file-lock state, not `files`/`deletedPaths`/`modifiedFiles` on a chat
+switch -- flagged by the audit agent as a possible gap but not confirmed as an actual
+bug and not traced further; needs a dedicated look before deciding whether it's real.
+Two concurrently-active `ActionRunner` instances (one per artifact) have no
+cross-runner write-ordering guarantee for the same file path -- a real gap, but the
+normal chat pipeline processes one artifact/streaming response at a time, so practical
+exposure looks low; not fixed without a concrete reproduction, per the mandate's
+"reproduce before fixing" rule.
+
+Fixing `syncFiles`'s signature required updating two pre-existing assertions in
+`creation-loop-e2e.spec.ts` that checked `toHaveBeenCalledWith` on a single argument --
+`toHaveBeenCalledWith` requires an exact match of ALL arguments, so adding the new
+`deletedPaths` parameter (even called with `[]`) made them fail; not a real regression,
+just an assertion that needed to account for the new parameter.
+
+489 → 501 tests. Typecheck clean. Lint clean.
+`app/lib/languages/capabilities.spec.ts`'s CodeMirror-resolution test is flaky under
+full-suite parallel load (hits its 5000ms default timeout under contention, passes in
+~1.7s standalone) -- pre-existing, unrelated to this round, noted so it isn't mistaken
+for a regression later.

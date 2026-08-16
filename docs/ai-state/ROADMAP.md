@@ -106,6 +106,17 @@
       triggers the same real Preview refresh signal the agent's own start
       path already did. Previously Preview only found out about agent-started
       servers, not user-started ones, and never learned a server had crashed.
+- [x] Multi-file consistency audit (2026-08-16) — found and fixed a critical
+      data-loss bug: unsaved editor edits in one file were silently reverted
+      whenever ANY other file changed anywhere (agent write, sync, etc.),
+      while the UI kept claiming the file was still "modified". Also closed
+      a real gap where locally-deleted files never propagated to Remote
+      Runtime (server had no delete endpoint at all) and could be silently
+      resurrected by a pull. See DECISIONS.md/CURRENT_STATE.md block 8 for
+      full detail, including what was investigated and deliberately deferred
+      (file rename doesn't exist as a feature; cross-ActionRunner write
+      ordering is a real but low-exposure gap, not fixed without a concrete
+      repro).
 
 ## P2 (future architecture, don't block P0/P1)
 - Local models (GGUF/safetensors/LoRA), media generation extension points.

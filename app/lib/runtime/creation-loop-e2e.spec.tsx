@@ -136,6 +136,7 @@ describe('Real creation loop, end-to-end (files -> sync -> remote start -> live 
     // Step 7 (proof): sync genuinely carried the real file content generated above, not a stub.
     expect(syncFiles).toHaveBeenCalledWith(
       expect.objectContaining({ 'index.html': '<html><body>Todo App v1</body></html>' }),
+      [],
     );
 
     // Step 9: the real, safe command-profile bridge actually ran.
@@ -194,6 +195,7 @@ describe('Real creation loop, end-to-end (files -> sync -> remote start -> live 
     // Step 7 (proof, round 2): the SECOND sync carried the SECOND edit's real content.
     expect(syncFiles).toHaveBeenLastCalledWith(
       expect.objectContaining({ 'index.html': '<html><body>Todo App v2 - added dark mode</body></html>' }),
+      [],
     );
     expect(remotePreviewRefreshSignal.get()).toBe(2);
   }, 15000);

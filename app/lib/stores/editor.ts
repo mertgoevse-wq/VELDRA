@@ -32,7 +32,18 @@ export class EditorStore {
     }
   }
 
-  setDocuments(files: FileMap) {
+  /**
+   * `unsavedFiles` identifies documents with a real in-progress user edit not yet reflected
+   * in `files` (workbenchStore.unsavedFiles). This runs on EVERY change to the files map,
+   * including one from a completely unrelated file (see workbench.ts's `files` subscription) --
+   * without this guard, an agent writing any other file mid-edit would silently overwrite the
+   * in-progress document's `value` back to its last-saved content, discarding unsaved typing
+   * while still leaving it marked "unsaved" (the actual bug this guard fixes). A file NOT in
+   * `unsavedFiles` always takes the fresh `dirent.content` -- that's how an externally-changed
+   * file (e.g. the agent editing a file the user has open but hasn't touched) is meant to reach
+   * the editor.
+   */
+  setDocuments(files: FileMap, unsavedFiles: ReadonlySet<string> = new Set()) {
     const previousDocuments = this.documents.value;
 
     this.documents.set(
@@ -44,11 +55,12 @@ export class EditorStore {
             }
 
             const previousDocument = previousDocuments?.[filePath];
+            const hasUnsavedEdit = unsavedFiles.has(filePath) && previousDocument !== undefined;
 
             return [
               filePath,
               {
-                value: dirent.content,
+                value: hasUnsavedEdit ? previousDocument.value : dirent.content,
                 filePath,
                 isBinary: dirent.isBinary, // Add this line
                 scroll: previousDocument?.scroll,

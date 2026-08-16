@@ -25,6 +25,7 @@ export interface ListFilesResponse {
 export interface SyncFilesResponse {
   ok: boolean;
   writtenFileCount: number;
+  deletedFileCount?: number;
   files: RemoteFileItem[];
 }
 
@@ -215,15 +216,20 @@ export class RemoteRuntimeClient {
 
   /**
    * Sync Files: PUT /workspace/:id/files
+   *
+   * `deletedPaths` (optional) tells the server to also remove those paths from the
+   * workspace, in the same request as the write -- without it, a file deleted locally
+   * would stay on the remote workspace forever (the server has no separate delete
+   * endpoint; this is the only path capable of removing a remote file).
    */
-  async syncFiles(files: Record<string, string>): Promise<SyncFilesResponse> {
+  async syncFiles(files: Record<string, string>, deletedPaths?: string[]): Promise<SyncFilesResponse> {
     if (!this._workspaceId) {
       throw new Error('Workspace ID is not set.');
     }
 
     return this._request<SyncFilesResponse>(`/workspace/${this._workspaceId}/files`, {
       method: 'PUT',
-      body: JSON.stringify({ files }),
+      body: JSON.stringify(deletedPaths?.length ? { files, deletedPaths } : { files }),
     });
   }
 

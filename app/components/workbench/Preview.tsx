@@ -164,15 +164,19 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
     };
   }, []);
 
+  const remotePreviewRequestIdRef = useRef(0);
+
   const refreshRemotePreview = useCallback(
     async (options: { quiet?: boolean } = {}) => {
       if (!remotePreviewConfigured) {
+        remotePreviewRequestIdRef.current += 1;
         setRemotePreview(null);
         setRemotePreviewError(null);
 
         return;
       }
 
+      const requestId = ++remotePreviewRequestIdRef.current;
       setRemotePreviewLoading(true);
       setRemotePreviewError(null);
 
@@ -183,6 +187,17 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
           runtime.remoteWorkspaceId,
         );
         const preview = await client.getPreviewUrl();
+
+        /*
+         * Two refreshes can overlap (e.g. a manual click landing while the agent-start signal
+         * also fires one). Without this guard, a slower older request's response could resolve
+         * after a newer one and clobber state back to stale data. Only the latest request may
+         * ever write state.
+         */
+        if (remotePreviewRequestIdRef.current !== requestId) {
+          return;
+        }
+
         setRemotePreview(preview);
 
         if (preview.status === 'running' && preview.previewUrl) {
@@ -197,6 +212,10 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
           }
         }
       } catch (error) {
+        if (remotePreviewRequestIdRef.current !== requestId) {
+          return;
+        }
+
         const message = error instanceof Error ? error.message : 'Failed to refresh remote preview.';
         setRemotePreviewError(message);
 
@@ -204,7 +223,9 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
           toast.error(message);
         }
       } finally {
-        setRemotePreviewLoading(false);
+        if (remotePreviewRequestIdRef.current === requestId) {
+          setRemotePreviewLoading(false);
+        }
       }
     },
     [remotePreviewConfigured, runtime.remoteAuthToken, runtime.remoteRuntimeUrl, runtime.remoteWorkspaceId],

@@ -180,4 +180,37 @@ describe('Preview -- Remote Runtime live preview honesty', () => {
     await waitFor(() => expect(screen.queryByTitle('remote-preview')).not.toBeInTheDocument());
     expect(screen.getByText(/Remote preview needs:/)).toBeInTheDocument();
   });
+
+  it('ignores a stale response from an older overlapping refresh request (no request-ordering guard = a race)', async () => {
+    let resolveFirst!: (value: RemotePreviewResponse) => void;
+    const firstCallPromise = new Promise<RemotePreviewResponse>((resolve) => {
+      resolveFirst = resolve;
+    });
+
+    const getPreviewUrl = vi
+      .spyOn(RemoteRuntimeClient.prototype, 'getPreviewUrl')
+      .mockImplementationOnce(() => firstCallPromise)
+      .mockResolvedValueOnce(
+        makePreviewResponse({ status: 'running', previewUrl: 'https://preview.example.com/fresh' }),
+      );
+
+    runtimeModeStore.set(REMOTE_STATE);
+    render(<Preview />);
+
+    // Mount fires the first (now-pending) request.
+    await waitFor(() => expect(getPreviewUrl).toHaveBeenCalledTimes(1));
+
+    // A second, newer refresh is issued (e.g. the agent-start signal) before the first resolves.
+    triggerRemotePreviewRefresh();
+    await waitFor(() => expect(getPreviewUrl).toHaveBeenCalledTimes(2));
+
+    const freshIframe = await screen.findByTitle('remote-preview');
+    expect(freshIframe).toHaveAttribute('src', 'https://preview.example.com/fresh');
+
+    // The older, slower request finally resolves with stale data -- it must be discarded.
+    resolveFirst(makePreviewResponse({ status: 'running', previewUrl: 'https://preview.example.com/STALE' }));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(screen.getByTitle('remote-preview')).toHaveAttribute('src', 'https://preview.example.com/fresh');
+  });
 });

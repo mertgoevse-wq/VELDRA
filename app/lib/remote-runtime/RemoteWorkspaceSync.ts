@@ -168,8 +168,9 @@ export async function pushLocalWorkspaceToRemote(): Promise<RemoteWorkspaceSyncS
 
     const state = await loadAndroidFallbackState();
     const { textFiles, warnings, skippedFileCount } = collectLocalTextFiles(state.workspace.files ?? {});
+    const deletedPaths = (state.workspace.deletedPaths ?? []).map(normalizeWorkspacePath).filter(Boolean);
     const client = createClient();
-    const result = await client.syncFiles(textFiles);
+    const result = await client.syncFiles(textFiles, deletedPaths);
 
     updateSyncStatus({
       state: 'success',
@@ -207,6 +208,7 @@ export async function pullRemoteWorkspaceToLocal(): Promise<RemoteWorkspaceSyncS
     const remoteFilesResponse = await client.listFiles({ includeContent: true });
     const localState = await loadAndroidFallbackState();
     const nextFiles: Record<string, PersistedDirent> = { ...(localState.workspace.files ?? {}) };
+    const deletedPaths = new Set((localState.workspace.deletedPaths ?? []).map(normalizeWorkspacePath));
     const conflicts: RemoteWorkspaceConflict[] = [];
     const warnings: string[] = [];
     let syncedFileCount = 0;
@@ -222,6 +224,22 @@ export async function pullRemoteWorkspaceToLocal(): Promise<RemoteWorkspaceSyncS
       if (remoteFile.isBinary || typeof remoteFile.content !== 'string') {
         skippedFileCount += 1;
         warnings.push(`Skipped remote binary or unreadable file: ${remotePath}`);
+        continue;
+      }
+
+      /*
+       * A file explicitly deleted locally must not be silently resurrected by a pull -- the
+       * remote copy is likely stale anyway (the push side wasn't telling the server about
+       * deletions until this same fix), and even once it does, a pull racing ahead of the
+       * matching push could still see the old file. Surface it as a real conflict for the
+       * user to resolve, the same as a content mismatch, rather than reintroducing a file the
+       * user removed without any signal that it came back.
+       */
+      if (deletedPaths.has(remotePath)) {
+        conflicts.push({
+          path: remotePath,
+          reason: 'File was deleted locally. Remote copy was not restored.',
+        });
         continue;
       }
 

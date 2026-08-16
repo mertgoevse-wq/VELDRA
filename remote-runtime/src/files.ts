@@ -138,6 +138,30 @@ export function listFilesRecursively(workspaceId: string, dirPath: string = ''):
 }
 
 /**
+ * Deletes a set of files (or directories) from the workspace. Idempotent -- an
+ * already-missing path is not an error, since the client's local delete state and the
+ * remote workspace can legitimately be out of sync (e.g. a prior sync already removed it).
+ * Returns the paths actually removed, for an honest response rather than assuming all
+ * requested paths existed.
+ */
+export function deleteWorkspaceFiles(workspaceId: string, relativePaths: string[]): string[] {
+  const deleted: string[] = [];
+
+  for (const relativePath of relativePaths) {
+    const resolvedPath = resolveSafeFilePath(workspaceId, relativePath);
+
+    if (!fs.existsSync(resolvedPath)) {
+      continue;
+    }
+
+    fs.rmSync(resolvedPath, { recursive: true, force: true });
+    deleted.push(relativePath.replace(/\\/g, '/'));
+  }
+
+  return deleted;
+}
+
+/**
  * Writes a set of files to the workspace.
  */
 export function writeWorkspaceFiles(workspaceId: string, files: Record<string, string>): void {

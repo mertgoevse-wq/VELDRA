@@ -10,6 +10,7 @@ import { requireAuth, validateToken } from './auth.js';
 import { isAllowedCorsOrigin } from './security.js';
 import { createWorkspace, getWorkspacePath, isValidWorkspaceId } from './workspaces.js';
 import {
+  deleteWorkspaceFiles,
   getWorkspaceFileMetadata,
   getWorkspaceFilesWithContent,
   listFilesRecursively,
@@ -189,7 +190,7 @@ app.get('/workspace/:id/files', requireAuth, (req, res) => {
  */
 app.put('/workspace/:id/files', requireAuth, (req, res) => {
   const { id } = req.params;
-  const { files } = req.body;
+  const { files, deletedPaths } = req.body;
 
   if (!isValidWorkspaceId(id)) {
     jsonError(res, 400, 'Invalid workspace ID format.');
@@ -211,13 +212,21 @@ app.put('/workspace/:id/files', requireAuth, (req, res) => {
     return;
   }
 
+  if (deletedPaths !== undefined && (!Array.isArray(deletedPaths) || deletedPaths.some((p) => typeof p !== 'string'))) {
+    jsonError(res, 400, 'Invalid payload: "deletedPaths" must be an array of strings.');
+    return;
+  }
+
   try {
     writeWorkspaceFiles(id, files);
+
+    const deleted = deletedPaths?.length ? deleteWorkspaceFiles(id, deletedPaths) : [];
 
     const filePaths = Object.keys(files);
     res.status(200).json({
       ok: true,
       writtenFileCount: filePaths.length,
+      deletedFileCount: deleted.length,
       files: getWorkspaceFileMetadata(id, filePaths),
     });
   } catch (error: any) {

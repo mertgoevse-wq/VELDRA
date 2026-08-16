@@ -1,9 +1,70 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-16 (block 7)
+Last updated: 2026-08-16 (block 8)
 Branch: `integration/veldra-bedrock-plus-claude-web` (single active branch — the
 `claude/veldra-android-recovery-85j8ws` branch referenced below was cherry-picked in;
 work directly on `integration/...` from here on, no new branches)
+
+## Block 8 (2026-08-16) — multi-file consistency audit: one critical data-loss bug fixed, delete propagation closed
+
+Deep audit of the file lifecycle (editor → workbenchStore.files → FilesStore → IndexedDB
+persistence → RemoteWorkspaceSync → Remote Runtime → Preview), run via two parallel
+investigation agents plus direct code tracing. Two real, previously-undiscovered bugs
+fixed, both with zero prior test coverage:
+
+1. **Critical, real data loss**: `Workbench.client.tsx`'s `useEffect(() =>
+   workbenchStore.setDocuments(files), [files])` re-runs on EVERY change to
+   `workbenchStore.files` — including a completely unrelated file. `EditorStore
+   .setDocuments` rebuilt every open document's `value` unconditionally from the
+   persisted `dirent.content`, so a user's in-progress unsaved edit in file A was
+   silently reverted whenever ANY file changed anywhere (e.g. an agent writing file B
+   in the background), while `unsavedFiles` kept claiming A was still "modified" —
+   doubly misleading. Fixed: `setDocuments(files, unsavedFiles)` now preserves the
+   in-memory `value` for any path present in `unsavedFiles`, and `WorkbenchStore
+   .setDocuments` threads its own `unsavedFiles` through. `editor.spec.ts` (new, first
+   test coverage for `EditorStore`) and `workbench.spec.ts` (new, first for
+   `WorkbenchStore`) prove the fix on the real singleton wiring, plus prove externally-
+   changed files the user HASN'T touched still refresh normally (no regression).
+2. **Delete never propagated to Remote Runtime**: `pushLocalWorkspaceToRemote` only
+   ever sent the file-write map; the server's `PUT /files` had no delete capability at
+   all (`RemoteRuntimeClient.syncFiles` was pure overwrite). A file deleted locally
+   stayed on the remote workspace forever. Compounding it, `pullRemoteWorkspaceToLocal`
+   could silently resurrect that same locally-deleted file — its merge only skipped a
+   remote file when local content *differed*, and a deleted file has no local content
+   to differ from. Fixed end-to-end, real server change included (this repo does
+   contain the actual `remote-runtime/` server, not just a client stub):
+   `remote-runtime/src/files.ts`'s new `deleteWorkspaceFiles()` (path-traversal-safe,
+   idempotent), wired into `PUT /workspace/:id/files` via an optional `deletedPaths`
+   field; `RemoteRuntimeClient.syncFiles(files, deletedPaths?)` sends it;
+   `pushLocalWorkspaceToRemote` now passes `deletedPaths` through; `pullRemoteWorkspaceToLocal`
+   now records deleted-but-still-remote files as an honest conflict instead of
+   resurrecting them. New tests: `remote-runtime/src/files.spec.ts` (real filesystem,
+   same convention as `security.spec.ts`), `RemoteWorkspaceSync.spec.ts` (new — first
+   coverage for this file — real fake-indexeddb-backed round-trip, only the HTTP
+   client spied).
+
+Also fixed the same round: a real stale-response race in `Preview.tsx`'s
+`refreshRemotePreview` (two overlapping refreshes — e.g. a manual click landing while
+the agent-start signal also fires one — had no ordering guard, so an older, slower
+response could resolve after a newer one and clobber state back to stale data). Fixed
+with a request-ID guard; regression test added to `Preview.spec.tsx`.
+
+Investigated and deliberately NOT changed (real findings, low enough
+confidence/severity/exposure to defer rather than fix speculatively): (a) file
+**rename** does not exist as a feature anywhere in the codebase (no bug, just
+unbuilt — the only way to "rename" today is delete + agent recreates under a new
+path); (b) `files.ts`'s chat-ID-switch `MutationObserver` only reloads file-lock
+state, not `files`/`deletedPaths`/`modifiedFiles` — flagged, not confirmed as an
+actual bug, not traced further; (c) two concurrently-active `ActionRunner` instances
+(one per artifact) have no cross-runner write-ordering guarantee for the same file
+path — real gap, but the normal chat pipeline processes one artifact at a time, so
+practical exposure looks low; not fixed without a concrete reproduction.
+
+501/501 tests (was 489 at block start), typecheck clean, lint clean.
+`app/lib/languages/capabilities.spec.ts`'s CodeMirror-resolution test is pre-existing-flaky
+under full-suite parallel load (hits its default 5000ms timeout under contention; passes in
+~1.7s standalone) — unrelated to this block, not touched, noted here so a future run isn't
+mistaken for a regression.
 
 ## Block 7 (2026-08-16) — real end-to-end creation-loop proof, Live Preview hardening, Terminal/Preview state consistency
 
