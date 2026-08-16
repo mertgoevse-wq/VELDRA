@@ -1,7 +1,36 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-16 (block 9)
+Last updated: 2026-08-16 (block 10)
 Branch: `integration/veldra-bedrock-plus-claude-web`
+
+## Block 10 (2026-08-16) — evidence-based dead-code/dependency sweep
+
+Per the mandate's explicit "prove deadness, don't blind-delete" rule: ran an
+investigation pass first, verified every finding myself with independent greps before
+removing anything. Removed, all confirmed zero references anywhere in `app/`,
+`remote-runtime/`, or config files (not just "few grep hits" — genuinely zero):
+
+- npm dependencies: `@phosphor-icons/react`, `react-beautiful-dnd` (+
+  `@types/react-beautiful-dnd`), `jose`, `@tanstack/react-virtual`,
+  `@radix-ui/react-progress`. (`@heroicons/react` was a false-positive candidate —
+  looked unused on a naive `from '@heroicons/react'` grep, but is genuinely imported via
+  a subpath, `@heroicons/react/24/outline`; correctly left alone.) Real duplicate-purpose
+  pairs confirmed: `react-dnd`(+backends) is the live drag-and-drop library,
+  `react-beautiful-dnd` was fully dead; `react-window` is the live virtualization
+  library (used in `Dialog.tsx`), `@tanstack/react-virtual` was fully dead.
+- `TEST_WORKBENCH_CONFIG` export (`app/lib/stores/workbench-config.ts`) — zero
+  references anywhere, including its own tests (despite the name).
+
+**Found but deliberately NOT fixed this block**: `app/lib/stores/github.ts` (desktop,
+server-OAuth-proxied) and `app/lib/stores/githubConnection.ts` (Android, client-side PAT
+entry) are real duplicate state — both read/write the same `github_connection`
+localStorage key but keep independent in-memory atoms with no cross-sync, so a live
+session can't see the other's connect/disconnect reactively. Not merged: they're two
+genuinely different auth models (server-side-only token vs. client-supplied token), and
+collapsing them is a product decision, not a mechanical fix. See ROADMAP.md P2.
+
+514/514 tests (unchanged — this block removed dead code, added none), typecheck clean,
+lint clean.
 
 ## Block 9 (2026-08-16) — multi-device/project sync foundation (interfaces + honest threat model, not a cloud platform)
 

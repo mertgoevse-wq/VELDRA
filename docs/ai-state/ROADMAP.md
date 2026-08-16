@@ -141,6 +141,18 @@
   global workspace shared by every chat — see `docs/architecture/STORAGE_AND_SYNC.md`).
 - Encryption at rest for credentials/project files (real WebCrypto helper
   already exists at `app/lib/crypto.ts`, unused by anything today).
+- Unify `app/lib/stores/github.ts` (desktop, server-OAuth-proxied — token
+  never touches the client) and `app/lib/stores/githubConnection.ts`
+  (Android, client-side PAT entry) — confirmed real duplicate state
+  (2026-08-16 dead-code sweep): both read/write the SAME `github_connection`
+  localStorage key but keep separate in-memory atoms, so a live session
+  where both were somehow active wouldn't see each other's connect/disconnect
+  reactively (only synced on next page load / `initializeConnection()`).
+  Not fixed this round — they represent two genuinely different auth models
+  (server-proxied OAuth vs. client-supplied PAT), and unifying them is a
+  product decision (should Android get OAuth too? should desktop support
+  PAT entry?) not a mechanical bug fix. Flagging for a deliberate, scoped
+  follow-up rather than merging blind.
 
 ## Explicitly out of scope unless requested
 - Rewriting the app from scratch.

@@ -32,15 +32,6 @@ export const DEFAULT_WORKBENCH_CONFIG: WorkbenchConfig = {
   actionTimeoutMs: 300_000,
 };
 
-/**
- * Test configuration with faster timings for unit tests.
- */
-export const TEST_WORKBENCH_CONFIG: WorkbenchConfig = {
-  actionStreamSampleIntervalMs: 10,
-  maxConcurrentActionsPerArtifact: 1,
-  actionTimeoutMs: 5_000,
-};
-
 let currentConfig: WorkbenchConfig = { ...DEFAULT_WORKBENCH_CONFIG };
 
 /**
