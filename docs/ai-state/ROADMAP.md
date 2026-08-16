@@ -149,6 +149,16 @@
       `LocalStorageProvider` was still ignoring its own `project` argument
       after the per-project isolation migration landed — now genuinely
       threads it through. See `CURRENT_STATE.md` block 12.
+- [x] Unified the two duplicate GitHub connection stores (2026-08-16, later)
+      — `useGitHubConnection.ts` rewritten as a thin wrapper over the one
+      real `githubConnectionStore` instead of a second, independent
+      implementation; `github.ts` (its only prior caller) was fully dead
+      afterward and deleted. A call-site survey first found the real live
+      behavior was narrower than assumed — `github.ts`'s own "server-OAuth"
+      functions had zero callers anywhere. Regression test proves connecting
+      through the hook is visible to a separate direct reader of the store
+      (the exact access pattern `GitHubSyncPanel.tsx` uses) — the actual bug
+      this closes. See `CURRENT_STATE.md` block 13.
 
 ## P2 (future architecture, don't block P0/P1)
 - Local models (GGUF/safetensors/LoRA), media generation extension points.
@@ -158,18 +168,6 @@
   today; do not treat them as security boundaries).
 - Encryption at rest for credentials/project files (real WebCrypto helper
   already exists at `app/lib/crypto.ts`, unused by anything today).
-- Unify `app/lib/stores/github.ts` (desktop, server-OAuth-proxied — token
-  never touches the client) and `app/lib/stores/githubConnection.ts`
-  (Android, client-side PAT entry) — confirmed real duplicate state
-  (2026-08-16 dead-code sweep): both read/write the SAME `github_connection`
-  localStorage key but keep separate in-memory atoms, so a live session
-  where both were somehow active wouldn't see each other's connect/disconnect
-  reactively (only synced on next page load / `initializeConnection()`).
-  Not fixed this round — they represent two genuinely different auth models
-  (server-proxied OAuth vs. client-supplied PAT), and unifying them is a
-  product decision (should Android get OAuth too? should desktop support
-  PAT entry?) not a mechanical bug fix. Flagging for a deliberate, scoped
-  follow-up rather than merging blind.
 
 ## Explicitly out of scope unless requested
 - Rewriting the app from scratch.

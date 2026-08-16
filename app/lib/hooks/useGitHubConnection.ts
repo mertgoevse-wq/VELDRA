@@ -1,10 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '@nanostores/react';
 import { toast } from 'react-toastify';
-import Cookies from 'js-cookie';
-import type { GitHubUserResponse, GitHubConnection } from '~/types/GitHub';
+import type { GitHubConnection } from '~/types/GitHub';
 import { useGitHubAPI } from './useGitHubAPI';
-import { githubConnection, isConnecting, updateGitHubConnection } from '~/lib/stores/github';
+import { githubConnectionAtom, githubConnectionStore, isGitHubConnecting } from '~/lib/stores/githubConnection';
+
+/**
+ * Block 5 of the identity/sync mandate: this hook used to read/write its OWN separate
+ * atom (app/lib/stores/github.ts) with its own inline fetch-to-api.github.com logic,
+ * duplicating what app/lib/stores/githubConnection.ts's `githubConnectionStore` already
+ * did (and does more robustly, via the shared `gitHubApiService`). Confirmed by a full
+ * call-site survey before this rewrite: `github.ts`'s own `initializeGitHubConnection`/
+ * `fetchGitHubStatsViaAPI` (its actual "server-OAuth" functions) had ZERO callers
+ * anywhere -- the real, live desktop behavior was always this hook's own inline
+ * client-PAT fetch, nearly identical to `githubConnectionStore.connect()`, just writing
+ * to a different atom than Android's `GitHubSyncPanel.tsx` reads. That's the real bug a
+ * prior round's dead-code sweep found: connecting via desktop Settings and Android's
+ * sync panel could disagree on connection state within the same live session. Fixed by
+ * making this hook a thin wrapper over the ONE shared store instead of a second
+ * implementation -- `github.ts` is now fully dead (this was its only caller) and removed.
+ *
+ * Public interface (`ConnectionState`/`UseGitHubConnectionReturn`) is unchanged so this
+ * hook's only consumer, GitHubTab.tsx, needed zero changes.
+ */
 
 export interface ConnectionState {
   isConnected: boolean;
@@ -22,172 +40,71 @@ export interface UseGitHubConnectionReturn extends ConnectionState {
   testConnection: () => Promise<boolean>;
 }
 
-const STORAGE_KEY = 'github_connection';
-
 export function useGitHubConnection(): UseGitHubConnectionReturn {
-  const connection = useStore(githubConnection);
-  const connecting = useStore(isConnecting);
+  const connection = useStore(githubConnectionAtom);
+  const connecting = useStore(isGitHubConnecting);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Create API instance - will update when connection changes
   useGitHubAPI();
 
-  // Load saved connection on mount
+  /*
+   * The shared store already restores a saved connection (with user data) from
+   * localStorage at module load -- this only needs to cover the one case that leaves
+   * incomplete: a token present with no user/stats yet (e.g. connect() started, then the
+   * app reloaded before stats finished fetching).
+   */
   useEffect(() => {
-    loadSavedConnection();
-  }, []);
-
-  const loadSavedConnection = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Check if connection already exists in store (likely from initialization)
-      if (connection?.user) {
-        setIsLoading(false);
-        return;
-      }
-
-      // If we have a token but no user, or incomplete data, refresh
-      if (connection?.token && (!connection.user || !connection.stats)) {
-        await refreshConnectionData(connection);
-      }
-
+    if (connection.user || !connection.token) {
       setIsLoading(false);
-    } catch (error) {
-      console.error('Error loading saved connection:', error);
-      setError('Failed to load saved connection');
-      setIsLoading(false);
-
-      // Clean up corrupted data
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }, [connection]);
-
-  const refreshConnectionData = useCallback(async (connection: GitHubConnection) => {
-    if (!connection.token) {
       return;
     }
 
-    try {
-      // Make direct API call instead of using hook
-      const response = await fetch('https://api.github.com/user', {
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
-          Authorization: `${connection.tokenType === 'classic' ? 'token' : 'Bearer'} ${connection.token}`,
-          'User-Agent': 'VELDRA',
-        },
-      });
+    setIsLoading(true);
+    githubConnectionStore
+      .fetchStats()
+      .catch((refreshError) => {
+        console.error('Error loading saved connection:', refreshError);
+        setError('Failed to load saved connection');
+      })
+      .finally(() => setIsLoading(false));
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const userData = (await response.json()) as GitHubUserResponse;
-
-      const updatedConnection: GitHubConnection = {
-        ...connection,
-        user: userData,
-      };
-
-      updateGitHubConnection(updatedConnection);
-    } catch (error) {
-      console.error('Error refreshing connection data:', error);
-    }
+    /*
+     * Only ever needs to run once on mount -- re-running on every `connection` change
+     * would re-fetch stats every time connect()/disconnect() update the shared atom.
+     */
   }, []);
 
   const connect = useCallback(async (token: string, tokenType: 'classic' | 'fine-grained') => {
-    console.log('useGitHubConnection.connect called with tokenType:', tokenType);
-
     if (!token.trim()) {
-      console.log('Token validation failed - empty token');
       setError('Token is required');
-
       return;
     }
 
-    console.log('Setting isConnecting to true');
-    isConnecting.set(true);
     setError(null);
 
     try {
-      console.log('Making API request to GitHub...');
+      await githubConnectionStore.connect(token, tokenType);
 
-      // Test the token by fetching user info
-      const response = await fetch('https://api.github.com/user', {
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
-          Authorization: `${tokenType === 'classic' ? 'token' : 'Bearer'} ${token}`,
-          'User-Agent': 'VELDRA',
-        },
-      });
-
-      console.log('GitHub API response status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        throw new Error(`Authentication failed: ${response.status} ${response.statusText}`);
-      }
-
-      const userData = (await response.json()) as GitHubUserResponse;
-
-      // Create connection object
-      const connectionData: GitHubConnection = {
-        user: userData,
-        token,
-        tokenType,
-      };
-
-      // Set cookies for API requests
-      Cookies.set('githubToken', token);
-      Cookies.set('githubUsername', userData.login);
-      Cookies.set(
-        'git:github.com',
-        JSON.stringify({
-          username: token,
-          password: 'x-oauth-basic',
-        }),
-      );
-
-      // Update the store
-      updateGitHubConnection(connectionData);
-
-      toast.success(`Connected to GitHub as ${userData.login}`);
-    } catch (error) {
-      console.error('Failed to connect to GitHub:', error);
-
-      const errorMessage = error instanceof Error ? error.message : 'Failed to connect to GitHub';
-
+      const connected = githubConnectionAtom.get();
+      toast.success(`Connected to GitHub as ${connected.user?.login}`);
+    } catch (connectError) {
+      const errorMessage = connectError instanceof Error ? connectError.message : 'Failed to connect to GitHub';
       setError(errorMessage);
       toast.error(`Failed to connect: ${errorMessage}`);
-      throw error;
-    } finally {
-      isConnecting.set(false);
+      throw connectError;
     }
   }, []);
 
   const disconnect = useCallback(() => {
-    // Clear localStorage
-    localStorage.removeItem(STORAGE_KEY);
-
-    // Clear all GitHub-related cookies
-    Cookies.remove('githubToken');
-    Cookies.remove('githubUsername');
-    Cookies.remove('git:github.com');
-
-    // Reset store
-    updateGitHubConnection({
-      user: null,
-      token: '',
-      tokenType: 'classic',
-    });
-
+    githubConnectionStore.disconnect();
     setError(null);
     toast.success('Disconnected from GitHub');
   }, []);
 
   const refreshConnection = useCallback(async () => {
-    if (!connection?.token) {
+    if (!connection.token) {
       throw new Error('No connection to refresh');
     }
 
@@ -195,15 +112,15 @@ export function useGitHubConnection(): UseGitHubConnectionReturn {
     setError(null);
 
     try {
-      await refreshConnectionData(connection);
-    } catch (error) {
-      console.error('Error refreshing connection:', error);
+      await githubConnectionStore.fetchStats();
+    } catch (refreshError) {
+      console.error('Error refreshing connection:', refreshError);
       setError('Failed to refresh connection');
-      throw error;
+      throw refreshError;
     } finally {
       setIsLoading(false);
     }
-  }, [connection, refreshConnectionData]);
+  }, [connection.token]);
 
   const testConnection = useCallback(async (): Promise<boolean> => {
     if (!connection) {
@@ -211,15 +128,13 @@ export function useGitHubConnection(): UseGitHubConnectionReturn {
     }
 
     try {
-      // For server-side connections, test via our API
-      const isServerSide = !connection.token;
-
-      if (isServerSide) {
+      // For server-side connections (no client-held token), test via our own API proxy.
+      if (!connection.token) {
         const response = await fetch('/api/github-user');
         return response.ok;
       }
 
-      // For client-side connections, test directly
+      // For client-side connections, test directly against the real token.
       const response = await fetch('https://api.github.com/user', {
         headers: {
           Accept: 'application/vnd.github.v3+json',
@@ -229,19 +144,19 @@ export function useGitHubConnection(): UseGitHubConnectionReturn {
       });
 
       return response.ok;
-    } catch (error) {
-      console.error('Connection test failed:', error);
+    } catch (testError) {
+      console.error('Connection test failed:', testError);
       return false;
     }
   }, [connection]);
 
   return {
-    isConnected: !!connection?.user,
+    isConnected: !!connection.user,
     isLoading,
     isConnecting: connecting,
     connection,
     error,
-    isServerSide: !connection?.token, // Server-side if no token
+    isServerSide: !connection.token,
     connect,
     disconnect,
     refreshConnection,

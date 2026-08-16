@@ -1171,3 +1171,41 @@ before this fix since the adapter ignored `project` anyway, would have started l
 state between tests the moment it didn't).
 
 521 → 529 tests. Typecheck clean. Lint clean.
+
+## 2026-08-16, later still: unified the two duplicate GitHub connection stores
+
+A prior round's dead-code sweep flagged `app/lib/stores/github.ts` vs.
+`app/lib/stores/githubConnection.ts` as real duplicate state but deliberately deferred
+fixing it, reasoning that they represented two different auth models (server-OAuth vs.
+client-PAT) and merging them would be a product decision, not a mechanical fix. This
+round's mandate explicitly authorized revisiting it with more investigation, so a full
+call-site survey ran first (not implementation) -- and it overturned that earlier
+premise: `github.ts`'s own "server-OAuth" functions
+(`initializeGitHubConnection`/`fetchGitHubStatsViaAPI`) had **zero callers anywhere**.
+The real, live desktop behavior was never server-OAuth -- it was
+`useGitHubConnection.ts`'s own inline `fetch('https://api.github.com/user', ...)` logic,
+nearly identical to `githubConnectionStore.connect()` in the other file, just against a
+separate atom. There was only ever one real auth model in production (client-PAT), just
+implemented twice. That reframing is what made the unification safe to actually do this
+round rather than deferring again.
+
+Fixed by rewriting `useGitHubConnection.ts` into a thin wrapper over
+`githubConnectionStore` -- the more complete implementation (uses the shared, tested
+`gitHubApiService` rather than raw inline `fetch`, already has
+`connect`/`disconnect`/`fetchStats`/`updateTokenType`/`clearCache`). `github.ts` was then
+fully dead (its only caller was the file just rewritten) and deleted outright, alongside
+its own dead-and-unused exports. `GitHubTab.tsx`, the hook's sole consumer (confirmed via
+the same survey -- none of the `@settings/tabs/github/components/` files touch either
+store directly, all receive props from `GitHubTab.tsx`), needed zero changes: the public
+`ConnectionState`/`UseGitHubConnectionReturn` interface is unchanged.
+
+New test coverage where none existed before (`useGitHubConnection.spec.ts`, using
+`@testing-library/react`'s `renderHook`): the load-bearing test connects through the hook
+and then asserts a *separate* direct read of `githubConnectionStore.get()` sees the same
+connection -- exactly the access pattern `GitHubSyncPanel.tsx` uses, and exactly what
+would have failed before this fix (the whole point of the two-atom bug). Also covers a
+real connect failure leaving the shared store honestly disconnected, `disconnect()`
+clearing the shared store (not just hook-local state), and `isServerSide` reflecting
+real token presence.
+
+529 → 533 tests. Typecheck clean. Lint clean.

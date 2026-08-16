@@ -1,7 +1,36 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-16 (block 12)
+Last updated: 2026-08-16 (block 13)
 Branch: `integration/veldra-bedrock-plus-claude-web`
+
+## Block 13 (2026-08-16) — unified the two duplicate GitHub connection stores
+
+Closes a real bug flagged (but deliberately deferred) in an earlier dead-code sweep this
+session: `app/lib/stores/github.ts` and `app/lib/stores/githubConnection.ts` were two
+independent in-memory atoms both backing GitHub connection state, reading/writing the
+same `github_connection` localStorage key but never syncing with each other in a live
+session.
+
+A full call-site survey (run before touching anything, per the mandate's "prove the
+blast radius" instruction) found the real picture was narrower and safer to fix than
+initially assumed: `github.ts`'s own "server-OAuth" functions
+(`initializeGitHubConnection`/`fetchGitHubStatsViaAPI`) had **zero callers anywhere** --
+the real, live desktop behavior was always `useGitHubConnection.ts`'s own inline
+client-PAT fetch logic, nearly identical to `githubConnectionStore.connect()` in the
+other file. Fixed by rewriting `useGitHubConnection.ts` into a thin wrapper over
+`githubConnectionStore` (the more complete implementation -- uses the shared
+`gitHubApiService`, already has `connect`/`disconnect`/`fetchStats`/`updateTokenType`)
+instead of a second parallel implementation. `github.ts` was then fully dead (its only
+caller was the file just rewritten) and deleted outright. `GitHubTab.tsx`, the hook's
+only consumer, needed zero changes -- the public `ConnectionState`/
+`UseGitHubConnectionReturn` interface is unchanged.
+
+New test coverage where none existed before (`useGitHubConnection.spec.ts`): proves
+connecting through the hook is visible to a *separate* reader of the shared store (the
+same access pattern `GitHubSyncPanel.tsx` uses) -- the actual bug this fixes, made into a
+regression test, not just asserted in prose.
+
+529 → 533 tests. Typecheck clean. Lint clean.
 
 ## Block 12 (2026-08-16) — StorageProvider hardening: exists/getMetadata/rename, and a real gap closed
 
