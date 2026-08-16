@@ -727,6 +727,25 @@ export class ActionRunner {
   }
 
   /**
+   * Pushes the agent's current local files to the remote workspace before running a command
+   * against it. Without this, #runBuildActionRemote/#runStartActionRemote would run a real
+   * command against whatever the remote workspace last happened to have -- possibly stale or
+   * empty -- since file writes only reach the remote workspace via this same
+   * RemoteWorkspaceSync.ts push, which otherwise only fires from a manual "Sync" button in
+   * Settings (RuntimeModeTab.tsx/AndroidSettingsPanel.tsx). Found while wiring the remote
+   * build/start bridge itself: a real "runtime doesn't see the same files as the editor" gap.
+   * Throws with the real sync error rather than silently building/running stale files.
+   */
+  async #syncBeforeRemoteCommand(): Promise<void> {
+    const { pushLocalWorkspaceToRemote } = await import('~/lib/remote-runtime/RemoteWorkspaceSync');
+    const status = await pushLocalWorkspaceToRemote();
+
+    if (status.state === 'error') {
+      throw new ActionCommandError('Remote File Sync Failed', status.lastError || 'Unknown sync error');
+    }
+  }
+
+  /**
    * Real bridge for agent-issued 'build' actions on Remote Runtime, routed through
    * RemoteRuntimeClient's safe, fixed command-profile allowlist (not arbitrary shell) -- see
    * runtime-mode.ts's agentBuildCommands doc comment for why this split from raw shell is safe.
@@ -735,6 +754,8 @@ export class ActionRunner {
    * same runtime instance the user's manual Terminal/Preview already talk to, not a second one.
    */
   async #runBuildActionRemote(): Promise<void> {
+    await this.#syncBeforeRemoteCommand();
+
     const runtime = runtimeModeStore.get();
     const client = new RemoteRuntimeClient(
       runtime.remoteRuntimeUrl,
@@ -761,6 +782,8 @@ export class ActionRunner {
    * preview URL once it's up, so there's no need to duplicate that logic here.
    */
   async #runStartActionRemote(): Promise<void> {
+    await this.#syncBeforeRemoteCommand();
+
     const runtime = runtimeModeStore.get();
     const client = new RemoteRuntimeClient(
       runtime.remoteRuntimeUrl,

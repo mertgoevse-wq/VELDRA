@@ -7,6 +7,12 @@ import type { FileHistory } from '~/types/actions';
 import { buildActivityStore, clearBuildActivity } from '~/lib/stores/buildActivity';
 import { RemoteRuntimeClient } from '~/lib/remote-runtime/RemoteRuntimeClient';
 import { remotePreviewRefreshSignal } from '~/lib/stores/remotePreviewSignal';
+import { pushLocalWorkspaceToRemote } from '~/lib/remote-runtime/RemoteWorkspaceSync';
+
+// action-runner.ts dynamically imports this (avoiding a real circular import via workbench.ts).
+vi.mock('~/lib/remote-runtime/RemoteWorkspaceSync', () => ({
+  pushLocalWorkspaceToRemote: vi.fn().mockResolvedValue({ state: 'success', syncedFileCount: 1 }),
+}));
 
 describe('file action runtime policy', () => {
   const initialRuntime = runtimeModeStore.get();
@@ -258,11 +264,85 @@ describe('agent build/start actions on Remote Runtime (real bridge, not raw shel
       capabilities: { ...initialRuntime.capabilities, agentBuildCommands: true, commandExecution: false },
     });
     clearBuildActivity();
+
+    /*
+     * afterEach's vi.restoreAllMocks() wipes this vi.fn()'s mockResolvedValue default (it has
+     * no "original" pre-mock implementation to restore to, since it's a synthetic vi.mock()
+     * factory function, not a vi.spyOn() on something real) -- re-establish it every test
+     * rather than relying on the factory's one-time initial value surviving restoreAllMocks.
+     */
+    vi.mocked(pushLocalWorkspaceToRemote).mockResolvedValue({
+      state: 'success',
+      syncedFileCount: 1,
+      skippedFileCount: 0,
+      conflictCount: 0,
+      warnings: [],
+      conflicts: [],
+    } as any);
   });
 
   afterEach(() => {
     runtimeModeStore.set(initialRuntime);
     vi.restoreAllMocks();
+  });
+
+  it('syncs current local files to the remote workspace before running a remote build, so it never builds stale/no files', async () => {
+    const runCommand = vi.fn().mockResolvedValue({ commandId: 'cmd-sync', status: 'running' });
+    vi.spyOn(RemoteRuntimeClient.prototype, 'runCommand').mockImplementation(runCommand);
+    vi.spyOn(RemoteRuntimeClient.prototype, 'getCommandStatus').mockResolvedValue({
+      commandId: 'cmd-sync',
+      status: 'exited',
+      exitCode: 0,
+    } as any);
+
+    const runner = new ActionRunner(
+      () => Promise.reject(new Error('WebContainer unavailable')),
+      () => undefined as never,
+    );
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'sync-build-action',
+      action: { type: 'build', content: '' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+
+    expect(pushLocalWorkspaceToRemote).toHaveBeenCalled();
+    expect(runCommand).toHaveBeenCalledWith('npm run build');
+  });
+
+  it('reports a real sync failure honestly and never runs the remote command against unsynced files', async () => {
+    vi.mocked(pushLocalWorkspaceToRemote).mockResolvedValueOnce({
+      state: 'error',
+      lastError: 'Remote Runtime is not configured. Missing: workspace ID.',
+      syncedFileCount: 0,
+      skippedFileCount: 0,
+      conflictCount: 0,
+      warnings: [],
+      conflicts: [],
+    } as any);
+
+    const runCommand = vi.fn();
+    vi.spyOn(RemoteRuntimeClient.prototype, 'runCommand').mockImplementation(runCommand);
+
+    const runner = new ActionRunner(
+      () => Promise.reject(new Error('WebContainer unavailable')),
+      () => undefined as never,
+    );
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'sync-fail-action',
+      action: { type: 'build', content: '' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+
+    expect(runCommand).not.toHaveBeenCalled();
+    expect(runner.actions.get()['sync-fail-action']?.status).toBe('failed');
   });
 
   it('runs a real build action through RemoteRuntimeClient.runCommand and reports success on real exit 0', async () => {
