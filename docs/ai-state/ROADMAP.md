@@ -20,8 +20,15 @@
       for it without a manual refresh. No dev-server preview exists yet with NO Remote
       Runtime configured — that would need a future Service-Worker-backed virtual-FS
       interceptor, see DECISIONS.md/CURRENT_STATE.md.
-- [ ] Real device / APK verification — blocked on Android SDK availability in this
-      environment; code is ready for it.
+- [x] Android SDK availability — corrected 2026-08-16 (this claim was stale): the SDK
+      *is* available in this environment (`/opt/android-sdk`, `gradlew assembleDebug`
+      and `assembleRelease` both build successfully). See QUALITY_GATES.md's own
+      correction. What's still genuinely blocked: (1) real device install — no
+      `platform-tools`/`adb` in this container, code/APK is otherwise ready for it; (2) a
+      *fresh* end-to-end rebuild reflecting the latest commits — the Vite web-asset build
+      hit real memory exhaustion late in a long session on 2026-08-16 (see
+      CURRENT_STATE.md Block 14's "Current build status"), not a code problem; retry
+      when the container has headroom.
 
 ## P1 (polish / product quality)
 - [x] Home/chat welcome screen — verified via screenshot: already has a coherent

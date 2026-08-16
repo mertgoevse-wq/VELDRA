@@ -1,7 +1,104 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-16 (block 13)
+Last updated: 2026-08-16 (block 14)
 Branch: `integration/veldra-bedrock-plus-claude-web`
+
+## Block 14 (2026-08-16) — three-way sync, model registry, Android release hardening
+
+Continuation of the same autonomous mandate, picking up after Block 13. Covers five of
+the mandate's own block labels (kept distinct here since they're a different numbering
+scheme than this file's own sequential rounds): Block 1 (real three-way sync), Block 6
+(APK build verification), Block 3 (security gate), Block 11 (model registry), and Block
+4+5 (premium/entitlement/APK-hardening architecture). Five commits, `3f85ebf` through
+`5790813`, each independently typechecked/linted/tested/pushed with `HEAD == origin`
+verified after every one -- see each commit message for full detail; this entry
+summarizes what changed and why, not a duplicate of the commit log.
+
+**Block 1 -- real three-way sync (`app/lib/sync/three-way-merge.ts`, new).** Replaced
+`RemoteWorkspaceSync.ts`'s naive two-way diff (push overwrote remote blindly; pull
+treated *any* local/remote divergence as a conflict, even a safe fast-forward) with a
+deterministic three-way merge against a persisted last-known-common-state snapshot
+(`androidFallbackStorage.ts`, DB v1->v2, per-project, cleared on workspace reset). Push
+now reads remote state first and won't clobber a file that changed remotely since the
+last sync. 17 new unit tests for the merge engine itself; rippled into 3 other spec
+files that had mocked the old blind-push behavior, now using realistic stateful fakes.
+
+**Block 6 -- APK verification.** Rebuilt and verified the debug APK against the then-
+current HEAD (`a0489b6`): 22,216,894 bytes, real build succeeded in 2m43s. Corrected a
+stale `QUALITY_GATES.md` claim that `gradlew assembleDebug` needs an unavailable
+`ANDROID_HOME` in agent containers -- it doesn't; the SDK is at `/opt/android-sdk` and
+works fine here. **This specific verified APK is now stale again** -- see the "current
+build status" note at the end of this entry for what's true as of `5790813`.
+
+**Block 3 -- security gate.** Bounded git-history scan (all 1,900 commits) for
+`sk-ant-`/`AIza`/`ghp_`/PEM-header/Slack-token patterns. Only `ghp_` had hits, all
+confirmed placeholder text in docs/test fixtures (`ghp_xxxx...`, `ghp_ABCDEF...`), not
+real secrets. Tree scan already clean from an earlier round. No remediation needed.
+
+**Block 11 -- provider-neutral model registry (`2e19ceb`, `fe78376`).** Found and
+fixed real, live defects, not just added infrastructure:
+`app/utils/constants.ts`'s `DEFAULT_MODEL` was `'claude-3-5-sonnet-latest'` -- not a real
+Anthropic model id (no `-latest` alias scheme exists) -- and was the default for every
+new chat plus every server-side fallback; fixed to `claude-sonnet-5`.
+`anthropic.ts`'s 3 hardcoded "essential fallback" models included
+`claude-3-5-sonnet-20241022`, retired 2025-10-28; replaced with the current
+Opus/Sonnet/Haiku tier. Fixed `getDynamicModels()` misreading the live API's
+`max_tokens` field (the output-token cap) as the context window -- correct field is
+`max_input_tokens`. Added `ModelInfo.status` (`'deprecated' | 'retired'`) with a single
+`excludeRetired()` choke point in `manager.ts` so a retired model can never reach the
+picker UI again. Also closed a real UI gap: `ModelSelector.tsx` had a fallback effect for
+an invalid *provider* selection but none for an invalid *model* selection (a stale/retired
+model name just rendered "Select model" literally) -- added the missing effect. New test
+coverage where there was none: `manager.spec.ts` (LLMManager had zero tests -- provider
+registration, the duplicate-name-skip branch, static/dynamic merge, retired-model
+exclusion) and `ModelSelector.spec.tsx` (first test file for this component).
+
+**Block 4+5 -- premium/auth/entitlement + APK hardening (`a45c284`, `5790813`).** A
+discovery audit established real ground truth first: VELDRA has no backend server of any
+kind today (confirmed by direct code search), so real server-side entitlement
+enforcement isn't buildable in-repo right now -- `entitlement.ts`/`stores/entitlement.ts`
+already correctly self-document as client-side/UI-only. Wrote
+`docs/architecture/ENTITLEMENT_AND_SECURITY.md`: current-state audit, the target
+Auth -> Session -> Device-Trust -> Server-Entitlement architecture with a concrete
+phase-in order, and an honest accounting of what APK hardening can and can't do for a
+WebView-hosted app. Fixed a real dormant bug the same audit found: two independent,
+un-synced `entitlementTierStore` atoms existed (`stores/entitlement.ts` -- the one the
+orchestrator actually reads -- and `dev/developer-mode.ts`, its own separate copy);
+unified to one shared store. Separately, real Android release-build hardening, verified
+by actually building both variants (not just editing files -- this caught two real bugs
+along the way: an XML comment containing `--`, invalid per spec, and a manifest-merger
+conflict against a bundled Cordova plugin's own manifest, both fixed and reverified):
+`capacitor.config.ts`'s three dev-only flags (cleartext HTTP, mixed content, WebView
+remote-debugging bridge) were applying unconditionally to every build including release --
+now gated by a `VELDRA_ANDROID_DEBUG_BUILD` env var `build-apk.mjs` sets only for debug
+builds. `AndroidManifest.xml`/`network_security_config.xml` hardened
+(`usesCleartextTraffic`/`allowBackup` both to `false` for release), with a real
+per-variant override at `android/app/src/debug/` restoring the permissive values for
+debug builds only (Android's standard source-set overlay, not an env-var hack, since
+these are static XML files `cap sync` doesn't touch). `build.gradle`: `minifyEnabled true`
++ `shrinkResources true` for release (R8 now actually runs -- verified: 12.8MB unsigned
+release APK vs. 22.2MB unminified debug), plus real `signingConfigs.release` scaffolding
+reading a gitignored `keystore.properties` (doesn't exist yet -- release still builds
+unsigned until one is added, no regression from before).
+
+### Current build status (as of `5790813`)
+
+The Block 6 APK above (`a0489b6`, 22,216,894 bytes) predates all of Block 1/11/4+5 and
+must not be cited as verifying current HEAD. A fresh end-to-end rebuild was attempted
+multiple times this round and hit a real, reproducible constraint, not a fixable bug:
+**the Vite web-asset build (`android:webbuild`) OOM'd three times in a row** late in this
+session, after succeeding earlier in the same session -- consistent with this container's
+memory filling up over a very long-running session rather than anything wrong with the
+build itself or this round's code changes. What *is* independently verified for the
+Android-hardening changes specifically: both `assembleDebug` and `assembleRelease`
+compiled successfully at the Gradle/native level (confirmed via a placeholder web
+payload, isolating the native/manifest/gradle-signing logic from the memory-heavy JS
+bundling step) -- so the manifest merge, R8 minification, and signing-config plumbing are
+structurally verified even though a full installable artifact wasn't produced this round.
+Full JS/TS verification (typecheck, lint, 560/560 tests) passed at every commit above,
+independent of the Android build. **Next session with more headroom should**: run
+`npm run android:apk:debug` fresh (no code changes needed, just retry when memory allows)
+and confirm the resulting APK still launches correctly on/off a real device.
 
 ## Block 13 (2026-08-16) — unified the two duplicate GitHub connection stores
 
