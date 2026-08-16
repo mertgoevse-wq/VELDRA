@@ -117,6 +117,19 @@
       (file rename doesn't exist as a feature; cross-ActionRunner write
       ordering is a real but low-exposure gap, not fixed without a concrete
       repro).
+- [x] Multi-device/project sync foundation (2026-08-16) — `StorageProvider`
+      interface (`app/lib/storage/types.ts`) with two real adapters
+      (`RemoteRuntimeProvider`, `LocalStorageProvider`), both wrapping
+      already-proven logic rather than reimplementing file I/O. New device
+      identity (`app/lib/identity/device.ts`) — nothing used one before.
+      Full LOCAL/REMOTE/SYNC/PROJECT/AUTHENTICATION/STORAGE-PROVIDER
+      breakdown and an honest threat model (no encryption at rest anywhere
+      today, despite a real unused `crypto.ts`; GitHub/provider tokens in
+      plaintext localStorage+cookies; no real per-project file isolation —
+      Android fallback storage is one single global workspace) written up
+      in `docs/architecture/STORAGE_AND_SYNC.md`. Deliberately NOT built:
+      any GitHub/Drive/iCloud provider (no OAuth/conflict-UI to back one
+      yet), encryption at rest, real multi-project UI.
 
 ## P2 (future architecture, don't block P0/P1)
 - Local models (GGUF/safetensors/LoRA), media generation extension points.
@@ -124,6 +137,10 @@
   once evidence of no regressions vs. legacy SubagentService path.
 - Entitlement enforcement moved fully server-side (client flags are UI-only
   today; do not treat them as security boundaries).
+- Real per-project isolation for `androidFallbackStorage.ts` (today: one
+  global workspace shared by every chat — see `docs/architecture/STORAGE_AND_SYNC.md`).
+- Encryption at rest for credentials/project files (real WebCrypto helper
+  already exists at `app/lib/crypto.ts`, unused by anything today).
 
 ## Explicitly out of scope unless requested
 - Rewriting the app from scratch.

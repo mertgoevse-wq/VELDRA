@@ -1034,3 +1034,59 @@ just an assertion that needed to account for the new parameter.
 full-suite parallel load (hits its 5000ms default timeout under contention, passes in
 ~1.7s standalone) -- pre-existing, unrelated to this round, noted so it isn't mistaken
 for a regression later.
+
+## 2026-08-16, later still: multi-device/project sync foundation
+
+Ran two survey agents first (not implementation agents) specifically to avoid designing
+against an idealized picture of the codebase -- the mandate's own "evidence before
+architecture" rule. What they found shaped the scope more than anything else this round:
+no stable project identity exists separate from a chat ID; `androidFallbackStorage.ts`
+is one single global workspace, not scoped per chat/project at all; no device-identity
+concept existed anywhere; every credential (Remote Runtime token, provider API keys,
+GitHub token) is plaintext `localStorage`, with the GitHub token additionally duplicated
+in a plaintext cookie; a real WebCrypto AES-CBC module (`app/lib/crypto.ts`) exists and
+is correctly implemented (native `crypto.subtle`, not a hand-rolled cipher) but is
+imported by nothing anywhere in the app.
+
+Given that baseline, building a full multi-project/multi-device sync system this round
+would have meant inventing capabilities (real project isolation, real encryption, a real
+GitHub provider) the mandate explicitly warned against faking. Scoped down to what's
+genuinely buildable without fabrication:
+
+- **`app/lib/storage/types.ts`**: `StorageProvider` interface, reconciling the three
+  already-incompatible file-shape types in the codebase (`PersistedDirent` in
+  androidFallbackStorage.ts, `Dirent` in files.ts, `RemoteFileItem` in
+  RemoteRuntimeClient.ts -- differ on `'folder'` vs `'directory'`, `path`-as-field vs
+  `path`-as-Record-key, and whether lock state exists at all) into one neutral
+  `StorageFileEntry` shape. `ProjectIdentity`, `SyncState`, and
+  `StorageProviderCapabilities` types alongside it.
+- **`RemoteRuntimeProvider`** and **`LocalStorageProvider`**
+  (`app/lib/storage/providers/`): the two real, already-working backends adapted to the
+  interface. Neither reimplements file I/O -- both call straight through to
+  `RemoteWorkspaceSync.ts`/`RemoteRuntimeClient` and `androidFallbackStorage.ts`
+  respectively, proven by tests that spy only at the real HTTP boundary (Remote Runtime
+  provider) or run against real fake-indexeddb persistence (local provider) -- no
+  VELDRA-owned layer mocked in either.
+- **`app/lib/identity/device.ts`**: new device identity (`crypto.randomUUID()`,
+  persisted plaintext localStorage like everything else in this codebase today).
+  Deliberately inert -- nothing sends it anywhere yet. Exists so a future
+  multi-device-aware conflict UI has something real to build on, kept explicitly
+  separate from `ProjectIdentity` per the mandate's requirement.
+- **`docs/architecture/STORAGE_AND_SYNC.md`**: the LOCAL/REMOTE/SYNC/PROJECT/
+  AUTHENTICATION/STORAGE-PROVIDER breakdown the mandate asked for, each mapped to real
+  code rather than described abstractly, plus the full threat model above stated
+  plainly (not softened) and an explicit list of what this block deliberately did not
+  build: no GitHub/Drive/iCloud provider (no OAuth or conflict UI exists to back one
+  honestly yet -- a stub class that throws "not implemented" would only invite a future
+  caller to register it and silently fail), no encryption at rest, no real per-project
+  isolation for `androidFallbackStorage.ts` (a genuinely separate migration with its own
+  data-migration story for existing users, not something to fold into an interface
+  change).
+
+`LocalStorageProvider`'s `getSyncState()` always returns `'synced'` -- not a placeholder,
+an honest answer: a single local-only copy has nothing external to be out of sync with,
+which is also why its `capabilities.conflictDetection` is `false` (only
+`RemoteRuntimeProvider`, which genuinely compares against a second copy, can detect a
+real conflict).
+
+501 → 514 tests. Typecheck clean. Lint clean.

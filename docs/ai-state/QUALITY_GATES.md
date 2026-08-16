@@ -5,8 +5,8 @@ Run after a coherent implementation block, not after every edit.
 ```bash
 npm run typecheck        # tsc --noEmit
 npm run lint              # eslint (must be 0 errors; 2 known warnings OK)
-npm test                  # vitest run — 501 passing as of 2026-08-16 (multi-file
-                           # consistency audit round); run this yourself, don't just cite
+npm test                  # vitest run — 514 passing as of 2026-08-16 (multi-device/
+                           # storage-foundation round); run this yourself, don't just cite
                            # a stale count from a doc (see DECISIONS.md/current-session.md
                            # 2026-08-15: 9 pre-existing failures across 2 files were
                            # sitting undiscovered before that round). Note:

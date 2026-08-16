@@ -78,6 +78,8 @@ android/app/src/main/assets/public/
 !docs/design/*.md
 !docs/ai-state/
 !docs/ai-state/*.md
+!docs/architecture/
+!docs/architecture/*.md
 !VELDRA-RESEARCH/
 !VELDRA-RESEARCH/*.md
 !project/SESSION-HANDOFF.md

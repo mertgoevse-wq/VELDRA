@@ -1,6 +1,37 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-16 (block 8)
+Last updated: 2026-08-16 (block 9)
+Branch: `integration/veldra-bedrock-plus-claude-web`
+
+## Block 9 (2026-08-16) — multi-device/project sync foundation (interfaces + honest threat model, not a cloud platform)
+
+Full detail: `docs/architecture/STORAGE_AND_SYNC.md`. Summary: added a `StorageProvider`
+interface (`app/lib/storage/types.ts`) reconciling the three incompatible file-shape types
+already in the codebase (`PersistedDirent`, `Dirent`, `RemoteFileItem`), with two real
+adapters wrapping already-proven logic (`RemoteRuntimeProvider` over
+`RemoteRuntimeClient`/`RemoteWorkspaceSync.ts`, `LocalStorageProvider` over
+`androidFallbackStorage.ts`) — neither reimplements file I/O. Added device identity
+(`app/lib/identity/device.ts`, `crypto.randomUUID()`-backed, plaintext localStorage,
+nothing sends it anywhere today) since none existed before and the mandate required
+separating device identity from project identity explicitly.
+
+Two survey agents (run before implementing, per the mandate's evidence-first rule)
+established the honest baseline this design had to be grounded in, not idealized against:
+no stable "project" identity exists separate from a chat; Android fallback storage is
+one single global workspace shared by every chat (not per-project); no device identity
+existed; every credential (Remote Runtime token, provider API keys, GitHub token) is
+stored in plaintext localStorage, with the GitHub token ALSO duplicated in a plaintext
+cookie; a real WebCrypto AES-CBC module (`app/lib/crypto.ts`) exists but is imported by
+nothing. All of this is written up plainly in the new doc rather than glossed over.
+
+Deliberately not built, per the mandate's "no fake cloud integrations" rule: any GitHub/
+Google Drive/iCloud `StorageProvider` implementation (no OAuth flow or conflict-resolution
+UI exists yet to back one honestly), encryption at rest, or real per-project isolation for
+`androidFallbackStorage.ts` (a genuinely separate, larger migration).
+
+514/514 tests (was 501), typecheck clean, lint clean.
+
+## Block 8 (2026-08-16)
 Branch: `integration/veldra-bedrock-plus-claude-web` (single active branch — the
 `claude/veldra-android-recovery-85j8ws` branch referenced below was cherry-picked in;
 work directly on `integration/...` from here on, no new branches)
