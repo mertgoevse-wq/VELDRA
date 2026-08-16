@@ -116,3 +116,6 @@ artifacts/
 
 # Vite build timestamp files
 *.timestamp-*
+
+# Lint cache (machine-local, must never be committed)
+.eslintcache

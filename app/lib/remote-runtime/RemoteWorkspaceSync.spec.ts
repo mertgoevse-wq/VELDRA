@@ -5,7 +5,11 @@ import { pushLocalWorkspaceToRemote, pullRemoteWorkspaceToLocal } from './Remote
 import { RemoteRuntimeClient } from './RemoteRuntimeClient';
 import { runtimeModeStore } from '~/lib/stores/runtime-mode';
 import { workbenchStore } from '~/lib/stores/workbench';
-import { saveAndroidFallbackWorkspace, loadAndroidFallbackState } from '~/lib/persistence/androidFallbackStorage';
+import {
+  saveAndroidFallbackWorkspace,
+  loadAndroidFallbackState,
+  saveSyncBaseSnapshot,
+} from '~/lib/persistence/androidFallbackStorage';
 import { WORK_DIR } from '~/utils/constants';
 
 /**
@@ -45,6 +49,7 @@ describe('RemoteWorkspaceSync -- delete propagation', () => {
     runtimeModeStore.set(REMOTE_STATE);
     workbenchStore.files.set({});
     await saveAndroidFallbackWorkspace({}, []);
+    await saveSyncBaseSnapshot({});
   });
 
   afterEach(() => {
@@ -57,6 +62,8 @@ describe('RemoteWorkspaceSync -- delete propagation', () => {
       { [`${WORK_DIR}/index.html`]: { type: 'file', content: '<html></html>', isBinary: false } },
       [`${WORK_DIR}/old-file.js`],
     );
+
+    vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockResolvedValue({ files: [] });
 
     const syncFiles = vi.spyOn(RemoteRuntimeClient.prototype, 'syncFiles').mockResolvedValue({
       ok: true,
@@ -77,6 +84,8 @@ describe('RemoteWorkspaceSync -- delete propagation', () => {
       [],
     );
 
+    vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockResolvedValue({ files: [] });
+
     const syncFiles = vi
       .spyOn(RemoteRuntimeClient.prototype, 'syncFiles')
       .mockResolvedValue({ ok: true, writtenFileCount: 1, files: [] });
@@ -84,6 +93,45 @@ describe('RemoteWorkspaceSync -- delete propagation', () => {
     await pushLocalWorkspaceToRemote();
 
     expect(syncFiles).toHaveBeenCalledWith(expect.objectContaining({ 'index.html': '<html></html>' }), []);
+  });
+
+  it('push does not overwrite a file that was modified remotely since the last sync (real conflict, no data loss)', async () => {
+    // First sync: local and remote agree, establishing a base snapshot.
+    await saveAndroidFallbackWorkspace(
+      { [`${WORK_DIR}/shared.js`]: { type: 'file', content: 'original', isBinary: false } },
+      [],
+    );
+    vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockResolvedValue({
+      files: [{ path: 'shared.js', type: 'file', content: 'original', isBinary: false }],
+    });
+    vi.spyOn(RemoteRuntimeClient.prototype, 'syncFiles').mockResolvedValue({
+      ok: true,
+      writtenFileCount: 0,
+      files: [],
+    });
+    await pushLocalWorkspaceToRemote();
+    vi.restoreAllMocks();
+
+    // Now local edits shared.js, AND remote is discovered to have independently changed too.
+    await saveAndroidFallbackWorkspace(
+      { [`${WORK_DIR}/shared.js`]: { type: 'file', content: 'local edit', isBinary: false } },
+      [],
+    );
+    vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockResolvedValue({
+      files: [{ path: 'shared.js', type: 'file', content: 'remote edit', isBinary: false }],
+    });
+
+    const secondSyncFiles = vi
+      .spyOn(RemoteRuntimeClient.prototype, 'syncFiles')
+      .mockResolvedValue({ ok: true, writtenFileCount: 0, files: [] });
+
+    const status = await pushLocalWorkspaceToRemote();
+
+    // syncFiles must never be called with shared.js as a write -- that would clobber the remote edit.
+    expect(secondSyncFiles).not.toHaveBeenCalledWith(expect.objectContaining({ 'shared.js': expect.anything() }), []);
+    expect(status.conflicts).toContainEqual(
+      expect.objectContaining({ path: 'shared.js', reason: expect.stringContaining('changed this file differently') }),
+    );
   });
 
   it('pull does NOT resurrect a file the user explicitly deleted locally, and records it as a real conflict', async () => {

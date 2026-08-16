@@ -50,9 +50,17 @@ interface AndroidFallbackState {
 }
 
 const DB_NAME = 'bolt-android-fallback';
-const DB_VERSION = 1;
+
+/**
+ * v2 adds SYNC_BASE_STORE (the three-way-sync "last known common state" snapshot -- see
+ * app/lib/sync/three-way-merge.ts). No data migration needed for existing installs: the store
+ * simply doesn't exist yet for any project, and an absent base snapshot is a valid, meaningful
+ * state (treated as "never synced" -- see getBaseSnapshot below), not an error.
+ */
+const DB_VERSION = 2;
 const WORKSPACE_STORE = 'workspace';
 const SESSION_STORE = 'session';
+const SYNC_BASE_STORE = 'syncBase';
 
 /**
  * The exact IndexedDB key every install used before per-project storage existed --
@@ -154,6 +162,10 @@ function openDb(): Promise<IDBDatabase | undefined> {
 
       if (!db.objectStoreNames.contains(SESSION_STORE)) {
         db.createObjectStore(SESSION_STORE, { keyPath: 'key' });
+      }
+
+      if (!db.objectStoreNames.contains(SYNC_BASE_STORE)) {
+        db.createObjectStore(SYNC_BASE_STORE, { keyPath: 'key' });
       }
     };
 
@@ -348,6 +360,85 @@ export async function saveAndroidFallbackWorkspace(
   await putRawWorkspaceRecord(db, state);
 }
 
+interface SyncBaseRecord {
+  key: string;
+  snapshot: Record<string, string>;
+  updatedAt: string;
+}
+
+function syncBaseKeyFor(projectId: string): string {
+  return `syncBase:${projectId}`;
+}
+
+function isValidSyncBaseRecord(value: unknown): value is SyncBaseRecord {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Partial<SyncBaseRecord>;
+
+  return typeof candidate.key === 'string' && typeof candidate.snapshot === 'object' && candidate.snapshot !== null;
+}
+
+/**
+ * The three-way-sync "last known common state" snapshot -- absent means this project has never
+ * completed a sync, which the caller (RemoteWorkspaceSync.ts) treats as an empty base, correctly
+ * classifying every existing file as newly-added rather than crashing or guessing.
+ */
+export async function getSyncBaseSnapshot(projectId: string = getCurrentProjectId()): Promise<Record<string, string>> {
+  const db = await openDb();
+
+  if (!db) {
+    return {};
+  }
+
+  const value = await new Promise<unknown>((resolve) => {
+    const transaction = db.transaction(SYNC_BASE_STORE, 'readonly');
+    const store = transaction.objectStore(SYNC_BASE_STORE);
+    const request = store.get(syncBaseKeyFor(projectId));
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => resolve(undefined);
+  });
+
+  if (value === undefined) {
+    return {};
+  }
+
+  if (!isValidSyncBaseRecord(value)) {
+    console.error('[androidFallbackStorage] Discarding corrupted sync base record', value);
+    return {};
+  }
+
+  return value.snapshot;
+}
+
+export async function saveSyncBaseSnapshot(
+  snapshot: Record<string, string>,
+  projectId: string = getCurrentProjectId(),
+): Promise<void> {
+  const db = await openDb();
+
+  if (!db) {
+    return;
+  }
+
+  const record: SyncBaseRecord = {
+    key: syncBaseKeyFor(projectId),
+    snapshot,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(SYNC_BASE_STORE, 'readwrite');
+    const store = transaction.objectStore(SYNC_BASE_STORE);
+    const request = store.put(record);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error ?? new Error('Failed to save sync base snapshot'));
+  });
+}
+
 export async function updateAndroidFallbackSession(partial: Partial<AndroidFallbackSessionState>) {
   const db = await openDb();
 
@@ -394,6 +485,20 @@ export async function resetAndroidFallbackStorage(projectId: string = getCurrent
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error ?? new Error('Failed to reset workspace state'));
+  });
+
+  /*
+   * A stale sync base surviving a workspace reset would misclassify every remote file on the
+   * next sync (base says "existed", fresh-empty local says "gone" -> looks like a local
+   * deletion instead of "never synced, safe to pull"). Reset must clear both together.
+   */
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(SYNC_BASE_STORE, 'readwrite');
+    const store = transaction.objectStore(SYNC_BASE_STORE);
+    const request = store.delete(syncBaseKeyFor(projectId));
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error ?? new Error('Failed to reset sync base snapshot'));
   });
 }
 

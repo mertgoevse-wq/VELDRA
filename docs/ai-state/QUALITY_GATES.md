@@ -16,8 +16,26 @@ npm test                  # vitest run — 514 passing as of 2026-08-16 (multi-d
                            # flake, not a regression, if you see it fail in the full run.
 npm run build:android     # Android SPA/Vite build
 npx cap sync android      # sync web build into the Capacitor Android project
-cd android && ./gradlew assembleDebug   # requires ANDROID_HOME — often unavailable in agent containers
+cd android && ./gradlew assembleDebug   # see note below — works in this container as of 2026-08-16
 ```
+
+## Android SDK availability (correction, 2026-08-16)
+The line above previously claimed `./gradlew assembleDebug` "requires ANDROID_HOME — often
+unavailable in agent containers." That was stale. Verified directly in this container: SDK at
+`/opt/android-sdk` (`platforms/android-35`, `build-tools/34.0.0` and `35.0.0`, `cmdline-tools/latest`,
+all licenses accepted), Java 21 (OpenJDK) on `PATH`, and the Gradle wrapper's requested distribution
+(`gradle-8.11.1-all`) already cached under `~/.gradle/wrapper/dists`. A real debug build succeeded
+against current HEAD (`a0489b6`) in 2m 43s:
+```bash
+export ANDROID_HOME=/opt/android-sdk
+export ANDROID_SDK_ROOT=/opt/android-sdk
+cd android && ./gradlew assembleDebug --console=plain -Dorg.gradle.jvmargs="-Xmx1536m"
+```
+`-Xmx1536m` keeps the daemon under this container's ~7.4GB RAM ceiling; omit if your container has
+more headroom. Output: `android/app/build/outputs/apk/debug/app-debug.apk`, 22,216,894 bytes,
+sha256 `f791114fe7c631240102a8c2cf926e4dad0fe39ec96c78837c834bcf7631d8b1`. **Still not possible**:
+installing to a real device or emulator — no `platform-tools`/`adb` present in this container, only
+the SDK components listed above.
 
 ## Environment notes
 - `npm install` requires `--legacy-peer-deps` (unrelated pre-existing

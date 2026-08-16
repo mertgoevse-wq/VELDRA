@@ -5,7 +5,7 @@ import { RemoteRuntimeProvider } from './remote-runtime-provider';
 import { RemoteRuntimeClient } from '~/lib/remote-runtime/RemoteRuntimeClient';
 import { resetSyncStatus } from '~/lib/remote-runtime/RemoteWorkspaceSync';
 import { runtimeModeStore } from '~/lib/stores/runtime-mode';
-import { saveAndroidFallbackWorkspace } from '~/lib/persistence/androidFallbackStorage';
+import { saveAndroidFallbackWorkspace, saveSyncBaseSnapshot } from '~/lib/persistence/androidFallbackStorage';
 import { WORK_DIR } from '~/utils/constants';
 
 /**
@@ -45,6 +45,7 @@ describe('RemoteRuntimeProvider', () => {
     runtimeModeStore.set(REMOTE_STATE);
     resetSyncStatus();
     await saveAndroidFallbackWorkspace({}, []);
+    await saveSyncBaseSnapshot({});
   });
 
   afterEach(() => {
@@ -93,6 +94,8 @@ describe('RemoteRuntimeProvider', () => {
       [],
     );
 
+    vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockResolvedValue({ files: [] });
+
     const syncFiles = vi
       .spyOn(RemoteRuntimeClient.prototype, 'syncFiles')
       .mockResolvedValue({ ok: true, writtenFileCount: 1, files: [] });
@@ -105,6 +108,15 @@ describe('RemoteRuntimeProvider', () => {
   });
 
   it('writeFiles throws a real error instead of reporting fake success when the underlying sync fails', async () => {
+    /*
+     * Needs at least one real local change, or the three-way plan has nothing to push and
+     * syncFiles is never called at all (so a mocked rejection would never fire either way).
+     */
+    await saveAndroidFallbackWorkspace(
+      { [`${WORK_DIR}/index.html`]: { type: 'file', content: '<html></html>', isBinary: false } },
+      [],
+    );
+    vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockResolvedValue({ files: [] });
     vi.spyOn(RemoteRuntimeClient.prototype, 'syncFiles').mockRejectedValue(new Error('network down'));
 
     const provider = new RemoteRuntimeProvider();
@@ -115,6 +127,7 @@ describe('RemoteRuntimeProvider', () => {
     const provider = new RemoteRuntimeProvider();
     expect(provider.getSyncState(PROJECT)).toBe('idle');
 
+    vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockResolvedValue({ files: [] });
     vi.spyOn(RemoteRuntimeClient.prototype, 'syncFiles').mockResolvedValue({
       ok: true,
       writtenFileCount: 0,

@@ -7,7 +7,7 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import { runtimeModeStore } from '~/lib/stores/runtime-mode';
 import { RemoteRuntimeClient } from '~/lib/remote-runtime/RemoteRuntimeClient';
 import { remotePreviewRefreshSignal } from '~/lib/stores/remotePreviewSignal';
-import { saveAndroidFallbackWorkspace } from '~/lib/persistence/androidFallbackStorage';
+import { saveAndroidFallbackWorkspace, saveSyncBaseSnapshot } from '~/lib/persistence/androidFallbackStorage';
 import { WORK_DIR } from '~/utils/constants';
 import { Preview } from '~/components/workbench/Preview';
 
@@ -56,6 +56,7 @@ describe('Real creation loop, end-to-end (files -> sync -> remote start -> live 
     runtimeModeStore.set(REMOTE_ANDROID_STATE);
     workbenchStore.files.set({});
     await saveAndroidFallbackWorkspace({}, []);
+    await saveSyncBaseSnapshot({});
 
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -108,12 +109,35 @@ describe('Real creation loop, end-to-end (files -> sync -> remote start -> live 
       '<html><body>Todo App v1</body></html>',
     );
 
-    // Step 7-9: agent starts the dev server. Only the real HTTP boundary is replaced.
-    const syncFiles = vi.spyOn(RemoteRuntimeClient.prototype, 'syncFiles').mockImplementation(async (files) => ({
-      ok: true,
-      writtenFileCount: Object.keys(files).length,
-      files: [],
+    /*
+     * Step 7-9: agent starts the dev server. Only the real HTTP boundary is replaced -- with a
+     * genuinely stateful fake (push now reads remote state via listFiles for real three-way
+     * conflict detection, so the fake must actually remember what syncFiles wrote, not just
+     * report success blindly).
+     */
+    const remoteFilesState: Record<string, string> = {};
+    vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockImplementation(async () => ({
+      files: Object.entries(remoteFilesState).map(([path, content]) => ({
+        path,
+        type: 'file' as const,
+        content,
+        isBinary: false,
+      })),
     }));
+
+    const syncFiles = vi
+      .spyOn(RemoteRuntimeClient.prototype, 'syncFiles')
+      .mockImplementation(async (files, deletedPaths) => {
+        for (const [path, content] of Object.entries(files)) {
+          remoteFilesState[path] = content;
+        }
+
+        for (const path of deletedPaths ?? []) {
+          delete remoteFilesState[path];
+        }
+
+        return { ok: true, writtenFileCount: Object.keys(files).length, files: [] };
+      });
     const runCommand = vi.spyOn(RemoteRuntimeClient.prototype, 'runCommand').mockResolvedValue({
       commandId: 'cmd-start-1',
       commandProfile: 'npm run dev',
@@ -219,6 +243,7 @@ describe('Real creation loop, end-to-end (files -> sync -> remote start -> live 
     runner!.addAction(fileAction);
     await runner!.runAction(fileAction);
 
+    vi.spyOn(RemoteRuntimeClient.prototype, 'listFiles').mockResolvedValue({ files: [] });
     vi.spyOn(RemoteRuntimeClient.prototype, 'syncFiles').mockResolvedValue({
       ok: true,
       writtenFileCount: 1,
