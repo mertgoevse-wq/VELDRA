@@ -61,7 +61,7 @@ function emitToolFailureIfAttributable(taskId: string, error: unknown): void {
       toolName: error.toolName,
       toolCallId: error.toolCallId,
       args: summarizeForEvent(error.toolArgs),
-      error: error.message,
+      error: summarizeForEvent(error.message),
     },
     taskId,
   );

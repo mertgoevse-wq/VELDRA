@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyFileToolCall, extractFilePath, summarizeForEvent } from './subagent-tool-events';
+import { classifyFileToolCall, extractFilePath, redactSecrets, summarizeForEvent } from './subagent-tool-events';
 
 describe('extractFilePath', () => {
   it('finds a real path arg under any of the recognized key names', () => {
@@ -54,5 +54,35 @@ describe('summarizeForEvent', () => {
     const circular: any = {};
     circular.self = circular;
     expect(() => summarizeForEvent(circular)).not.toThrow();
+  });
+
+  it('redacts a Bearer token before it reaches an event payload', () => {
+    const result = summarizeForEvent('request failed: Authorization: Bearer sk-abcdefghijklmno1234567890');
+    expect(result).not.toContain('sk-abcdefghijklmno1234567890');
+    expect(result).toContain('[redacted]');
+  });
+});
+
+describe('redactSecrets', () => {
+  it('redacts a Bearer token, keeping surrounding text', () => {
+    const result = redactSecrets('failed request: Authorization: Bearer abc.def-ghi_123');
+    expect(result).toBe('failed request: Authorization: [redacted]');
+  });
+
+  it('redacts common API-key-shaped prefixes (sk-, ghp_, AKIA...)', () => {
+    expect(redactSecrets('key=sk-proj-abcdefghijklmnopqrst')).not.toContain('sk-proj-abcdefghijklmnopqrst');
+    expect(redactSecrets('token ghp_ABCDEFGHIJ1234567890')).not.toContain('ghp_ABCDEFGHIJ1234567890');
+    expect(redactSecrets('AKIAABCDEFGHIJKLMNOP is the key id')).not.toContain('AKIAABCDEFGHIJKLMNOP');
+  });
+
+  it('redacts a key=value/json-style secret assignment while keeping the key name visible', () => {
+    const result = redactSecrets('{"apiKey": "abcdef123456"}');
+    expect(result).not.toContain('abcdef123456');
+    expect(result).toContain('apiKey');
+  });
+
+  it('leaves ordinary error text with no secret-shaped substring unchanged', () => {
+    const text = "ENOENT: no such file or directory, open '/tmp/x.txt'";
+    expect(redactSecrets(text)).toBe(text);
   });
 });

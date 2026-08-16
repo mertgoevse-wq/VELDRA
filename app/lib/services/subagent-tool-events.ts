@@ -60,6 +60,40 @@ export function classifyFileToolCall(toolName: string, args: unknown): FileEvent
   return undefined;
 }
 
+/*
+ * Defense-in-depth redaction, not a fix for a specific known leak: MCP tools are
+ * dynamically registered from arbitrary third-party servers (see this file's own doc
+ * comment above) whose implementation VELDRA has no visibility into or control over -- if
+ * one embeds a credential in its own thrown error text (e.g. an HTTP client that includes
+ * request headers in a "request failed" message), that text reaches tool.failed's
+ * displayed error field verbatim. VELDRA cannot fix a third-party tool's own bug, but can
+ * cheaply reduce the blast radius of the common, recognizable secret shapes before display.
+ * Found and scoped during a security review, 2026-08-16 -- see DECISIONS.md.
+ *
+ * Each entry owns its own replacer so there's no ambiguity between "this regex has a
+ * prefix-to-keep capture group" and "String.replace's callback offset argument" -- both
+ * are the 2nd positional callback argument when a pattern has zero groups, and conflating
+ * them was a real bug caught by this file's own tests (an offset number like "31" leaking
+ * into the "redacted" text for group-less patterns).
+ */
+const SECRET_PATTERNS: Array<{ pattern: RegExp; replace: (...match: string[]) => string }> = [
+  { pattern: /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, replace: () => '[redacted]' },
+
+  // GitHub tokens use '_' (ghp_xxx); OpenAI/Slack-style keys use '-' (sk-xxx) -- both accepted.
+  { pattern: /\b(sk|ghp|gho|ghu|ghs|ghr|xox[baprs])[_-][A-Za-z0-9-]{10,}\b/gi, replace: () => '[redacted]' },
+  { pattern: /\b(AKIA|ASIA)[A-Z0-9]{16}\b/g, replace: () => '[redacted]' },
+  {
+    pattern:
+      /(["']?(?:api[_-]?key|access[_-]?token|auth[_-]?token|secret|password|client[_-]?secret)["']?\s*[:=]\s*["']?)[^\s"',}]{6,}/gi,
+    replace: (_match: string, prefix: string) => `${prefix}[redacted]`,
+  },
+];
+
+/** Replaces recognizable secret-shaped substrings with a redaction marker. */
+export function redactSecrets(text: string): string {
+  return SECRET_PATTERNS.reduce((result, { pattern, replace }) => result.replace(pattern, replace), text);
+}
+
 /** Bounded, safe stringification for event payloads -- never throws, never unbounded. */
 export function summarizeForEvent(value: unknown, maxLen = 300): string {
   let text: string;
@@ -73,6 +107,8 @@ export function summarizeForEvent(value: unknown, maxLen = 300): string {
   if (text === undefined) {
     return '';
   }
+
+  text = redactSecrets(text);
 
   return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
 }
