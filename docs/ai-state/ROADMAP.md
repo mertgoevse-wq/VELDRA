@@ -3,6 +3,12 @@
 ## P0 (must work for Android to be usable)
 - [x] Fix fallback banner / workbench toolbar overlap.
 - [x] Fix app-crashing production bundling bug (React undefined in vendor-ai chunk).
+      **Re-broken and re-fixed 2026-08-16**: this specific bug stayed fixed, but the
+      build broke again for 4 different, related chunk-splitting circular-reference
+      reasons that went undetected for a while (no real build+screenshot check had been
+      run since P0 was last verified) — see DECISIONS.md's 2026-08-16 entry. Lesson: a
+      manual `manualChunks` split is only as safe as its last real screenshot
+      verification, not a one-time fix.
 - [x] Fix Workbench panel always rendering full-screen regardless of active tab
       (the actual root cause of the original bug screenshot's dominant editor area).
 - [x] Back button / drawer state, undersized touch targets, hover-only controls,
@@ -30,8 +36,11 @@
       — "Code Workspace"/"Project Overview" now deterministically seed real
       starter files via `applyStarterTemplate`, not just a layout switch. The
       other 6 templates are workspace-mode presets by design, not project
-      scaffolds — see DECISIONS.md. Still open: unifying with desktop's
-      `StarterTemplates`/`/git`-route path (separate, larger change).
+      scaffolds — see DECISIONS.md.
+- [x] Desktop's `StarterTemplates`/`/git`-route path unified with the shared
+      seeding pipeline (2026-08-16) — desktop now seeds into the current chat
+      via `applyStarterTemplate`, same as Android, instead of navigating away.
+      `/git?url=...` (arbitrary GitHub URL import) deliberately left separate.
 - [x] SubagentActivityWidget mounted (prior session) and confirmed genuinely
       wired to real subagentService.ts task state, not synthetic (2026-08-15
       orchestrator audit). Real per-tool-call granularity (tool selected/
@@ -47,8 +56,8 @@
       distinction, and it's visually a no-op in the default theme since
       `--bolt-elements-item-backgroundDefault` resolves to fully transparent
       there. Not changed without visual confirmation across the other skins.
-- [ ] `UserMessage.tsx`'s two content-shape branches unified into one
-      consistent layout (2026-08-15) — done, see DECISIONS.md/current-session.md.
+- [x] `UserMessage.tsx`'s two content-shape branches unified into one
+      consistent layout (2026-08-15) — see DECISIONS.md/current-session.md.
 - [x] Real-time state-truth bug fixed: Android's bottom-nav `activeTab` could
       disagree with `workbenchStore.showWorkbench` when the panel opened from
       an artifact-link click or AI file-streaming rather than a tab switch
@@ -62,6 +71,15 @@
       `selectedFile`/`unsavedFiles`/`Preview.tsx` file-sourcing were also
       checked this round — all single-source-of-truth. See
       `docs/ai-state/DECISIONS.md`'s Phase 8 entry for the full trail.
+
+- [x] Agent-issued 'build'/'start' actions bridged to Remote Runtime (2026-08-16)
+      — previously only the user's manual Terminal panel could talk to a
+      configured Remote Runtime server; the agent itself had no execution path
+      at all on that mode. Now routes through the same safe command-profile
+      API (`npm run build`/`npm run dev`), not raw shell. See DECISIONS.md.
+      Still open: raw agent-issued 'shell' actions remain unavailable on
+      Remote Runtime by design (would mean executing unvalidated LLM text on
+      a real remote server).
 
 ## P2 (future architecture, don't block P0/P1)
 - Local models (GGUF/safetensors/LoRA), media generation extension points.

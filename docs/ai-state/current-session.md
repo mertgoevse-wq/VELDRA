@@ -481,7 +481,45 @@ Three blocks of Android recovery work (see git log for exact commits):
 
 ## How to verify without a device
 See "How to screenshot-verify" in CURRENT_STATE.md — `vite preview` serves the exact
-static output Capacitor ships, and a headless Chromium (Playwright, pre-installed in
-this environment at `/opt/pw-browsers`) can screenshot/click it at a Pixel 7 viewport.
-Use this before claiming any Android UI change is fixed — two of that session's bugs
-were invisible from source code alone.
+static output Capacitor ships, and a headless Chromium can screenshot/click it at a
+Pixel 7 viewport. Use this before claiming any Android UI change is fixed — several of
+this repo's most serious bugs were invisible from source code alone.
+
+**Correction (2026-08-16)**: `/opt/pw-browsers` does not exist in this container and
+never did during this session -- that claim went stale at some point and misled every
+attempt to reuse it until 2026-08-16 finally worked around it directly. What actually
+works in this environment: a cached Chromium binary lives at
+`/root/.cache/ms-playwright/chromium-1234/chrome-linux/chrome` (downloaded by an earlier
+`npx playwright` invocation that itself timed out on the *npm package* fetch, but left
+the browser binary behind), and a cached `playwright-core` npm package exists at
+`/root/.npm/_npx/<hash>/node_modules/playwright-core` from that same prior invocation --
+`node -e "require('.../playwright-core').chromium.launch(...)"` works directly without
+needing `npx playwright` to resolve at all. The binary also needs
+`playwright install-deps chromium` run once (installs `libatk-1.0.so.0` and its X11/font/
+GTK dependency chain via apt) before it will actually launch -- confirmed working,
+2026-08-16, first successful real Android build+screenshot verification this session.
+
+## 2026-08-16 block -- Core Creation Loop, Live Runtime bridge, real visual verification
+
+Continuation of the product-integration mandate from `a24ffd7`. Full detail in
+`DECISIONS.md`'s 2026-08-16 entries; summary:
+- Fixed a real, exploitable attribute-breakout tag-injection vulnerability in the shared
+  template-seeding builder (`3450ea8`).
+- Fixed the Android production build, which had been completely broken (permanent splash
+  screen) since some point after this doc's own last screenshot-verified block -- 4 real
+  crashes chased through mcp-stdio's Node-only import and 3 distinct chunk-splitting
+  circular-reference bugs (`e08e61e`, `0daefef`).
+- First real headless-Chromium screenshots this session (see correction above) --
+  Chat/Settings/Files/Preview all confirmed rendering correctly; screenshots committed to
+  `docs/images/android-2026-08-16/` and referenced in README.
+- Bridged agent-issued 'build'/'start' actions to Remote Runtime via the existing safe
+  command-profile API (`6a02e3d`) -- a real, previously-self-documented Core Creation Loop
+  gap (agent could chat but never actually build/run anything on Remote Runtime).
+  Deliberately did NOT bridge raw 'shell' actions -- would mean executing unvalidated
+  LLM-generated text on a real remote server.
+- Redacted secret-shaped substrings from `tool.failed` event error text as defense-in-depth
+  (`3f98a0e`) -- follow-up to an earlier security review's low-severity finding.
+- Corrected stale README APK/build-status claims (`91a080e`) -- the web bundle build is
+  now genuinely verified; the native Gradle/Capacitor APK build is not (no Android SDK in
+  this environment).
+- 422 -> 459 tests across this block; typecheck/lint clean throughout.
