@@ -102,11 +102,24 @@ Neither is a `StorageProvider` today.
 ## Threat model — current reality, stated plainly
 
 **No encryption at rest exists anywhere in this codebase today**, despite a real,
-correctly-implemented WebCrypto module (`app/lib/crypto.ts`, AES-CBC via
-`crypto.subtle` — a real primitive, not hand-rolled) existing in the tree. It is **not
-imported by anything** (verified: zero call sites). This is not a claim of "encrypted
-storage, just not wired up everywhere" — it means every credential and every project
-file this app persists today is plaintext, full stop.
+correctly-implemented WebCrypto module (`app/lib/crypto.ts`, AES-GCM via
+`crypto.subtle` — a real, authenticated primitive, not hand-rolled) existing in the
+tree. It is **not imported by anything** (verified: zero call sites). This is not a
+claim of "encrypted storage, just not wired up everywhere" — it means every credential
+and every project file this app persists today is plaintext, full stop.
+
+`crypto.ts` was switched from AES-CBC to AES-GCM this round (still zero call sites —
+this is a correctness fix to code that was already unused, not new wiring). AES-CBC has
+no integrity check: tampered ciphertext decrypts silently into garbage plaintext instead
+of failing, which matters once this module is actually protecting secrets. AES-GCM is
+authenticated — `decrypt()` now throws on any tampering, verified by
+`app/lib/crypto.spec.ts`'s round-trip/tamper/wrong-key tests (new this round, the
+module's first test coverage). The `getKey()` shape was re-confirmed as the *correct*
+one to eventually wrap with a platform keystore: it takes a raw key handle and does pure
+AES-GCM encrypt/decrypt, with no key generation or key persistence of its own — that
+separation of concerns (Keystore generates/holds a non-extractable hardware-backed key;
+this module only uses a key it's handed) is exactly the shape a Keystore integration
+needs, so nothing about `crypto.ts` itself blocks that follow-up.
 
 Confirmed plaintext storage locations:
 - **Remote Runtime auth token**: `localStorage` (`runtime-mode.ts`,
@@ -129,10 +142,37 @@ URL, otherwise plaintext HTTP; the client does not enforce a scheme.
 
 **Do not claim end-to-end encryption anywhere in product copy or documentation** until
 this changes. If/when it does, the natural shape (not built this block, noted for
-whoever picks this up): use `crypto.ts`'s existing AES-CBC helpers to encrypt
-localStorage/IndexedDB values at rest, keyed by a passphrase or platform keystore-backed
-key — never a hardcoded key, never an invented cipher. That work is genuinely separate
-from the storage-provider abstraction this block adds and was not attempted here.
+whoever picks this up): use `crypto.ts`'s AES-GCM helpers to encrypt
+localStorage/IndexedDB values at rest, with the raw AES key itself sourced from a
+platform-backed keystore — **not** a user passphrase (nothing in this app's UX today
+prompts for one, and inventing that flow just to protect API keys the user typed in
+anyway would be a worse experience for no real gain over device-lock-screen-level
+protection). Concretely, on Android: a Capacitor secure-storage plugin backed by
+`EncryptedSharedPreferences`/Android Keystore (none is a dependency today — confirmed by
+audit; this is a real new native dependency to add, not configuration of something
+already present) generates and holds a non-extractable hardware-backed AES key, and
+`crypto.ts` wraps it for the actual encrypt/decrypt calls — the division of labor
+`getKey()`'s shape already assumes. On desktop/web, where no OS keystore is reachable
+from a browser, the honest fallback is: encrypt with a key derived from the browser's
+own storage-partition isolation (i.e., accept that a compromised browser profile is a
+compromised secret store, same as today) rather than fabricate an equivalent guarantee
+Web platforms can't actually provide — do not claim Keystore-equivalent protection on
+desktop/web.
+
+**Recovery behavior once this is wired up** (document before shipping, so a lost key
+isn't a surprise): a hardware-backed Keystore key cannot be exported or backed up by
+design. App reinstall, keystore reset, or restoring `localStorage`/IndexedDB onto a
+different device from a backup all mean the encrypted blobs become **permanently
+unreadable** — there is no recovery path, by construction. For the specific data this
+threat model covers (provider API keys, OAuth tokens, the Remote Runtime token), that's
+an acceptable tradeoff: all of it is either re-typeable by the user or re-obtainable via
+re-authenticating, never the *only* copy of something irreplaceable. Project file
+content should **not** be encrypted under this same non-recoverable key for exactly that
+reason — losing a project's only copy to a keystore reset would be a real data-loss bug,
+not an acceptable security tradeoff; project files should stay in the sync/backup path
+(`RemoteWorkspaceSync.ts`'s three-way merge, or a future cloud provider) rather than
+behind a device-bound, non-recoverable key. That work is genuinely separate from the
+storage-provider abstraction this doc otherwise covers and was not attempted here.
 
 ## What's still NOT built (explicitly, so it isn't assumed done)
 
