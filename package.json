@@ -41,7 +41,7 @@
     "electron:build:win": "rm -rf dist && pnpm electron:build:renderer && pnpm electron:build:deps && electron-builder --win",
     "electron:build:linux": "rm -rf dist && pnpm electron:build:renderer && pnpm electron:build:deps && electron-builder --linux",
     "electron:build:dist": "rm -rf dist && pnpm electron:build:renderer && pnpm electron:build:deps && electron-builder --mwl",
-    "android:webbuild": "vite build --config vite.android.config.ts",
+    "android:webbuild": "NODE_OPTIONS='--max-old-space-size=1536' vite build --config vite.android.config.ts",
     "android:sync": "npm run android:webbuild && cap sync android",
     "android:init": "cap add android",
     "android:copy": "cap copy android",

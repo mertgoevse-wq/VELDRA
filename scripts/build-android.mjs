@@ -21,6 +21,19 @@ const BUILD_CLIENT = path.join(ROOT, 'build', 'client');
 
 console.log('\n[Android Build] Starting...');
 
+/*
+ * This build has been observed OOMing late in long dev sessions on constrained ARM64/Termux
+ * containers -- not because of anything in this build's own config, but because ad-hoc test
+ * runs earlier in the same session can leave orphaned `vitest` worker pools resident (a known
+ * failure mode when a run is piped through `timeout ... | tail`, which detaches the process
+ * from the timeout wrapper's signal). Clearing those before this memory-heavy step gives the
+ * Vite build the most headroom this container can offer. Best-effort: pkill exits non-zero
+ * when nothing matches, which is the common/expected case, not a real failure.
+ */
+if (process.platform !== 'win32') {
+  spawnSync('pkill', ['-f', 'vitest'], { stdio: 'ignore' });
+}
+
 // Step 1: Run the Android-specific Vite build (no Remix server deps)
 console.log('\n[Build] Running Android Vite build...');
 const buildResult = spawnSync('npm', ['run', 'android:webbuild'], {
