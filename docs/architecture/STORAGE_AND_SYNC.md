@@ -99,6 +99,54 @@ safe wrapper around local git operations), not a GitHub-as-storage-backend integ
 `GitHubDeploy.client.tsx` is deploy/publish only, not bidirectional project file sync.
 Neither is a `StorageProvider` today.
 
+## Multi-device sync — what the three-way merge actually enables today
+
+The mandate's target topology is `Galaxy ↕ OnePlus ↕ cloud/backend ↕ desktop`, built on the
+real three-way merge (`app/lib/sync/three-way-merge.ts`), not a replacement for it.
+
+**Identity separation, confirmed against real code, not just intent**: project identity
+(`app/lib/identity/project.ts`), device identity (`app/lib/identity/device.ts`), and user
+identity (would live in the Supabase Auth `auth.users` table from
+`docs/architecture/ENTITLEMENT_AND_SECURITY.md` §3.5 once that's deployed — does not exist
+today, so "user identity" is currently undefined, not merely unused) are three genuinely
+separate types today, matching the mandate's explicit requirement. There is no fourth
+"session identity" concept yet — with no sign-in flow, there is no session to be distinct
+from a device. Chat identity (`getCurrentChatId()`) remains the practical stand-in for
+project identity (see "Project identity" above), a pre-existing, honestly-documented
+simplification this doc already covers — not new to this update.
+
+**A real, if manual, multi-device path exists today**: any two devices (e.g. a Galaxy phone
+and a desktop browser) configured in Settings → Runtime Mode to point at the *same*
+self-hosted Remote Runtime server URL already sync through it, each running its own
+three-way merge independently. This works for the same reason `git` does across independent
+clones: each device keeps its *own* local last-known-common-state snapshot
+(`androidFallbackStorage.ts`, per-project, per-device — IndexedDB is inherently per-browser-
+profile/per-device, never shared) and compares *its own* base/local/remote triple on every
+sync, so two devices don't need to coordinate with each other directly, only with the one
+shared server each of them talks to. This was not previously stated anywhere as a multi-
+device capability — it falls directly out of Block 1's three-way merge plus Remote Runtime
+already being a real shared server, not a new mechanism built for this doc.
+
+**What that path does NOT give you, honestly**:
+- **No conflict visibility UI.** `computeThreeWaySyncPlan()`'s output (which files are
+  genuine two-sided conflicts vs. safe fast-forwards) is computed correctly, but nothing in
+  the Workbench surfaces it to a user beyond the existing generic `SyncState` status —
+  `'conflict'` is a real, reachable value, not a UI to review *which* files conflict or
+  choose a resolution.
+- **Deletion propagation** follows whatever `three-way-merge.ts`'s own plan says (a file
+  deleted on one side and unchanged on the other propagates as a delete; a file deleted on
+  one side and *edited* on the other is a real conflict, not a silent delete) — this is
+  correct per the merge algorithm, but again has no UI to confirm before it applies.
+- **Rename handling is path-identity only** — the merge algorithm has no rename-detection
+  heuristic (comparing content across differently-named paths); a rename looks like a
+  delete-plus-create to the algorithm, same as `git diff` without `-M` would see it. Not a
+  bug, a scope boundary worth stating so nobody assumes smarter rename tracking exists.
+- **Requires a self-hosted Remote Runtime server reachable from both devices** — there is no
+  managed, VELDRA-operated sync backend today. §3.5's Supabase entitlement backend is a
+  *different* system (auth/entitlement, not file sync) and was not built to also host file
+  sync — conflating the two would be a real architecture mistake for a future session to
+  avoid, not a shortcut to take.
+
 ## Threat model — current reality, stated plainly
 
 **No encryption at rest exists anywhere in this codebase today**, despite a real,
