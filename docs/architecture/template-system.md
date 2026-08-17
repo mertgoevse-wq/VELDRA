@@ -30,19 +30,22 @@ Initial visual families:
 
 ## Templates
 
-Templates are reusable application compositions:
+Templates are reusable application compositions. The list below previously described an
+aspirational/architecture-vision set that never matched what's actually implemented — corrected
+2026-08-17 against `app/lib/templates.ts`'s real `VELDRA_TEMPLATES` array, the source of truth:
 
-- Dashboard
-- Chat Workspace
+- AI Chat
+- Code Workspace
 - Agent Workspace
 - Model Laboratory
-- Workflow Builder
-- MCP Workspace
+- Prompt Studio
 - Project Overview
-- Settings
-- Monitoring
 - Terminal
-- Orchestration
+- Monitoring
+
+("Dashboard", "Chat Workspace" (the real one is named "AI Chat"), "Workflow Builder",
+"MCP Workspace", "Settings", and "Orchestration" have no corresponding entry in
+`app/lib/templates.ts` today — do not reference them as available templates.)
 
 External repositories are references.
 

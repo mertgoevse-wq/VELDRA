@@ -1,3 +1,29 @@
+# VELDRA Session Checkpoint — 2026-08-17 (current)
+
+Supersedes the 2026-08-15 checkpoint below (kept for context, that mandate is done). This
+round's full detail lives in `docs/ai-state/CURRENT_STATE.md`'s top entry (dated
+2026-08-17) — this section is a short pointer, not a duplicate.
+
+**What happened**: continuation of the standing autonomous VELDRA mandate. Ten commits,
+`7ddffe6` → final HEAD `5245a6b`. Highlights: fixed 6 real Live Preview bugs and 3
+Terminal/remote-runtime bugs (all found by a 7-agent parallel discovery audit that cited
+file:line evidence before any code was touched); fixed the actual Android app icon/splash
+(was a literal lightning-bolt shape mislabeled `veldra_*`, never redrawn) plus several
+leftover "bolt-" branded user-visible strings; built a real pixel-morph text-dissolve
+animation engine and wired it into the home greeting; switched `crypto.ts` from AES-CBC to
+AES-GCM; compared Supabase/Cloudflare/Firebase and wrote (but did not deploy) a real
+entitlement backend contract on Supabase; root-caused and fixed the Android build OOM with
+real measurements, not guesses; **produced and verified a genuine current-HEAD debug APK**
+(`5e82078f...`, see CURRENT_STATE.md for the full record) — the stale `a0489b6` artifact
+from an earlier round must not be cited as representing current HEAD anymore.
+
+**State to pick up from**: 576/576 tests, typecheck/lint clean. No `adb`/physical-device
+verification and no browser/screenshot visual verification were possible this session
+(neither tool was available) — both remain genuinely open, not done. See CURRENT_STATE.md's
+"Explicitly, honestly, NOT done this round" for the precise list.
+
+---
+
 # VELDRA Session Checkpoint — 2026-08-15 (product integration mandate, in progress)
 
 Read this section first. This supersedes the "recovery round" checkpoint below it (kept

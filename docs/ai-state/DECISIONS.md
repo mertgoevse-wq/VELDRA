@@ -1209,3 +1209,53 @@ clearing the shared store (not just hook-local state), and `isServerSide` reflec
 real token presence.
 
 529 → 533 tests. Typecheck clean. Lint clean.
+
+## 2026-08-17 — Live Preview/Terminal fixes, branding, media foundation, backend/encryption decisions, verified APK
+
+Full round detail: `docs/ai-state/CURRENT_STATE.md`'s top entry. This entry records the
+genuinely decision-worthy choices, not implementation detail already covered there.
+
+- **`showRemoteCommandPanel` gating simplified to `mode === 'remote'` alone**, dropping the
+  `isAndroid || !webContainerAvailable` condition. Decision: Remote Runtime's
+  `interactiveShell: false` capability is unconditional on the provider itself — platform
+  doesn't change that fact, so gating on platform in addition to mode was never correct;
+  it just happened to not matter until "remote mode selected on a desktop where
+  WebContainer is also available" became reachable (it always was, via manual runtime-mode
+  selection — nothing guarded it).
+- **AES-GCM over AES-CBC for `crypto.ts`**, decided the moment the file was touched at all
+  rather than left as AES-CBC because "nothing calls it yet anyway." Reasoning: this module
+  exists specifically so a future caller doesn't have to make a cipher-mode decision under
+  deadline pressure; shipping it already wrong (no integrity check) just moves that mistake
+  downstream to whoever wires it up first.
+- **Supabase Free selected over Cloudflare Workers+D1 and Firebase Spark** for VELDRA's own
+  backend (§3.5 of `ENTITLEMENT_AND_SECURITY.md` has the full comparison table). Decision
+  driver: Firebase Spark's Cloud Functions block all outbound network calls — not a
+  workaround-able limitation, a hard blocker for the Play Billing purchase-verification
+  step the whole entitlement system exists to eventually do. This ruled it out categorically
+  rather than on a softer "less generous free tier" basis.
+- **The entitlement backend contract was written but deliberately NOT wired into
+  `stores/entitlement.ts`**, even though the client library (`serverEntitlementClient.ts`)
+  is fully real and tested. Decision: wiring it in today would only replace one
+  unenforceable state (a locally-set tier) with a fetch that always 401s, since no sign-in
+  flow exists to produce a user token — that's a worse UX than the current honest
+  client-side-only state, not progress. Wire it in only after §2.1's sign-in flow exists.
+- **Pixel-morph engine takes `color` as a per-render-call argument, not a preset field.**
+  Decision: canvas `fillStyle` does not reliably resolve CSS `currentColor` the way a real
+  DOM element's computed style would; the correct place to resolve an actual theme-aware
+  color is the React component (via `getComputedStyle` on a real styled container element),
+  not something baked into a preset config object that has no DOM context of its own.
+- **`android:webbuild`'s `NODE_OPTIONS` heap cap set from direct measurement (3072MB), not
+  from the audit's earlier advisory value (1536MB).** Decision/methodology note for future
+  memory-tuning work in this container: don't reason about a "safe" heap value from
+  available-RAM headroom alone — actually run the build at a few candidate values and read
+  where it fails (a clean V8 heap-OOM error names the exact phase that ran out, e.g.
+  "transform" vs. "chunk rendering"), then pick the smallest value observed to succeed. The
+  1536MB starting point wasn't wrong advice in isolation (fail clean, not silent), but
+  wasn't validated against a real run before being committed, and turned out to be roughly
+  half of what was actually needed.
+- **Verified-APK claims now always carry the exact commit they were built against**, both in
+  `CURRENT_STATE.md` and `QUALITY_GATES.md` — the direct cause of this round's docs-sync
+  work existing at all was a previous round's real APK verification going stale the moment
+  HEAD moved past it, with no doc making that expiry explicit. Going forward: an APK
+  verification claim without a commit hash next to it should be treated as unverifiable, not
+  assumed current.

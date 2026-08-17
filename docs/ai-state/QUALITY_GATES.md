@@ -5,11 +5,11 @@ Run after a coherent implementation block, not after every edit.
 ```bash
 npm run typecheck        # tsc --noEmit
 npm run lint              # eslint (must be 0 errors; 2 known warnings OK)
-npm test                  # vitest run — 514 passing as of 2026-08-16 (multi-device/
-                           # storage-foundation round); run this yourself, don't just cite
-                           # a stale count from a doc (see DECISIONS.md/current-session.md
-                           # 2026-08-15: 9 pre-existing failures across 2 files were
-                           # sitting undiscovered before that round). Note:
+npm test                  # vitest run — 576 passing as of 2026-08-17 (this file's own count
+                           # drifts fastest of any doc in this repo; run this yourself, don't
+                           # just cite a stale count from a doc — see DECISIONS.md/
+                           # current-session.md 2026-08-15: 9 pre-existing failures across 2
+                           # files were sitting undiscovered before that round). Note:
                            # app/lib/languages/capabilities.spec.ts's CodeMirror-resolution
                            # test can hit its default 5000ms timeout under full-suite
                            # parallel load (passes in ~1.7s standalone) -- a pre-existing
@@ -32,10 +32,24 @@ export ANDROID_SDK_ROOT=/opt/android-sdk
 cd android && ./gradlew assembleDebug --console=plain -Dorg.gradle.jvmargs="-Xmx1536m"
 ```
 `-Xmx1536m` keeps the daemon under this container's ~7.4GB RAM ceiling; omit if your container has
-more headroom. Output: `android/app/build/outputs/apk/debug/app-debug.apk`, 22,216,894 bytes,
-sha256 `f791114fe7c631240102a8c2cf926e4dad0fe39ec96c78837c834bcf7631d8b1`. **Still not possible**:
-installing to a real device or emulator — no `platform-tools`/`adb` present in this container, only
-the SDK components listed above.
+more headroom. **Still not possible**: installing to a real device or emulator — no
+`platform-tools`/`adb` present in this container, only the SDK components listed above.
+
+## Current-HEAD APK (correction, 2026-08-17 — the `a0489b6` artifact above is now stale)
+The build above was against `a0489b6`, several commits behind current HEAD -- do not cite its
+byte size/SHA256 as representing current HEAD. A fresh full pipeline (`android:webbuild` → `cap
+sync android` → `gradlew assembleDebug`) was run this round against `8d174ec` and succeeded:
+`BUILD SUCCESSFUL in 2m 3s` (first run), `21s` on a second, mostly-cached run after a config fix.
+Output: `android/app/build/outputs/apk/debug/app-debug.apk`, **19,952,671 bytes**, sha256
+`5e82078f5a05e8f87bb2dc0f76a5db6734bb7e0b7b9b3e0887feca794e9d4da9`. `applicationId com.veldra.app`,
+`versionCode 1`, `versionName "1.0"` (read from `android/app/build.gradle` — `aapt dump badging`
+failed with `Illegal instruction`/SIGILL on this ARM64/proot host's prebuilt `aapt` binary, a real
+toolchain-architecture limitation, not something faked around). This required two real fixes made
+the same round: a `preandroid:webbuild` npm hook clearing leaked `vitest` processes (root cause of
+the earlier silent OOM), and raising `android:webbuild`'s `NODE_OPTIONS` heap cap to an
+empirically-measured 3072MB (896MB and 2048MB both produced clean, catchable heap-OOM errors at
+increasing points in the build; 3072MB completed). Still not possible: `adb`/physical-device
+install — same real gap as above, unchanged.
 
 ## Environment notes
 - `npm install` requires `--legacy-peer-deps` (unrelated pre-existing

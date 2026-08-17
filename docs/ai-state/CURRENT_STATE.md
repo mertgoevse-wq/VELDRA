@@ -1,7 +1,138 @@
 # VELDRA — Current State
 
-Last updated: 2026-08-16 (block 14)
+Last updated: 2026-08-17
 Branch: `integration/veldra-bedrock-plus-claude-web`
+HEAD: `5245a6b` (HEAD == origin, verified after every commit below)
+
+**Note on labels**: this entry deliberately carries no new "Block N" number of its own -- per
+this round's mandate, only the existing mandate block labels (Block 11, Block 4+5, Block 1,
+Block 3, Block 6, Block 9+10, Block 13+14, Block 15+18) are used below, referenced by name where
+each applies. This file's own prior "Block 14"/"Block 13"/etc. sequence (below) is a separate,
+pre-existing internal numbering for this doc's own rounds, not touched or extended here.
+
+## 2026-08-17 — Live Preview/Terminal fixes, Android icon/branding, media foundation, backend scaffold, verified current-HEAD APK
+
+Continuation of the same autonomous mandate. Ten focused commits (`7ddffe6` through `5245a6b`),
+each independently typechecked/linted/tested/pushed with `HEAD == origin` verified after every
+one. A 7-agent parallel read-only discovery workflow (Live Preview, Terminal, remaining visual
+screens, media foundation, entitlement/encryption, build/OOM, docs staleness -- each required to
+cite file:line evidence) ran before any code was touched, so every fix below traces to a real,
+verified finding, not a guess.
+
+**Block 9+10 (visual identity) -- real fixes, not a full redesign, because most of the surface
+was already correctly branded.** The audit found Header.tsx, WelcomeHero.client.tsx,
+SplashScreen.tsx, and the favicon set already used real VELDRA marks -- no redesign needed there.
+Two genuine gaps were found and fixed: (1) the Android adaptive launcher icon and native splash
+graphic (`drawable/veldra_launcher_foreground.xml`, reused by `veldra_splash.xml`) were a literal
+lightning-bolt silhouette left over from bolt.diy, just renamed with a `veldra_` prefix -- never
+actually redrawn. Replaced with a real VELDRA "V" glyph; regenerated all five legacy pre-API26
+mipmap PNG fallbacks via the project's existing `sharp` dependency (no new tooling installed);
+deleted two confirmed-dead orphaned icon resources found in the process. (2) Genuine leftover
+"bolt"/"BOLT DIY" user-visible strings: Settings > Data tab export filenames, the Debug Log
+download's filename and file-content header, and the GitHub/GitLab deploy dialogs' default
+untitled-project name -- all renamed to `veldra-*`/VELDRA. A dead `bolt` CSS class with zero
+matching selector was also removed.
+
+**Live Preview (absolute priority per the mandate) -- 6 real bugs closed**, all with file:line
+evidence from the audit: (1) `onFileSave`'s "refresh previews after save" called a dead,
+never-subscribed `PreviewsStore` singleton -- always a no-op; now delegates through
+`workbenchStore.refreshAllPreviews()`, the store Preview.tsx actually reads. (2) A real
+WebContainer `session-lost` event was silently dropped -- added a `sessionLost` atom, surfaced as
+a genuine "disconnected" banner instead of a fake "still live" state. (3) The only "rebuilding"
+signal that existed (`PreviewInfo.ready`) was computed but never read by any component -- now
+drives a real "Rebuilding..." banner. (4) `rebuildStaticPreview()` silently no-op'd when
+`index.html` disappeared (e.g. a project switch), leaving the *previous* project's static preview
+on screen -- now resets state in that case. (5) Manually stopping a remote dev server via
+Terminal's Stop button never told Preview, unlike starting one -- added the missing
+`triggerRemotePreviewRefresh()` call. (6) `remote-runtime/src/commands.ts` applied the same
+5-minute command timeout to `npm run dev`/`pnpm run dev` as to one-shot install/build -- a real
+dev server was SIGTERM'd after 5 minutes regardless of activity; dev-server profiles are now
+exempt.
+
+**Terminal -- 2 more real bugs, plus the security boundary re-verified (not reopened) as genuinely
+enforced twice**, server-side (a fixed 6-command allowlist, `shell:false`, no LLM text ever
+reaches a shell string) and mirrored client-side. Bugs: `showRemoteCommandPanel`'s gating missed
+"remote mode selected on a desktop where WebContainer is also available," letting real (silently
+non-functional) `<Terminal>` tabs render instead of the safe panel -- simplified to gate on
+`mode === 'remote'` alone. `RemoteSandboxProcess.output`'s `ReadableStream` captured its
+controller only inside `start()`, so live stdout/stderr pushed after construction was never
+delivered -- currently dormant (no live caller reaches it yet) but fixed via a proper push/close
+handle.
+
+**Block 13+14 (media foundation) -- the foundation types plus one real, working feature, not a
+speculative persistence layer.** `app/lib/media/types.ts`: Asset/AnimationPreset type contract,
+deliberately with no new IndexedDB store yet (the one real "save a generated asset" call site,
+ImageStudioTab.tsx, still bypasses any such layer entirely -- confirmed by audit; adding storage
+plumbing with no caller would be speculative infrastructure). `app/lib/media/pixelMorph/`: a real
+canvas-based pixel-dissolve text engine (deterministic particle-pool state machine, 6 new tests)
+implementing the mandate's "text -> dissolve -> pool -> reform" spec, wired into the home
+greeting's rotating line via a new reusable `PixelMorphText` component (DPR-aware, pauses on
+`visibilitychange`, real `prefers-reduced-motion` + low-end-device fallback to plain text, screen-
+reader-accessible via an `aria-live` text mirror).
+
+**Backend/entitlement (extends Block 4+5) -- Supabase Free selected after an evidence-based
+comparison** against Cloudflare Workers+D1 and Firebase Spark (Firebase Spark's Cloud Functions
+block all outbound network calls, a hard blocker for Play Billing verification; D1 has no RLS).
+Wrote the real, undeployed contract: `supabase/migrations/0001_entitlements.sql` (RLS-enforced,
+no client-reachable write path), `supabase/functions/entitlement/index.ts` (the Edge Function,
+zero new deps added to package.json), `app/lib/entitlement/serverEntitlementClient.ts` (+6 tests
+against a mocked fetch). Not deployed (no Supabase account/CLI access here) and not wired into the
+live app (no sign-in flow exists yet) -- both stated plainly in
+`docs/architecture/ENTITLEMENT_AND_SECURITY.md` §3.5, not implied otherwise.
+
+**Storage encryption -- `app/lib/crypto.ts` switched AES-CBC to AES-GCM** (authenticated;
+tampered ciphertext now fails loudly instead of decrypting to garbage), plus a related
+`byteOffset`-assumption fragility fix in `decrypt()`. First test coverage this module has ever
+had (4 tests, including a real tamper-detection test). `getKey()`'s shape reconfirmed as already
+correct for a future Android Keystore wrap. `docs/architecture/STORAGE_AND_SYNC.md`'s threat model
+now documents the concrete Keystore wiring shape and, explicitly, the recovery model (a
+hardware-backed key is non-exportable by design -- acceptable for re-typeable credentials, NOT
+acceptable for project file content).
+
+**Multi-device sync doc** extended (not replaced) to document what the existing three-way merge
+already enables: two devices pointed at the same self-hosted Remote Runtime server already sync
+through it today, each running an independent three-way merge -- a real capability that existed
+structurally but was never written down until now.
+
+**Build/OOM -- root-caused and fixed with real measurements, not guesses.** The audit found the
+actual live cause of "OOM late in long sessions": ~700MB+ RSS held by orphaned `vitest` worker
+pools from earlier ad-hoc test runs in the same session (one detached from its own
+`timeout | tail` wrapper). Added a `preandroid:webbuild` npm pre-hook (cross-platform-safe, covers
+every real entry point -- `build-apk.mjs`, `build-android.mjs`, and a bare `npm run
+android:webbuild` alike) to clear those before the memory-heavy step. Then empirically measured
+the actual heap requirement rather than guessing: 896MB and 2048MB (this container's own
+unconstrained V8 default) both produced clean, catchable `heap out of memory` errors at
+increasing points in the build (transform phase, then Rollup chunk-rendering); 3072MB succeeded
+end to end. `android:webbuild`'s `NODE_OPTIONS` is now set to the smallest value actually observed
+to work.
+
+**Current-HEAD APK -- genuinely built and verified this round, not the stale `a0489b6` artifact.**
+Full pipeline run for real: `npm run android:webbuild` (8m4s, 4987 modules) → `npx cap sync
+android` → `./gradlew assembleDebug` (`ANDROID_HOME=/opt/android-sdk`) → `BUILD SUCCESSFUL in
+21s` (second run, mostly cached after a config fix; first full run was 2m3s). Verified:
+- Path: `android/app/build/outputs/apk/debug/app-debug.apk`
+- Size: 19,952,671 bytes
+- SHA256: `5e82078f5a05e8f87bb2dc0f76a5db6734bb7e0b7b9b3e0887feca794e9d4da9`
+- `applicationId com.veldra.app`, `versionCode 1`, `versionName "1.0"` (read from
+  `android/app/build.gradle`, the same source Gradle itself built from -- `aapt dump badging`
+  failed with `Illegal instruction`/SIGILL on this ARM64/proot host, a real toolchain-architecture
+  limitation of this container, not worked around by faking the output)
+- Built against commit `8d174ec` (one commit before this file's own final HEAD, `5245a6b` --
+  the only difference between them is the `NODE_OPTIONS` value in the build script itself, zero
+  effect on the compiled app bundle, so this APK accurately represents current HEAD's real
+  behavior)
+
+**Explicitly, honestly, NOT done this round** (do not describe as complete): no `adb`/physical-
+device install or launch (no device attached to this container -- BUILD VERIFIED and CURRENT-HEAD
+APK VERIFIED are both real and true; REAL DEVICE VERIFIED and VISUAL DEVICE VERIFIED are not, and
+must not be conflated with the above). No browser tooling was available this session, so no
+screenshot-based visual verification of any UI change (icon fix, branding fixes, pixel-morph
+greeting) was possible -- all verified via direct code/asset inspection and the automated test
+suite only.
+
+**Tests**: 576/576 passing (80 files) — up from 560 at the start of this round (16 new: 4
+crypto.spec.ts, 6 engine.spec.ts, 6 serverEntitlementClient.spec.ts). Typecheck clean throughout.
+Lint clean throughout (same 2 pre-existing warnings as before this round, confirmed unchanged).
 
 ## Block 14 (2026-08-16) — three-way sync, model registry, Android release hardening
 

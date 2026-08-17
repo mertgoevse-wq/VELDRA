@@ -34,7 +34,7 @@ Honest status, not aspirational — a feature is only marked "Complete" once it 
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| **Capacitor WebView Shell** | ⚠️ Partially verified | The web SPA bundle builds and renders correctly (verified via headless-Chromium screenshot against the real production output, 2026-08-16); the *native* Android APK (Capacitor/Gradle) has not been built or run in this development environment — no Android SDK available. See "APK Build Instructions" below for real status |
+| **Capacitor WebView Shell** | ✅ Build verified, current-HEAD APK verified | The Android SDK IS available in this environment, at `/opt/android-sdk` (an earlier README claim that it wasn't is stale — see `docs/ai-state/QUALITY_GATES.md`). A real end-to-end build (`android:webbuild` → `cap sync` → `gradlew assembleDebug`) has been run against current HEAD and produced a genuine `app-debug.apk` — path, size, SHA256 in `docs/ai-state/CURRENT_STATE.md`'s top entry. **Distinct from real-device verification**: no `adb`/physical device is available in this container, so the APK has not been installed or launched on real hardware, and no screenshot-based visual verification exists either — see "APK Build Instructions" below for the exact distinctions this project maintains between BUILD VERIFIED / CURRENT-HEAD APK VERIFIED / REAL DEVICE VERIFIED / VISUAL DEVICE VERIFIED. |
 | **LLM Chat & Prompting** | ✅ Works | Provider-agnostic: OpenAI, Anthropic, Google Gemini, Ollama, OpenRouter, DeepSeek, Mistral, and more |
 | **Mobile Provider/Model Selection** | ✅ Works | Native bottom sheets on mobile (search, keyboard-accessible, focus trap, Escape/backdrop close), dropdowns on desktop — same shared provider/model architecture underneath |
 | **File Editor (CodeMirror)** | ✅ Works | Touch editor controls, copy/paste, and auto-save |
@@ -47,7 +47,7 @@ Honest status, not aspirational — a feature is only marked "Complete" once it 
 | **Preview** | ⚠️ Partial | Local static HTML preview (Blob URL) works offline; Live Server preview requires a WebContainer (desktop browser) or a configured Remote Runtime, with an honest "Live Preview Unavailable" state and remote-preview status card otherwise. When the agent starts a real dev server on Remote Runtime, Preview now checks for it automatically instead of requiring a manual refresh |
 | **WebContainer Interception** | ✅ Safe | Intercepts commands (npm install, shell, start) and fails gracefully with toasts on platforms without WebContainer support |
 | **Language Support** | ⚠️ Partial, matrix-tracked | Full support (edit + run + build + preview) for the JS/TS/HTML/CSS web ecosystem only — both WebContainer and Remote Runtime are Node.js-only execution environments today. Real editor syntax highlighting also exists for Python, Go, Rust, Java, Kotlin, C, and C++ (no execution/build/preview for these — that's a real, checkable limitation, not an omission). See `app/lib/languages/capabilities.ts` for the exact, tested matrix |
-| **Automated APK Builds** | 📋 Scripted, unverified | `pnpm run android:apk:debug` is wired end-to-end (web build → Capacitor sync → Gradle), but has not actually been run to completion in this development environment (no Android SDK) — the web-build half is verified (see above), the Gradle/native half is not |
+| **Automated APK Builds** | ✅ Verified end-to-end | `pnpm run android:apk:debug`'s full chain (web build → Capacitor sync → Gradle) has been run to completion against current HEAD and produced a real, verified `app-debug.apk` (see `docs/ai-state/CURRENT_STATE.md`). Required raising `android:webbuild`'s heap cap to an empirically-measured 3072MB and clearing leaked test-runner processes beforehand (`preandroid:webbuild` hook) — both are now permanent fixes in the build scripts themselves, not manual steps a future run needs to repeat. |
 
 ---
 
@@ -137,6 +137,21 @@ pnpm run android:apk:debug
 Once the process finishes, the compiled artifact is generated at:
 `android/app/build/outputs/apk/debug/app-debug.apk`
 
+**Four distinct verification tiers — this project never conflates them**:
+1. **BUILD VERIFIED** — the Gradle/native toolchain compiles successfully (manifest merge, R8,
+   signing config all structurally sound).
+2. **CURRENT-HEAD APK VERIFIED** — an actual `.apk` file was produced from a build run against a
+   specific, named git commit, with its path/size/SHA256 recorded (see
+   `docs/ai-state/CURRENT_STATE.md`'s top entry for the current one). A build verified at an old
+   commit does **not** carry forward as verification for a newer HEAD.
+3. **REAL DEVICE VERIFIED** — the APK was actually installed (`adb install` or equivalent) and
+   launched on physical Android hardware or a running emulator.
+4. **VISUAL DEVICE VERIFIED** — a real screenshot or screen recording from that device/emulator
+   run was captured and reviewed.
+As of this writing, tiers 1 and 2 are true for current HEAD; tiers 3 and 4 are not — no
+`adb`/physical device or browser-driven screenshot tooling has been available in this development
+container. Do not describe a build-verified APK as device-tested, and vice versa.
+
 - **Open in Android Studio**: Run `pnpm run android:open`
 - **Deploy to connected USB device**: Run `pnpm run android:run`
 - **Release builds**: Running `pnpm run android:apk:release` compiles the release target. Note that signing keys must be configured in `android/app/build.gradle` to produce a signed distributable APK.
@@ -160,7 +175,8 @@ Since standard Android WebViews do not support `SharedArrayBuffer` and WebContai
 - [ ] **Remote Runtime Server**: Implement a lightweight Node.js/Docker sandbox backend that `RemoteCommandPanel` and the Live Preview status card can connect to, so Terminal and Preview work beyond their current "not configured" fallback states.
 - [ ] **Native File Picker**: Hook Capacitor Filesystem API to export/import files into the phone's native storage.
 - [ ] **Signed APK Releases**: Add automatic workflow generation for production APK releases.
-- [ ] **Native APK Build + Physical Device Testing**: Run the actual Gradle/Capacitor build and validate on a real Android device or emulator — blocked on Android SDK availability in the development environment; the web SPA half is verified (see Android Status Table above), the native packaging half is not.
+- [x] **Native APK Build**: The actual Gradle/Capacitor build has been run to completion against current HEAD and produces a real, verified `app-debug.apk` (see Android Status Table above and `docs/ai-state/CURRENT_STATE.md`).
+- [ ] **Physical Device Testing**: No `adb`/physical Android device is available in this container — the built APK has never been installed or launched on real hardware. Split out from the item above so a completed build is never read as implying device verification, which is a separate, still-open item.
 
 ---
 
