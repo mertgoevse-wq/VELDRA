@@ -6,8 +6,10 @@ import { profileStore } from '~/lib/stores/profile';
 import { BUILD_PROMPTS, composeGreeting } from '~/lib/utils/greeting';
 import { isCapacitor } from '~/lib/adapters/platform';
 import { androidActiveChatId } from '~/lib/stores/androidChatSession';
+import { PixelMorphText } from '~/components/ui/PixelMorphText';
 
-const ROTATE_INTERVAL_MS = 7000;
+// Mandate spec: each line holds for roughly 8-12s before transitioning to the next.
+const ROTATE_INTERVAL_MS = 9500;
 const MAX_RECENT_PROJECTS = 3;
 
 function useRotatingLine(lines: readonly string[]): string {
@@ -76,12 +78,11 @@ export function WelcomeHero() {
         {composeGreeting(now, profile.username)}
       </h1>
 
-      <p
-        aria-live="polite"
-        className="mb-4 min-h-[1.75rem] text-md text-bolt-elements-textSecondary transition-opacity lg:text-xl animate-fade-in animation-delay-200"
-      >
-        {rotatingLine}
-      </p>
+      <PixelMorphText
+        text={rotatingLine}
+        preset="greeting"
+        className="mb-4 mx-auto h-7 w-full max-w-sm text-md text-bolt-elements-textSecondary animate-fade-in animation-delay-200 lg:h-9 lg:max-w-lg lg:text-xl"
+      />
 
       {recentProjects.length > 0 && (
         <div className="mb-2 flex w-full flex-col items-center justify-center gap-2 px-2">
