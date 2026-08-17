@@ -22,6 +22,7 @@ import { classNames } from '~/utils/classNames';
 import { debounce } from '~/utils/debounce';
 import { createScopedLogger, renderLogger } from '~/utils/logger';
 import { isFileLocked, getCurrentChatId } from '~/utils/fileLocks';
+import { EmptyState } from '~/components/ui';
 import { BinaryContent } from './BinaryContent';
 import { getTheme, reconfigureTheme } from './cm-theme';
 import { indentKeyBinding } from './indent';
@@ -313,6 +314,11 @@ export const CodeMirrorEditor = memo(
     return (
       <div className={classNames('relative h-full', className)}>
         {doc?.isBinary && <BinaryContent />}
+        {!doc && (
+          <div className="flex items-center justify-center absolute inset-0 z-10 bg-bolt-elements-background-depth-1">
+            <EmptyState icon="i-ph:file-text-duotone" title="Select a file to start editing" variant="compact" />
+          </div>
+        )}
         <div className="h-full overflow-hidden" ref={containerRef} />
       </div>
     );

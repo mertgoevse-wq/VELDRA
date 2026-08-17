@@ -247,7 +247,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
                 'settings-dialog-surface',
                 'w-full max-w-[1200px] h-[90vh]',
                 'bg-bolt-elements-background-depth-1',
-                'rounded-2xl shadow-2xl',
+                'veldra-radius-surface shadow-[var(--veldra-shadow-md)]',
                 'border border-bolt-elements-borderColor',
                 'flex flex-col overflow-hidden',
                 'relative',
@@ -255,7 +255,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
                 open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4',
               )}
             >
-              <div className="absolute inset-0 overflow-hidden rounded-2xl">
+              <div className="absolute inset-0 overflow-hidden veldra-radius-surface">
                 <BackgroundRays variant="contained" />
               </div>
               <div className="relative z-10 flex flex-col h-full">

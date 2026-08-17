@@ -96,7 +96,7 @@ const FileModifiedDropdown = memo(
         <Popover className="relative">
           {({ open }: { open: boolean }) => (
             <>
-              <Popover.Button className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 transition-colors text-bolt-elements-item-contentDefault">
+              <Popover.Button className="flex items-center gap-2 px-3 py-1.5 text-sm veldra-radius-control bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 transition-colors text-bolt-elements-item-contentDefault">
                 <span>File Changes</span>
                 {hasChanges && (
                   <span className="w-5 h-5 rounded-full bg-accent-500/20 text-accent-500 text-xs flex items-center justify-center border border-accent-500/30">
@@ -113,7 +113,7 @@ const FileModifiedDropdown = memo(
                 leaveFrom="transform scale-100 opacity-100"
                 leaveTo="transform scale-95 opacity-0"
               >
-                <Popover.Panel className="absolute right-0 z-20 mt-2 w-[min(20rem,calc(100vw-1.5rem))] origin-top-right rounded-xl bg-bolt-elements-background-depth-2 shadow-xl border border-bolt-elements-borderColor">
+                <Popover.Panel className="absolute right-0 z-20 mt-2 w-[min(20rem,calc(100vw-1.5rem))] origin-top-right veldra-radius-surface shadow-[var(--veldra-shadow-md)] bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor">
                   <div className="p-2">
                     <div className="relative mx-2 mb-2">
                       <input

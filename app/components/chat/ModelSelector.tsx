@@ -606,7 +606,7 @@ export const ModelSelector = ({
               aria-label="Close provider picker"
             />
             <div
-              className="absolute z-[311] w-full mt-1 py-1 rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 shadow-lg mobile-model-sheet"
+              className="absolute z-[311] w-full mt-1 py-1 veldra-radius-surface shadow-[var(--veldra-shadow-md)] border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 mobile-model-sheet"
               role="dialog"
               aria-modal="true"
               aria-labelledby="provider-picker-title"
@@ -799,7 +799,7 @@ export const ModelSelector = ({
               aria-label="Close model picker"
             />
             <div
-              className="absolute z-[311] w-full mt-1 py-1 rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 shadow-lg mobile-model-sheet"
+              className="absolute z-[311] w-full mt-1 py-1 veldra-radius-surface shadow-[var(--veldra-shadow-md)] border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 mobile-model-sheet"
               role="dialog"
               aria-modal="true"
               aria-labelledby="model-picker-title"
