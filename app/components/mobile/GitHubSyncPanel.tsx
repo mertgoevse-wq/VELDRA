@@ -290,7 +290,7 @@ export function GitHubSyncPanel() {
         transition={{ delay: 0.1 }}
       >
         <div className="flex items-center gap-2">
-          <div className="i-ph:gear-fill w-4 h-4 text-accent-500" />
+          <div className="i-ph:gear-fill w-4 h-4 text-bolt-elements-item-contentAccent" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Repository Configuration</span>
         </div>
 
@@ -307,7 +307,7 @@ export function GitHubSyncPanel() {
               'bg-bolt-elements-background-depth-2',
               'border border-bolt-elements-borderColor',
               'text-bolt-elements-textPrimary',
-              'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
+              'focus:outline-none focus:ring-1 focus:ring-bolt-elements-borderColorActive',
               'transition-all duration-200',
               'placeholder:text-bolt-elements-textTertiary',
             )}
@@ -327,7 +327,7 @@ export function GitHubSyncPanel() {
               'bg-bolt-elements-background-depth-2',
               'border border-bolt-elements-borderColor',
               'text-bolt-elements-textPrimary',
-              'focus:outline-none focus:ring-2 focus:ring-accent-500/30',
+              'focus:outline-none focus:ring-1 focus:ring-bolt-elements-borderColorActive',
               'transition-all duration-200',
               'placeholder:text-bolt-elements-textTertiary',
             )}
@@ -337,9 +337,9 @@ export function GitHubSyncPanel() {
         <button
           onClick={handleSaveConfig}
           className={classNames(
-            'w-full px-4 py-2 rounded-lg text-sm font-medium',
-            'bg-accent-500 text-white',
-            'hover:bg-accent-600',
+            'w-full min-h-11 px-4 py-2 rounded-lg text-sm font-medium',
+            'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent',
+            'hover:bg-bolt-elements-button-primary-backgroundHover',
             'transition-all duration-200',
             'transform active:scale-95',
           )}
@@ -359,7 +359,7 @@ export function GitHubSyncPanel() {
         transition={{ delay: 0.15 }}
       >
         <div className="flex items-center gap-2">
-          <div className="i-ph:clock-countdown-fill w-4 h-4 text-accent-500" />
+          <div className="i-ph:clock-countdown-fill w-4 h-4 text-bolt-elements-item-contentAccent" />
           <span className="text-sm font-medium text-bolt-elements-textPrimary">Sync Status</span>
         </div>
 
@@ -420,7 +420,7 @@ export function GitHubSyncPanel() {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="i-ph:git-branch-fill w-4 h-4 text-accent-500" />
+            <div className="i-ph:git-branch-fill w-4 h-4 text-bolt-elements-item-contentAccent" />
             <span className="text-sm font-medium text-bolt-elements-textPrimary">Git Operations</span>
           </div>
           {isRemoteMode && isRemoteUrlConfigured && isWorkspaceConfigured && (
@@ -436,10 +436,10 @@ export function GitHubSyncPanel() {
             onClick={handleGitInit}
             disabled={isGitActionDisabled || isLoading}
             className={classNames(
-              'px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border border-bolt-elements-borderColor transition-all duration-200',
+              'min-h-11 px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border border-bolt-elements-borderColor text-bolt-elements-textPrimary transition-all duration-200',
               isGitActionDisabled || isLoading
-                ? 'opacity-50 cursor-not-allowed bg-bolt-elements-background-depth-3 text-gray-400 dark:text-gray-600'
-                : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2 active:scale-95',
+                ? 'opacity-50 cursor-not-allowed bg-bolt-elements-background-depth-3'
+                : 'bg-bolt-elements-background-depth-1 hover:bg-bolt-elements-background-depth-2 active:scale-95',
             )}
           >
             <div
@@ -452,10 +452,10 @@ export function GitHubSyncPanel() {
             onClick={handleGitStatus}
             disabled={isGitActionDisabled || isLoading}
             className={classNames(
-              'px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border border-bolt-elements-borderColor transition-all duration-200',
+              'min-h-11 px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border border-bolt-elements-borderColor text-bolt-elements-textPrimary transition-all duration-200',
               isGitActionDisabled || isLoading
-                ? 'opacity-50 cursor-not-allowed bg-bolt-elements-background-depth-3 text-gray-400 dark:text-gray-600'
-                : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-2 active:scale-95',
+                ? 'opacity-50 cursor-not-allowed bg-bolt-elements-background-depth-3'
+                : 'bg-bolt-elements-background-depth-1 hover:bg-bolt-elements-background-depth-2 active:scale-95',
             )}
           >
             <div
@@ -479,7 +479,7 @@ export function GitHubSyncPanel() {
               'bg-bolt-elements-background-depth-2',
               'border border-bolt-elements-borderColor',
               'text-bolt-elements-textPrimary',
-              'focus:outline-none focus:ring-1 focus:ring-accent-500',
+              'focus:outline-none focus:ring-1 focus:ring-bolt-elements-borderColorActive',
               'transition-all duration-200',
               'placeholder:text-bolt-elements-textTertiary',
               (isGitActionDisabled || isLoading) && 'opacity-50 cursor-not-allowed',
@@ -492,10 +492,10 @@ export function GitHubSyncPanel() {
           onClick={handleGitCommit}
           disabled={isGitActionDisabled || isLoading || !commitMessage.trim()}
           className={classNames(
-            'w-full px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200',
+            'w-full min-h-11 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200',
             isGitActionDisabled || isLoading || !commitMessage.trim()
-              ? 'bg-bolt-elements-background-depth-3 text-gray-400 dark:text-gray-600 cursor-not-allowed'
-              : 'bg-accent-600 hover:bg-accent-700 text-white transform active:scale-95',
+              ? 'bg-bolt-elements-background-depth-3 text-bolt-elements-textTertiary opacity-50 cursor-not-allowed'
+              : 'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent hover:bg-bolt-elements-button-primary-backgroundHover transform active:scale-95',
           )}
         >
           <div className={isLoading ? 'i-ph:spinner-gap animate-spin w-4 h-4' : 'i-ph:git-commit-fill w-4 h-4'} />
@@ -508,10 +508,10 @@ export function GitHubSyncPanel() {
             onClick={handleGitPush}
             disabled={isGitActionDisabled || isLoading}
             className={classNames(
-              'w-full px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200',
+              'w-full min-h-11 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200',
               isGitActionDisabled || isLoading
-                ? 'bg-bolt-elements-background-depth-3 text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 text-white transform active:scale-95',
+                ? 'bg-bolt-elements-background-depth-3 text-bolt-elements-textTertiary opacity-50 cursor-not-allowed'
+                : 'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent hover:bg-bolt-elements-button-primary-backgroundHover transform active:scale-95',
             )}
           >
             <div className={isLoading ? 'i-ph:spinner-gap animate-spin w-4 h-4' : 'i-ph:cloud-arrow-up-fill w-4 h-4'} />
