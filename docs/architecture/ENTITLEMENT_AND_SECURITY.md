@@ -195,7 +195,7 @@ it deliberately doesn't attempt:
 
 ---
 
-## 3.5 Backend selection — evidence-based comparison, and the real (unwired) contract
+## 3.5 Backend selection — evidence-based comparison, and the real, deployed, wired contract
 
 **Do not confuse this with the existing "Supabase" tab in Settings.** `app/lib/stores/supabase.ts`
 / `SupabaseTab.tsx` let a *user* connect *their own* Supabase project so VELDRA can deploy
@@ -224,45 +224,76 @@ re-verified in Worker code instead of enforced at the data layer (more surface a
 wrong for a security-relevant table). This matches the mandate's own "priority candidate."
 **Selected after comparison, not by default** — no other provider was set up in parallel.
 
-**What's actually built here (contract + local-dev code, deliberately NOT deployed or wired
-into the live app)**:
+**What's actually built and deployed here**:
 - `supabase/migrations/0001_entitlements.sql` — the real Postgres schema: an `entitlements`
   table (one row per `auth.users.id`, tier/expiry/capabilities), RLS policies restricting each
   row to its own owner (`auth.uid() = user_id`) plus a `service_role`-only write path (so a
-  future Play Billing webhook, not the client, is what grants/revokes a tier).
+  future Play Billing webhook, not the client, is what grants/revokes a tier). **Applied** to
+  the live project (`pdmetkehgqypldvbruhm`, org `ktbcgplgkopwwrxlzybh`, name "VELDRA") —
+  `get_advisors(type: security)` returns zero lints against it.
 - `supabase/functions/entitlement/index.ts` — the Edge Function implementing `GET /entitlement`
   from §2.4's contract: verifies the caller's Supabase JWT, reads that user's row (RLS enforces
   the ownership check even if the function's own logic had a bug — defense in depth), returns
   `{ tier, expiresAt, capabilities }`. Runs on Deno; imports `@supabase/supabase-js` via an ESM
   URL inside the function file itself, so **no dependency was added to this repo's own
-  `package.json`** — Edge Functions are a separately deployed artifact, not part of the main
-  app bundle.
-- `app/lib/entitlement/serverEntitlementClient.ts` — the typed client-side fetch wrapper the
-  main app would call once a real deployment + sign-in flow exist. Deliberately plain `fetch`
-  (no `@supabase/supabase-js` client dependency added to the app bundle either) — this client
-  only needs one authenticated GET, not the full SDK's realtime/storage/query-builder surface.
-  Has its own test suite (`serverEntitlementClient.spec.ts`) against a mocked `fetch`. **Not
-  called from anywhere in the live app yet** — `stores/entitlement.ts` still reads/writes
-  `localStorage` exactly as before; wiring this in requires the sign-in flow from §2.1-2.2,
-  which doesn't exist, so pointing the store at this client today would just replace one
-  unenforceable state with a fetch that always 401s.
-- Env vars: `VELDRA_BACKEND_URL` / `VELDRA_BACKEND_ANON_KEY` (documented in `.env.example`) —
-  **deliberately not** `VITE_SUPABASE_*`, to keep this categorically separate from the
-  user-project-connection feature's identically-shaped-looking config. The anon key is safe to
-  ship client-side by design (that's what RLS is for — it authorizes nothing on its own, only a
-  valid user JWT does), the same guarantee the existing `VITE_SUPABASE_ANON_KEY` already relies
-  on for the unrelated feature.
+  `package.json`** for the function itself. **Deployed**, `status: ACTIVE`, `verify_jwt: true`
+  (Supabase's own gateway rejects a non-Supabase-issued bearer token before the function body
+  even runs — an extra layer beyond the function's own `auth.getUser()` check).
+- `app/lib/entitlement/serverEntitlementClient.ts` — the typed client-side fetch wrapper.
+  Deliberately plain `fetch` (no SDK) — needs exactly one authenticated GET. Has its own test
+  suite (`serverEntitlementClient.spec.ts`). **Now called** from `app/lib/stores/auth.ts` after
+  every real sign-in / session restore.
+- `app/lib/auth/veldraSupabaseClient.ts` + `app/lib/stores/auth.ts` — the real sign-in flow
+  §2.1-2.2 previously lacked: a lazily-initialized `@supabase/supabase-js` client (Auth surface
+  only — session persistence/refresh/PKCE are real SDK behavior, not hand-rolled), and a
+  nanostore (`authStore`) with `signInWithPassword` / `signUpWithPassword` / `signOut`. On a
+  real session, fetches the server entitlement and pushes it into the existing
+  `entitlementTierStore` (`app/lib/stores/entitlement.ts`, unchanged — still explicitly
+  UI-only). `app/root.tsx` calls `initVeldraAuth()` once on client mount to restore any
+  persisted session and subscribe to auth-state changes. UI: a real sign-in/sign-up/sign-out
+  form in Settings → Profile (`ProfileTab.tsx`'s `AccountSection`), with an honest
+  "not configured" state when the env vars below are unset rather than a fake-looking form.
+  Tests: `app/lib/stores/auth.spec.ts` (sign-in success/failure, sign-out, unconfigured state),
+  against a mocked Supabase client.
+- Env vars: `VITE_VELDRA_BACKEND_URL` / `VITE_VELDRA_BACKEND_ANON_KEY` (documented in
+  `.env.example`, placeholder in the tracked `.env.production`, real values in the local
+  gitignored `.env` used to build this session's APK) — **deliberately not** `VITE_SUPABASE_*`,
+  to keep this categorically separate from the user-project-connection feature's
+  identically-shaped-looking config. `VITE_` prefix is required by this repo's Vite `envPrefix`
+  allowlist (`vite.config.ts`) for the value to reach the client bundle at all. The anon/
+  publishable key is safe to ship client-side by design (that's what RLS is for — it authorizes
+  nothing on its own, only a valid user JWT does), the same guarantee the existing
+  `VITE_SUPABASE_ANON_KEY` already relies on for the unrelated feature.
 
-**Deployment instructions** (for whenever this becomes active work — not run in this session,
-no Supabase CLI/account access here):
-1. `npx supabase init` (if not already) → `npx supabase link --project-ref <ref>` against a real
-   (free-tier) Supabase project.
-2. `npx supabase db push` to apply `supabase/migrations/0001_entitlements.sql`.
-3. `npx supabase functions deploy entitlement`.
-4. Set `VELDRA_BACKEND_URL` (the project's Function URL) and `VELDRA_BACKEND_ANON_KEY` (Project
-   Settings → API → anon/public key) in the app's real env.
-5. Only then does wiring `serverEntitlementClient.ts` into `stores/entitlement.ts` make sense —
-   and only after §2.1's real sign-in flow exists to produce a user JWT to send.
+**Deliberately not built this round** (would be speculative infrastructure with no current
+caller — see the mandate's "smallest real backend prototype" instruction): separate `devices`
+or `projects` tables. Entitlement is per-user, not per-device/per-project, and VELDRA's existing
+multi-device sync (`docs/architecture/STORAGE_AND_SYNC.md`) already establishes device/project
+identity structurally through the three-way merge over Remote Runtime — duplicating that into
+Supabase with no consumer would be exactly the kind of invisible architecture this backend pass
+was told to avoid. Also not built: OAuth providers (email/password only for now — the Supabase
+Auth surface already supports adding OAuth later with no schema change), and any billing
+provider integration (no credentials, per the mandate's own instruction not to build billing
+without evidence).
+
+**Deployment record** (this round, via the Supabase MCP connector against the user-confirmed
+live project):
+1. `apply_migration` — `0001_entitlements.sql`, succeeded, zero security lints after.
+2. `deploy_edge_function` — `entitlement`, `status: ACTIVE`.
+3. `VITE_VELDRA_BACKEND_URL` / `VITE_VELDRA_BACKEND_ANON_KEY` set in the local `.env` (gitignored)
+   used for this round's Android build, and documented (placeholders) in `.env.example` /
+   `.env.production`.
+4. `app/lib/auth/veldraSupabaseClient.ts`, `app/lib/stores/auth.ts`, and the `ProfileTab.tsx`
+   sign-in UI wired end-to-end: sign-up/sign-in → Supabase session → `GET /entitlement` →
+   `entitlementTierStore`.
+
+**Not yet done**: no real user has signed up against the live project yet (that requires
+someone to actually use the sign-in form — a real device/browser test, not something this
+session can perform standalone), so the full round-trip is code-complete and deployed but not
+yet observed end-to-end against a live human sign-up. No Play Billing / other purchase-provider
+webhook exists yet to ever write a non-FREE row — every real account will read back `FREE` from
+`GET /entitlement` until one is built, which is by design (§2.5's "no client-reachable write
+path" guarantee).
 
 ## 4. What to build first, if/when this becomes active work
 

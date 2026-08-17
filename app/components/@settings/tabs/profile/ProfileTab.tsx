@@ -2,8 +2,105 @@ import { useState, useCallback } from 'react';
 import { useStore } from '@nanostores/react';
 import { classNames } from '~/utils/classNames';
 import { profileStore, updateProfile } from '~/lib/stores/profile';
+import { authStore, signInWithPassword, signUpWithPassword, signOut } from '~/lib/stores/auth';
+import { entitlementTierStore } from '~/lib/stores/entitlement';
 import { toast } from 'react-toastify';
 import { debounce } from '~/utils/debounce';
+
+function AccountSection() {
+  const auth = useStore(authStore);
+  const tier = useStore(entitlementTierStore);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+
+  const inputClasses = classNames(
+    'w-full px-4 py-2.5 rounded-xl',
+    'bg-white dark:bg-gray-800/50',
+    'border border-gray-200 dark:border-gray-700/50',
+    'text-gray-900 dark:text-white',
+    'placeholder-gray-400 dark:placeholder-gray-500',
+    'focus:outline-none focus:ring-2 focus:ring-accent-500/50 focus:border-accent-500/50',
+    'transition-all duration-300 ease-out',
+  );
+
+  if (auth.status === 'unconfigured') {
+    return (
+      <div className="mb-8 p-4 rounded-xl bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          VELDRA account sign-in isn't configured in this build. Local profile data below still works; premium
+          entitlement requires a signed-in account.
+        </p>
+      </div>
+    );
+  }
+
+  if (auth.status === 'signed-in') {
+    return (
+      <div className="mb-8 p-4 rounded-xl bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{auth.user?.email}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Tier: {tier}</p>
+          </div>
+          <button
+            onClick={() => void signOut()}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const submit = () => {
+    if (!email || !password) {
+      return;
+    }
+
+    void (mode === 'signin' ? signInWithPassword(email, password) : signUpWithPassword(email, password));
+  };
+
+  return (
+    <div className="mb-8 space-y-3">
+      <label className="block text-base font-medium text-gray-900 dark:text-gray-100">VELDRA Account</label>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Email"
+        className={inputClasses}
+        disabled={auth.status === 'loading'}
+      />
+      <input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Password"
+        className={inputClasses}
+        disabled={auth.status === 'loading'}
+        onKeyDown={(e) => e.key === 'Enter' && submit()}
+      />
+      {auth.error && <p className="text-sm text-red-500">{auth.error}</p>}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={submit}
+          disabled={auth.status === 'loading'}
+          className="px-4 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors disabled:opacity-50"
+        >
+          {auth.status === 'loading' ? 'Working...' : mode === 'signin' ? 'Sign in' : 'Sign up'}
+        </button>
+        <button
+          onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-accent-500 transition-colors"
+        >
+          {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function ProfileTab() {
   const profile = useStore(profileStore);
@@ -62,6 +159,8 @@ export default function ProfileTab() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="space-y-6">
+        <AccountSection />
+
         {/* Personal Information Section */}
         <div>
           {/* Avatar Upload */}

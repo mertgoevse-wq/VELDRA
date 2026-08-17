@@ -166,9 +166,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 import { logStore } from './lib/stores/logs';
+import { initVeldraAuth } from './lib/stores/auth';
 
 export default function App() {
   const theme = useStore(themeStore);
+
+  useEffect(() => {
+    initVeldraAuth();
+  }, []);
 
   useEffect(() => {
     logStore.logSystem('Application initialized', {

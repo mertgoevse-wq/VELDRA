@@ -2,12 +2,10 @@ import type { EntitlementTier } from '~/lib/orchestrator/entitlement';
 
 /**
  * Client for VELDRA's own backend GET /entitlement endpoint (supabase/functions/entitlement) --
- * see docs/architecture/ENTITLEMENT_AND_SECURITY.md §3.5 for the full contract, the comparison
- * that selected Supabase, and why this is deliberately not called from anywhere in the live app
- * yet: no sign-in flow exists to produce the `userAccessToken` this function requires, and
- * `stores/entitlement.ts` still reads/writes localStorage exactly as before. Wiring this in is
- * real future work, not this pass -- pointing the store at this client today would just replace
- * one unenforceable state with a fetch that always 401s.
+ * see docs/architecture/ENTITLEMENT_AND_SECURITY.md §3.5 for the full contract and the
+ * comparison that selected Supabase. Called from `stores/auth.ts` after a real sign-in, using
+ * the Supabase session's access token; `stores/entitlement.ts` remains a UI-only cache that this
+ * call keeps in sync, never the authorization boundary itself.
  *
  * Deliberately plain `fetch`, not the `@supabase/supabase-js` client SDK -- this needs exactly
  * one authenticated GET, not the SDK's realtime/storage/query-builder surface, and adding that
