@@ -5,6 +5,8 @@ import { db, getAll, type ChatHistoryItem } from '~/lib/persistence';
 import { profileStore } from '~/lib/stores/profile';
 import { BUILD_PROMPTS, composeGreeting } from '~/lib/utils/greeting';
 import { isCapacitor } from '~/lib/adapters/platform';
+import { isMobileDevice } from '~/utils/mobile';
+import { classNames } from '~/utils/classNames';
 import { androidActiveChatId } from '~/lib/stores/androidChatSession';
 import { PixelMorphText } from '~/components/ui/PixelMorphText';
 
@@ -89,8 +91,14 @@ export function WelcomeHero() {
           <span className="text-xs uppercase tracking-wide text-bolt-elements-textTertiary">Continue</span>
           <div className="flex w-full flex-wrap items-center justify-center gap-2">
             {recentProjects.map((item) => {
-              const itemClass =
-                'max-w-[calc(100vw-3rem)] truncate rounded-full border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-1.5 text-xs text-bolt-elements-textSecondary transition-theme hover:border-accent-500 hover:text-bolt-elements-textPrimary';
+              /*
+               * min-h-11 (44dp): these chips otherwise resolve to a ~28px hit target
+               * (px-3 py-1.5 text-xs). Gated to touch only so desktop keeps the tighter chip.
+               */
+              const itemClass = classNames(
+                'max-w-[calc(100vw-3rem)] truncate rounded-full border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-1.5 text-xs text-bolt-elements-textSecondary transition-theme hover:border-accent-500 hover:text-bolt-elements-textPrimary',
+                isMobileDevice() && 'min-h-11 inline-flex items-center',
+              );
 
               if (isCapacitor()) {
                 return (

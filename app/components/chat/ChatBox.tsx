@@ -20,6 +20,7 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import { WebSearch } from './WebSearch.client';
 import { isCapacitor } from '~/lib/adapters/platform';
+import { isMobileDevice } from '~/utils/mobile';
 import { getImageFiles, processImageFiles } from './composer';
 
 /*
@@ -105,6 +106,7 @@ interface ChatBoxProps {
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const uploadedFilesRef = useRef(props.uploadedFiles);
   const imageDataListRef = useRef(props.imageDataList);
   const dropQueueRef = useRef(Promise.resolve());
@@ -327,66 +329,218 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         </ClientOnly>
         <div className="flex items-center gap-2 text-sm p-4 pt-2">
           <div className="custom-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-            <ColorSchemeDialog designScheme={props.designScheme} setDesignScheme={props.setDesignScheme} />
-            <McpTools />
-            <IconButton title="Upload file" className="transition-all" onClick={() => props.handleFileUpload()}>
-              <div className="i-ph:paperclip text-xl"></div>
-            </IconButton>
-            <WebSearch onSearchResult={(result) => props.onWebSearchResult?.(result)} disabled={props.isStreaming} />
-            <IconButton
-              title="Enhance prompt"
-              disabled={props.input.length === 0 || props.enhancingPrompt}
-              className={classNames('transition-all', props.enhancingPrompt ? 'opacity-100' : '')}
-              onClick={() => props.enhancePrompt?.()}
-            >
-              {props.enhancingPrompt ? (
-                <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-xl animate-spin"></div>
-              ) : (
-                <div className="i-bolt:stars text-xl"></div>
-              )}
-            </IconButton>
+            {isMobileDevice() ? (
+              <>
+                {/*
+                 * !min-h-11/!min-w-11/!justify-center: IconButton.tsx defaults to `p-1` (~28px
+                 * hit target, out of scope for this pass -- see IconButton.tsx) -- bumped to the
+                 * 44dp touch minimum here for the always-visible mobile toolbar buttons only.
+                 * `!` forces these to win regardless of UnoCSS's generated rule order.
+                 */}
+                <IconButton
+                  title="Upload file"
+                  className="transition-all !min-h-11 !min-w-11 !justify-center"
+                  onClick={() => props.handleFileUpload()}
+                >
+                  <div className="i-ph:paperclip text-xl"></div>
+                </IconButton>
+                <IconButton
+                  title="Model Settings"
+                  className={classNames('transition-all flex items-center gap-1 !min-h-11 !justify-center', {
+                    'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent':
+                      props.isModelSettingsCollapsed,
+                    'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault':
+                      !props.isModelSettingsCollapsed,
+                  })}
+                  onClick={() => props.setIsModelSettingsCollapsed(!props.isModelSettingsCollapsed)}
+                  disabled={!props.providerList || props.providerList.length === 0}
+                >
+                  <div className={`i-ph:caret-${props.isModelSettingsCollapsed ? 'right' : 'down'} text-lg`} />
+                  {props.isModelSettingsCollapsed ? <span className="text-xs">{props.model}</span> : <span />}
+                </IconButton>
+                {/*
+                 * Touch-only overflow menu: the mandate's "Textarea / Send-Stop / Attach / one
+                 * contextual action" composer model leaves room for exactly one always-visible
+                 * context action (Model Settings, above -- the only one relevant before a chat
+                 * has even started). Everything else that was previously an always-visible icon
+                 * (color scheme, MCP tools, fetch URL, enhance prompt, speech-to-text, discuss
+                 * mode) moves behind this single "More" entry point instead of silently
+                 * scrolling off-screen. Reuses the existing mobile-model-sheet/-backdrop CSS
+                 * (app/styles/mobile.scss) that already renders ModelSelector's picker as a
+                 * bottom sheet on touch -- no new modal mechanism.
+                 */}
+                <div className="relative">
+                  <IconButton
+                    title="More actions"
+                    className="transition-all !min-h-11 !min-w-11 !justify-center"
+                    onClick={() => setIsMoreMenuOpen((open) => !open)}
+                    aria-haspopup="true"
+                    aria-expanded={isMoreMenuOpen}
+                  >
+                    <div className="i-ph:dots-three-vertical text-xl"></div>
+                  </IconButton>
+                  {isMoreMenuOpen && (
+                    <>
+                      <button
+                        type="button"
+                        className="mobile-model-sheet-backdrop"
+                        onClick={() => setIsMoreMenuOpen(false)}
+                        aria-label="Close more actions"
+                      />
+                      <div
+                        className="mobile-model-sheet"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="composer-more-actions-title"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h2 id="composer-more-actions-title" className="mobile-model-sheet-title !mb-0">
+                            More actions
+                          </h2>
+                          <IconButton title="Close" onClick={() => setIsMoreMenuOpen(false)}>
+                            <div className="i-ph:x text-lg" />
+                          </IconButton>
+                        </div>
+                        <div className="flex flex-col gap-1 px-1 pb-2 max-h-[60vh] overflow-y-auto">
+                          <div className="flex items-center gap-3">
+                            <ColorSchemeDialog
+                              designScheme={props.designScheme}
+                              setDesignScheme={props.setDesignScheme}
+                            />
+                            <span className="text-sm text-bolt-elements-textSecondary">Color scheme</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <McpTools />
+                            <span className="text-sm text-bolt-elements-textSecondary">MCP tools</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <WebSearch
+                              onSearchResult={(result) => props.onWebSearchResult?.(result)}
+                              disabled={props.isStreaming}
+                            />
+                            <span className="text-sm text-bolt-elements-textSecondary">Fetch URL content</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <IconButton
+                              title="Enhance prompt"
+                              disabled={props.input.length === 0 || props.enhancingPrompt}
+                              className={classNames('transition-all', props.enhancingPrompt ? 'opacity-100' : '')}
+                              onClick={() => props.enhancePrompt?.()}
+                            >
+                              {props.enhancingPrompt ? (
+                                <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-xl animate-spin"></div>
+                              ) : (
+                                <div className="i-bolt:stars text-xl"></div>
+                              )}
+                            </IconButton>
+                            <span className="text-sm text-bolt-elements-textSecondary">Enhance prompt</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <SpeechRecognitionButton
+                              isListening={props.isListening}
+                              onStart={props.startListening}
+                              onStop={props.stopListening}
+                              disabled={props.isStreaming || !props.speechRecognitionSupported}
+                              unsupported={!props.speechRecognitionSupported}
+                            />
+                            <span className="text-sm text-bolt-elements-textSecondary">
+                              {props.isListening ? 'Stop listening' : 'Speech to text'}
+                            </span>
+                          </div>
+                          {props.chatStarted && (
+                            <div className="flex items-center gap-3">
+                              <IconButton
+                                title="Discuss"
+                                className={classNames(
+                                  'transition-all flex items-center gap-1 px-1.5',
+                                  props.chatMode === 'discuss'
+                                    ? '!bg-bolt-elements-item-backgroundAccent !text-bolt-elements-item-contentAccent'
+                                    : 'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault',
+                                )}
+                                onClick={() => {
+                                  props.setChatMode?.(props.chatMode === 'discuss' ? 'build' : 'discuss');
+                                }}
+                              >
+                                <div className={`i-ph:chats text-xl`} />
+                              </IconButton>
+                              <span className="text-sm text-bolt-elements-textSecondary">
+                                {props.chatMode === 'discuss' ? 'Discuss mode (on)' : 'Discuss mode'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <ColorSchemeDialog designScheme={props.designScheme} setDesignScheme={props.setDesignScheme} />
+                <McpTools />
+                <IconButton title="Upload file" className="transition-all" onClick={() => props.handleFileUpload()}>
+                  <div className="i-ph:paperclip text-xl"></div>
+                </IconButton>
+                <WebSearch
+                  onSearchResult={(result) => props.onWebSearchResult?.(result)}
+                  disabled={props.isStreaming}
+                />
+                <IconButton
+                  title="Enhance prompt"
+                  disabled={props.input.length === 0 || props.enhancingPrompt}
+                  className={classNames('transition-all', props.enhancingPrompt ? 'opacity-100' : '')}
+                  onClick={() => props.enhancePrompt?.()}
+                >
+                  {props.enhancingPrompt ? (
+                    <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-xl animate-spin"></div>
+                  ) : (
+                    <div className="i-bolt:stars text-xl"></div>
+                  )}
+                </IconButton>
 
-            <SpeechRecognitionButton
-              isListening={props.isListening}
-              onStart={props.startListening}
-              onStop={props.stopListening}
-              disabled={props.isStreaming || !props.speechRecognitionSupported}
-              unsupported={!props.speechRecognitionSupported}
-            />
-            {props.chatStarted && (
-              <IconButton
-                title="Discuss"
-                className={classNames(
-                  'transition-all flex items-center gap-1 px-1.5',
-                  props.chatMode === 'discuss'
-                    ? '!bg-bolt-elements-item-backgroundAccent !text-bolt-elements-item-contentAccent'
-                    : 'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault',
+                <SpeechRecognitionButton
+                  isListening={props.isListening}
+                  onStart={props.startListening}
+                  onStop={props.stopListening}
+                  disabled={props.isStreaming || !props.speechRecognitionSupported}
+                  unsupported={!props.speechRecognitionSupported}
+                />
+                {props.chatStarted && (
+                  <IconButton
+                    title="Discuss"
+                    className={classNames(
+                      'transition-all flex items-center gap-1 px-1.5',
+                      props.chatMode === 'discuss'
+                        ? '!bg-bolt-elements-item-backgroundAccent !text-bolt-elements-item-contentAccent'
+                        : 'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault',
+                    )}
+                    onClick={() => {
+                      props.setChatMode?.(props.chatMode === 'discuss' ? 'build' : 'discuss');
+                    }}
+                  >
+                    <div className={`i-ph:chats text-xl`} />
+                    {props.chatMode === 'discuss' ? <span>Discuss</span> : <span />}
+                  </IconButton>
                 )}
-                onClick={() => {
-                  props.setChatMode?.(props.chatMode === 'discuss' ? 'build' : 'discuss');
-                }}
-              >
-                <div className={`i-ph:chats text-xl`} />
-                {props.chatMode === 'discuss' ? <span>Discuss</span> : <span />}
-              </IconButton>
+                <IconButton
+                  title="Model Settings"
+                  className={classNames('transition-all flex items-center gap-1', {
+                    'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent':
+                      props.isModelSettingsCollapsed,
+                    'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault':
+                      !props.isModelSettingsCollapsed,
+                  })}
+                  onClick={() => props.setIsModelSettingsCollapsed(!props.isModelSettingsCollapsed)}
+                  disabled={!props.providerList || props.providerList.length === 0}
+                >
+                  <div className={`i-ph:caret-${props.isModelSettingsCollapsed ? 'right' : 'down'} text-lg`} />
+                  {props.isModelSettingsCollapsed ? <span className="text-xs">{props.model}</span> : <span />}
+                </IconButton>
+              </>
             )}
-            <IconButton
-              title="Model Settings"
-              className={classNames('transition-all flex items-center gap-1', {
-                'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent':
-                  props.isModelSettingsCollapsed,
-                'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault':
-                  !props.isModelSettingsCollapsed,
-              })}
-              onClick={() => props.setIsModelSettingsCollapsed(!props.isModelSettingsCollapsed)}
-              disabled={!props.providerList || props.providerList.length === 0}
-            >
-              <div className={`i-ph:caret-${props.isModelSettingsCollapsed ? 'right' : 'down'} text-lg`} />
-              {props.isModelSettingsCollapsed ? <span className="text-xs">{props.model}</span> : <span />}
-            </IconButton>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {props.input.length > 3 ? (
+            {!isMobileDevice() && props.input.length > 3 ? (
               <div className="hidden text-xs text-bolt-elements-textTertiary sm:block">
                 Use <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Shift</kbd> +{' '}
                 <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Return</kbd> a new line

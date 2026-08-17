@@ -1,5 +1,7 @@
 import React from 'react';
 import { isCapacitor } from '~/lib/adapters/platform';
+import { isMobileDevice } from '~/utils/mobile';
+import { classNames } from '~/utils/classNames';
 
 const EXAMPLE_PROMPTS = [
   { text: 'Create a mobile app for an AI development workbench' },
@@ -35,7 +37,12 @@ export function ExamplePrompts(sendMessage?: { (event: React.UIEvent, messageInp
               onClick={(event) => {
                 sendMessage?.(event, examplePrompt.text);
               }}
-              className="border border-bolt-elements-borderColor rounded-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-950 dark:hover:bg-gray-900 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary px-3 py-1.5 text-xs transition-theme"
+              className={classNames(
+                'border border-bolt-elements-borderColor rounded-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-950 dark:hover:bg-gray-900 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary px-3 py-1.5 text-xs transition-theme',
+
+                // 44dp touch minimum on touch surfaces; desktop keeps the tighter ~28px chip.
+                isMobileDevice() && 'min-h-11 inline-flex items-center',
+              )}
             >
               {examplePrompt.text}
             </button>

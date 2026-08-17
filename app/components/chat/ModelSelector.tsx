@@ -5,6 +5,7 @@ import type { ModelInfo } from '~/lib/modules/llm/types';
 import { classNames } from '~/utils/classNames';
 import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
 import { AUTO_MODEL } from '~/utils/constants';
+import { isMobileDevice } from '~/utils/mobile';
 
 // Fuzzy search utilities
 const levenshteinDistance = (str1: string, str2: string): number => {
@@ -622,7 +623,7 @@ export const ModelSelector = ({
                     type="text"
                     value={providerSearchQuery}
                     onChange={(e) => setProviderSearchQuery(e.target.value)}
-                    placeholder="Search providers... (⌘K to clear)"
+                    placeholder={isMobileDevice() ? 'Search providers...' : 'Search providers... (⌘K to clear)'}
                     className={classNames(
                       'w-full pl-8 pr-8 py-1.5 rounded-md text-sm',
                       'bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor',
@@ -749,7 +750,11 @@ export const ModelSelector = ({
       </div>
 
       {/* Model Combobox */}
-      <div className="relative flex w-full min-w-[70%]" onKeyDown={handleModelKeyDown} ref={modelDropdownRef}>
+      <div
+        className={classNames('relative flex w-full', !isMobileDevice() && 'min-w-[70%]')}
+        onKeyDown={handleModelKeyDown}
+        ref={modelDropdownRef}
+      >
         <div
           className={classNames(
             'w-full p-2 rounded-lg border border-bolt-elements-borderColor',
@@ -852,7 +857,7 @@ export const ModelSelector = ({
                     type="text"
                     value={modelSearchQuery}
                     onChange={(e) => setModelSearchQuery(e.target.value)}
-                    placeholder="Search models... (⌘K to clear)"
+                    placeholder={isMobileDevice() ? 'Search models...' : 'Search models... (⌘K to clear)'}
                     className={classNames(
                       'w-full pl-8 pr-8 py-1.5 rounded-md text-sm',
                       'bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor',

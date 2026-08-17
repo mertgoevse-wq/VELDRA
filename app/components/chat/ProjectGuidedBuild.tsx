@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { Checkbox } from '~/components/ui/Checkbox';
 import { classNames } from '~/utils/classNames';
+import { isMobileDevice } from '~/utils/mobile';
 import {
   hasProjectBriefDetails,
   projectBriefStore,
@@ -73,6 +74,9 @@ export function ProjectGuidedBuild() {
                     brief.platform === option.value
                       ? 'bg-accent-500 text-white border-accent-500'
                       : 'bg-bolt-elements-background-depth-1 text-bolt-elements-textSecondary hover:border-accent-500/50',
+
+                    // 44dp touch minimum on touch surfaces; desktop keeps the tighter chip height.
+                    isMobileDevice() && 'min-h-11',
                   )}
                 >
                   <div className={option.icon} />

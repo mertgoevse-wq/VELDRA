@@ -37,6 +37,7 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
 import { RuntimeModeBanner } from '~/components/mobile/RuntimeModeBanner';
 import { isCapacitor } from '~/lib/adapters/platform';
+import { isMobileDevice } from '~/utils/mobile';
 import { getAndroidModelsRequest } from '~/lib/android-api/backend-config';
 import { ProjectGuidedBuild } from '~/components/chat/ProjectGuidedBuild';
 import { WelcomeHero } from '~/components/chat/WelcomeHero.client';
@@ -541,7 +542,14 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               </div>
             </StickToBottom>
             <div className="flex flex-col justify-center">
-              {!chatStarted && !isCapacitor() && (
+              {/*
+               * Was `!isCapacitor()` alone -- that only excludes the wrapped Android app, so a
+               * phone-width *mobile web* browser (isCapacitor() false, isMobileDevice() true)
+               * fell through to this desktop icon-grid path instead of the touch-appropriate
+               * TemplatePicker/SetupGuide below. Gate on both so any touch-first surface, not
+               * just the Capacitor shell, gets the mobile path.
+               */}
+              {!chatStarted && !isCapacitor() && !isMobileDevice() && (
                 <div className="flex flex-wrap justify-center gap-2 px-4 lg:px-0">
                   {ImportButtons(importChat)}
                   <GitCloneButton importChat={importChat} />
@@ -557,8 +565,10 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
 
                     handleSendMessage?.(event, messageInput);
                   })}
-                {!chatStarted && !isCapacitor() && <StarterTemplates applyStarterTemplate={applyStarterTemplate} />}
-                {!chatStarted && isCapacitor() && (
+                {!chatStarted && !isCapacitor() && !isMobileDevice() && (
+                  <StarterTemplates applyStarterTemplate={applyStarterTemplate} />
+                )}
+                {!chatStarted && (isCapacitor() || isMobileDevice()) && (
                   <>
                     <ClientOnly>{() => <SetupGuide />}</ClientOnly>
                     <TemplatePicker
