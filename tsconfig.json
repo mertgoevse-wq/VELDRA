@@ -38,6 +38,7 @@
   ],
   "exclude": [
     "remote-runtime/**/*",
+    "supabase/**/*",
     "node_modules"
   ]
 }

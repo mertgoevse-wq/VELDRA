@@ -195,6 +195,75 @@ it deliberately doesn't attempt:
 
 ---
 
+## 3.5 Backend selection — evidence-based comparison, and the real (unwired) contract
+
+**Do not confuse this with the existing "Supabase" tab in Settings.** `app/lib/stores/supabase.ts`
+/ `SupabaseTab.tsx` let a *user* connect *their own* Supabase project so VELDRA can deploy
+*their generated app* to it — a per-project integration, same family as the GitHub/Vercel/Netlify
+tabs. This section is about a completely different thing: a backend *VELDRA itself* operates, to
+answer "is this VELDRA user entitled to X" server-side (§2.4). The two must never share
+credentials or env var names — see the naming choice below.
+
+**Comparison** (evaluated against §2's minimum contract — auth, session/JWT, a database,
+serverless functions, manageable free quotas, Android compatibility):
+
+| | **Supabase Free** | Cloudflare Workers + D1 | Firebase Spark |
+|---|---|---|---|
+| Auth (OAuth/email/passkey) | Built-in (Auth), Google/GitHub OAuth, email, MFA | None built-in — bring your own (e.g. an external OIDC provider) or hand-roll | Built-in (Firebase Auth), same provider breadth as Supabase |
+| Database | Real Postgres (RLS for row-level auth — the natural fit for "only this session reads this row") | D1 (SQLite) — works, but SQLite has no RLS; authorization has to live entirely in Worker code | Firestore (NoSQL) — workable, but the entitlement model here (tier, expiry, capability list) is inherently relational |
+| Serverless functions | Edge Functions (Deno) | Workers (the platform's own primitive — very mature) | Cloud Functions (Spark tier: **no outbound network calls**, which blocks calling the Play Developer API for purchase-token verification — §2.4's core requirement) |
+| Free-tier ceiling for this use case | 500MB DB, 50k MAUs, 500k Edge Function invocations/mo — generous for a pre-revenue entitlement check | 100k requests/day (Workers), 5GB (D1) — generous, but auth is extra integration work | Spark: Cloud Functions require Blaze (pay-as-you-go) for any outbound HTTP — the Play Billing verification step doesn't fit the actual free tier |
+| Secret storage for future provider master secrets | Edge Function secrets (server-only, never shipped to client) | Worker secrets (same guarantee) | Cloud Functions config (same guarantee, but gated behind Blaze per above) |
+
+**Decision: Supabase Free.** It's the only option that satisfies the full §2 contract (Auth +
+Postgres+RLS + server-callable functions) on its actual free tier without an unbudgeted
+day-one upgrade — Firebase Spark's no-outbound-network restriction on Cloud Functions is a hard
+blocker for §2.4's Play Billing verification step, not a workaround-able inconvenience, and
+Cloudflare D1's lack of RLS means every authorization check has to be hand-written and
+re-verified in Worker code instead of enforced at the data layer (more surface area to get
+wrong for a security-relevant table). This matches the mandate's own "priority candidate."
+**Selected after comparison, not by default** — no other provider was set up in parallel.
+
+**What's actually built here (contract + local-dev code, deliberately NOT deployed or wired
+into the live app)**:
+- `supabase/migrations/0001_entitlements.sql` — the real Postgres schema: an `entitlements`
+  table (one row per `auth.users.id`, tier/expiry/capabilities), RLS policies restricting each
+  row to its own owner (`auth.uid() = user_id`) plus a `service_role`-only write path (so a
+  future Play Billing webhook, not the client, is what grants/revokes a tier).
+- `supabase/functions/entitlement/index.ts` — the Edge Function implementing `GET /entitlement`
+  from §2.4's contract: verifies the caller's Supabase JWT, reads that user's row (RLS enforces
+  the ownership check even if the function's own logic had a bug — defense in depth), returns
+  `{ tier, expiresAt, capabilities }`. Runs on Deno; imports `@supabase/supabase-js` via an ESM
+  URL inside the function file itself, so **no dependency was added to this repo's own
+  `package.json`** — Edge Functions are a separately deployed artifact, not part of the main
+  app bundle.
+- `app/lib/entitlement/serverEntitlementClient.ts` — the typed client-side fetch wrapper the
+  main app would call once a real deployment + sign-in flow exist. Deliberately plain `fetch`
+  (no `@supabase/supabase-js` client dependency added to the app bundle either) — this client
+  only needs one authenticated GET, not the full SDK's realtime/storage/query-builder surface.
+  Has its own test suite (`serverEntitlementClient.spec.ts`) against a mocked `fetch`. **Not
+  called from anywhere in the live app yet** — `stores/entitlement.ts` still reads/writes
+  `localStorage` exactly as before; wiring this in requires the sign-in flow from §2.1-2.2,
+  which doesn't exist, so pointing the store at this client today would just replace one
+  unenforceable state with a fetch that always 401s.
+- Env vars: `VELDRA_BACKEND_URL` / `VELDRA_BACKEND_ANON_KEY` (documented in `.env.example`) —
+  **deliberately not** `VITE_SUPABASE_*`, to keep this categorically separate from the
+  user-project-connection feature's identically-shaped-looking config. The anon key is safe to
+  ship client-side by design (that's what RLS is for — it authorizes nothing on its own, only a
+  valid user JWT does), the same guarantee the existing `VITE_SUPABASE_ANON_KEY` already relies
+  on for the unrelated feature.
+
+**Deployment instructions** (for whenever this becomes active work — not run in this session,
+no Supabase CLI/account access here):
+1. `npx supabase init` (if not already) → `npx supabase link --project-ref <ref>` against a real
+   (free-tier) Supabase project.
+2. `npx supabase db push` to apply `supabase/migrations/0001_entitlements.sql`.
+3. `npx supabase functions deploy entitlement`.
+4. Set `VELDRA_BACKEND_URL` (the project's Function URL) and `VELDRA_BACKEND_ANON_KEY` (Project
+   Settings → API → anon/public key) in the app's real env.
+5. Only then does wiring `serverEntitlementClient.ts` into `stores/entitlement.ts` make sense —
+   and only after §2.1's real sign-in flow exists to produce a user JWT to send.
+
 ## 4. What to build first, if/when this becomes active work
 
 In dependency order — each step is meaningless without the one before it:
