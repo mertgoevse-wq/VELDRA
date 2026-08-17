@@ -122,7 +122,7 @@ export const AssistantMessage = memo(
                     {codeContext && (
                       <div className="code-context flex flex-col p4 border border-bolt-elements-borderColor rounded-md">
                         <h2>Context</h2>
-                        <div className="flex gap-4 mt-4 bolt" style={{ zoom: 0.6 }}>
+                        <div className="flex gap-4 mt-4" style={{ zoom: 0.6 }}>
                           {codeContext.map((x) => {
                             const normalized = normalizedFilePath(x);
                             return (
