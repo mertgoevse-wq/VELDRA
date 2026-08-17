@@ -46,15 +46,14 @@ export const workspaceLayoutStore = computed(activeTemplateStore, (template): Wo
 });
 
 /** Map a PanelId to the corresponding MobileTab */
-export function panelToTab(panel: PanelId): 'chat' | 'files' | 'preview' | 'settings' {
+export function panelToTab(panel: PanelId): 'chat' | 'workbench' | 'settings' {
   switch (panel) {
     case 'editor':
     case 'terminal':
     case 'agents':
     case 'monitoring':
-      return 'files';
     case 'preview':
-      return 'preview';
+      return 'workbench';
     case 'settings':
       return 'settings';
     default:

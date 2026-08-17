@@ -5,7 +5,10 @@ import { isMobileDevice } from '~/utils/mobile';
 /**
  * Bottom navigation bar for mobile devices.
  *
- * Shows four tabs: Chat, Files, Preview, Settings.
+ * Shows three top-level tabs: Chat, Workbench, Settings. Files/Code/Diff/Preview all live
+ * *inside* the Workbench tab (see AndroidWorkbenchScreen) rather than as separate global nav
+ * items -- a flat "everything is a top-level tab" nav is a desktop-panel habit, not how a
+ * mobile app groups a single feature area's own sub-views.
  * Only rendered on mobile (Capacitor or touch + narrow viewport).
  * On desktop, this component renders null.
  *
@@ -14,13 +17,13 @@ import { isMobileDevice } from '~/utils/mobile';
  * just provides touch-friendly navigation buttons.
  */
 
-export type MobileTab = 'chat' | 'files' | 'preview' | 'settings';
+export type MobileTab = 'chat' | 'workbench' | 'settings';
 
 interface BottomNavProps {
   activeTab: MobileTab;
   onTabChange: (tab: MobileTab) => void;
 
-  /** Whether the workbench (files/preview) is available — requires chatStarted */
+  /** Whether the workbench (files/code/diff/preview) is available — requires chatStarted */
   workbenchAvailable?: boolean;
 }
 
@@ -44,8 +47,7 @@ function BottomNavBase({ activeTab, onTabChange, workbenchAvailable = false }: B
 
   const tabs: TabConfig[] = [
     { id: 'chat', label: 'Chat', icon: 'i-ph:chat-circle' },
-    { id: 'files', label: 'Files', icon: 'i-ph:folder-simple', disabled: !workbenchAvailable },
-    { id: 'preview', label: 'Preview', icon: 'i-ph:eye', disabled: !workbenchAvailable },
+    { id: 'workbench', label: 'Workbench', icon: 'i-ph:folder-simple', disabled: !workbenchAvailable },
     { id: 'settings', label: 'Settings', icon: 'i-ph:gear' },
   ];
 

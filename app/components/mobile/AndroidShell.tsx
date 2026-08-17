@@ -43,8 +43,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 // Lazy-load the heavy chat/workbench components to keep initial load fast
 const ChatLazy = React.lazy(() => import('~/components/chat/Chat.client').then((m) => ({ default: m.Chat })));
-const WorkbenchLazy = React.lazy(() =>
-  import('~/components/workbench/Workbench.client').then((m) => ({ default: m.Workbench })),
+const AndroidWorkbenchLazy = React.lazy(() =>
+  import('~/components/mobile/AndroidWorkbenchScreen').then((m) => ({ default: m.AndroidWorkbenchScreen })),
 );
 
 const toastAnimation = cssTransition({
@@ -151,6 +151,11 @@ export default function AndroidShell() {
   useEffect(() => {
     if (activeTemplate) {
       const targetTab = panelToTab(workspaceLayout.primaryPanel);
+
+      if (targetTab === 'workbench') {
+        workbenchStore.currentView.set(workspaceLayout.primaryPanel === 'preview' ? 'preview' : 'code');
+      }
+
       setActiveTab(targetTab);
     }
   }, [activeTemplate, workspaceLayout.primaryPanel]);
@@ -168,7 +173,10 @@ export default function AndroidShell() {
 
     if (!hadFile && hasIndexHtml && activeTab === 'chat') {
       // Brief delay so AI finishes writing other files first
-      const t = window.setTimeout(() => setActiveTab('preview'), 1200);
+      const t = window.setTimeout(() => {
+        workbenchStore.currentView.set('preview');
+        setActiveTab('workbench');
+      }, 1200);
       return () => window.clearTimeout(t);
     }
 
@@ -187,40 +195,32 @@ export default function AndroidShell() {
   }, []);
 
   /*
-   * The Files/Preview tabs don't own separate content -- they open the same Workbench
-   * component (file tree, editor, code/diff slider, preview) that desktop already uses,
-   * controlled by workbenchStore.showWorkbench/currentView. Without this, ActionRunner/
-   * FilesStore already correctly persist agent file changes, but there was no way to ever
-   * see them on Android -- Workbench was never mounted here.
+   * The Workbench tab doesn't own separate content per se -- it mounts AndroidWorkbenchScreen
+   * (file tree, editor, code/diff/preview segments, terminal sheet), which reads/writes
+   * workbenchStore.currentView itself once mounted. This shell only owns the coarse
+   * mount/unmount (showWorkbench), not which internal segment is selected -- ActionRunner/
+   * FilesStore already correctly persist agent file changes regardless of which tab is active.
    */
   useEffect(() => {
-    if (activeTab === 'files') {
-      workbenchStore.setShowWorkbench(true);
-      workbenchStore.currentView.set('code');
-    } else if (activeTab === 'preview') {
-      workbenchStore.setShowWorkbench(true);
-      workbenchStore.currentView.set('preview');
-    } else {
-      workbenchStore.setShowWorkbench(false);
-    }
+    workbenchStore.setShowWorkbench(activeTab === 'workbench');
   }, [activeTab]);
 
   /*
    * The sync above is one-directional (activeTab -> showWorkbench). But showWorkbench also has
    * writers this shell doesn't control -- Artifact.tsx's chat-message toggle, and
    * useMessageParser.ts auto-opening it the moment the AI starts streaming file content. When
-   * either of those flips it true while activeTab is still 'chat', the Workbench panel (which
-   * renders independent of activeTab, absolutely positioned over .android-main) visually slides
-   * over the screen, but the bottom nav still highlights "Chat" and .android-tab-active/-hidden
-   * still says the Chat pane is what's showing -- two state sources disagreeing about what's on
-   * screen. Close the loop: whenever showWorkbench becomes true for a reason other than this
-   * shell's own tab switch, follow it to the 'files' tab so nav/visibility/panel all agree.
+   * either of those flips it true while activeTab is still 'chat', the Workbench screen (which
+   * mounts independent of activeTab) would render, but the bottom nav still highlights "Chat"
+   * and .android-tab-active/-hidden still says the Chat pane is what's showing -- two state
+   * sources disagreeing about what's on screen. Close the loop: whenever showWorkbench becomes
+   * true for a reason other than this shell's own tab switch, follow it to the 'workbench' tab
+   * so nav/visibility/panel all agree.
    */
   const showWorkbench = useStore(workbenchStore.showWorkbench);
 
   useEffect(() => {
-    if (showWorkbench && activeTab !== 'files' && activeTab !== 'preview') {
-      setActiveTab('files');
+    if (showWorkbench && activeTab !== 'workbench') {
+      setActiveTab('workbench');
     }
   }, [showWorkbench, activeTab]);
 
@@ -246,11 +246,6 @@ export default function AndroidShell() {
     CapacitorApp.addListener('backButton', () => {
       if (historyOpen) {
         setHistoryOpen(false);
-        return;
-      }
-
-      if (workbenchStore.showWorkbench.get()) {
-        setActiveTab('chat');
         return;
       }
 
@@ -339,14 +334,16 @@ export default function AndroidShell() {
           </div>
 
           {/*
-           * Workbench (Files/Preview) stays mounted always, not just when active -- it manages
-           * its own visibility via workbenchStore.showWorkbench (collapses to width:0 when
-           * closed), and unmounting/remounting it on every tab switch would lose file-tree/
-           * editor state for no benefit.
+           * Workbench tab: mounted only while active. All state it reads/writes
+           * (files, selectedFile, currentView, unsavedFiles) lives in workbenchStore, not local
+           * component state, so unmount/remount on tab switch loses nothing -- and not keeping a
+           * CodeMirror instance alive off-screen is a real memory/battery win on Android.
            */}
-          <Suspense fallback={null}>
-            <WorkbenchLazy chatStarted isStreaming={isStreaming} />
-          </Suspense>
+          {activeTab === 'workbench' && (
+            <Suspense fallback={<LoadingScreen />}>
+              <AndroidWorkbenchLazy isStreaming={isStreaming} onBack={() => setActiveTab('chat')} />
+            </Suspense>
+          )}
 
           {/* Settings tab */}
           {activeTab === 'settings' && <SettingsTab />}

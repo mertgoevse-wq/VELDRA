@@ -103,29 +103,88 @@
 }
 
 /*
- * The Workbench panel (Files/Preview tabs) is position:fixed, anchored to the
- * viewport top -- that ignores the AndroidFallbackBanner, which lives in normal
- * flow above .android-main and can push .android-main down by a variable amount.
- * Re-anchor it to position:absolute inside .android-main (which is already
- * position:relative) so it shares the same coordinate space as .android-tab-content
- * and moves down together with it when the banner is shown/hidden, instead of a
- * fixed offset that overlaps whatever is on screen at that vertical position.
- *
- * Deliberately NOT overriding left/right here (this used to force `left:0
- * !important; right:0 !important` unconditionally): the component's own
- * `left-0` (open, small viewport) / `left-[100%]` (closed) / `w-full` classes
- * are what actually show/hide the panel. Forcing left/right pinned it open
- * and full-screen at all times regardless of `showWorkbench` state, which is
- * why Code/Diff/Preview/Export/Files rendered on top of the Chat tab -- a
- * pre-existing bug, confirmed via headless-browser screenshot of the built
- * output, predating this session's other Android fixes.
+ * Prior versions of this file forced the desktop Workbench's fixed/left:100%-transition
+ * container into an in-flow position via `.android-shell .fixed.top-[...] { position:
+ * absolute !important; ... }` -- a CSS override chasing a component that was never really
+ * built for this shell. AndroidShell now mounts a dedicated `AndroidWorkbenchScreen` (below)
+ * as a genuine sibling tab content block instead of reusing the desktop Workbench panel, so
+ * that override no longer has anything to target and was removed rather than left dead.
  */
-.android-shell .fixed.top-\[calc\(var\(--header-height\)\+1\.2rem\)\] {
-  position: absolute !important;
-  top: 0 !important;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
-  border-radius: 0 !important;
-  margin: 0 !important;
+
+/* =========================================================
+   Workbench screen (Files/Code/Diff/Preview)
+   ========================================================= */
+
+.android-workbench-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  background: var(--bolt-elements-background-depth-1);
+}
+
+.android-workbench-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  min-height: 56px;
+  border-bottom: 1px solid var(--bolt-elements-borderColor);
+  background: var(--bolt-elements-background-depth-2);
+  flex-shrink: 0;
+}
+
+.android-workbench-back,
+.android-workbench-terminal-toggle,
+.android-workbench-header-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--veldra-radius-md, 12px);
+  color: var(--bolt-elements-textSecondary);
+  background: transparent;
+  transition: background-color var(--veldra-motion-duration-base, 200ms) var(--veldra-motion-ease, ease);
+  flex-shrink: 0;
+}
+
+.android-workbench-back:active,
+.android-workbench-terminal-toggle:active,
+.android-workbench-header-action:active {
+  background: var(--bolt-elements-background-depth-3);
+}
+
+.android-workbench-terminal-toggle.active {
+  color: var(--bolt-elements-item-contentAccent);
+  background: var(--bolt-elements-item-backgroundAccent);
+}
+
+.android-workbench-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bolt-elements-textPrimary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.android-workbench-segments-row {
+  padding: 8px 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--bolt-elements-borderColor);
+  background: var(--bolt-elements-background-depth-2);
+}
+
+.android-workbench-content {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
 }
 
 /* =========================================================
@@ -169,7 +228,7 @@
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  transition: color 0.15s ease;
+  transition: color var(--veldra-motion-duration-fast, 120ms) ease;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -191,7 +250,7 @@
 .mobile-bottom-nav button div {
   width: 24px;
   height: 24px;
-  transition: transform 0.15s ease;
+  transition: transform var(--veldra-motion-duration-fast, 120ms) ease;
 }
 
 .mobile-bottom-nav button:not(:disabled):active div {
@@ -621,7 +680,7 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity var(--veldra-motion-duration-fast, 120ms);
 }
 
 .android-danger-btn:disabled {
@@ -652,7 +711,7 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity var(--veldra-motion-duration-fast, 120ms);
 }
 
 .android-secondary-btn:active {
@@ -943,7 +1002,7 @@
   display: flex;
   flex-direction: column;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  animation: slide-up 0.25s var(--veldra-motion-ease, ease-out);
+  animation: slide-up var(--veldra-motion-duration-sheet, 240ms) var(--veldra-motion-ease, ease-out);
 }
 
 @keyframes slide-up {
@@ -1024,7 +1083,7 @@
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.1s;
+  transition: background-color var(--veldra-motion-duration-fast, 120ms);
 }
 
 .chat-history-item:active {
@@ -1083,11 +1142,11 @@
 }
 
 .animated.fadeInRight {
-  animation: fadeInRight 0.3s ease;
+  animation: fadeInRight var(--veldra-motion-duration-screen, 280ms) ease;
 }
 
 .animated.fadeOutRight {
-  animation: fadeOutRight 0.3s ease;
+  animation: fadeOutRight var(--veldra-motion-duration-screen, 280ms) ease;
 }
 
 @keyframes fadeInRight {

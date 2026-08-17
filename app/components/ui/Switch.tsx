@@ -6,11 +6,17 @@ export interface SwitchProps extends React.ComponentPropsWithoutRef<typeof Switc
   className?: string;
 }
 
+/*
+ * Visual track stays 24x44 (h-6 w-11); the Root's ::before pseudo-element (below) extends the
+ * actual clickable/tappable box to a 44dp-tall hit area without changing how the track looks --
+ * a bare 24px-tall control is well under the mandated minimum mobile touch target.
+ */
 export const Switch = memo(({ className, ...props }: SwitchProps) => {
   return (
     <SwitchPrimitive.Root
       className={classNames(
-        'relative h-6 w-11 cursor-pointer rounded-full bg-bolt-elements-button-primary-background',
+        'relative inline-flex items-center h-6 w-11 cursor-pointer rounded-full bg-bolt-elements-button-primary-background',
+        'before:content-[""] before:absolute before:-inset-y-[10px] before:inset-x-0',
         'transition-colors duration-200 ease-in-out',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
         'disabled:cursor-not-allowed disabled:opacity-50',

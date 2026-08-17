@@ -299,6 +299,12 @@
      makes that duration respect prefers-reduced-motion, it does not change its default value. */
   --veldra-motion-duration-theme: 150ms;
 
+  /* Android-first motion scale (mobile shell rebuild): sheets/dialogs and full-screen transitions
+     are visually heavier than a control state change, so they get their own tokens rather than
+     reusing -fast/-base/-slow, which stay tuned for button/control feedback. */
+  --veldra-motion-duration-sheet: 240ms;
+  --veldra-motion-duration-screen: 280ms;
+
   /* Ambient "breathing" background (mandate section 14): deliberately a different, much longer
      scale than the UI-transition tokens above -- this animates a full cycle, not a state change. */
   --veldra-breathe-duration: 26s;
@@ -321,6 +327,8 @@
     --veldra-motion-duration-base: 0ms;
     --veldra-motion-duration-slow: 0ms;
     --veldra-motion-duration-theme: 0ms;
+    --veldra-motion-duration-sheet: 0ms;
+    --veldra-motion-duration-screen: 0ms;
     --veldra-composer-border-duration: 0ms;
   }
 }
