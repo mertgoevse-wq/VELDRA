@@ -28,6 +28,7 @@ const FAST_PRESET: PixelMorphPreset = {
   particleSize: 2,
   poolLine: 0.5,
   poolJitter: 1,
+  holdJitter: 0.5,
   dissolveMs: 100,
   poolMs: 50,
   reformMs: 100,
@@ -38,6 +39,25 @@ function makeEngine() {
   engine.resize(200, 100);
 
   return engine;
+}
+
+/**
+ * The engine exposes no direct particle accessor -- render() is the only observable surface
+ * for particle positions, so tests that need them record fillRect() calls against a stub
+ * CanvasRenderingContext2D instead of a real one (which jsdom doesn't implement anyway).
+ */
+function createRecordingCtx() {
+  const calls: Array<{ x: number; y: number }> = [];
+  const ctx = {
+    clearRect: vi.fn(),
+    fillStyle: '',
+    globalAlpha: 1,
+    fillRect: vi.fn((x: number, y: number) => {
+      calls.push({ x, y });
+    }),
+  } as unknown as CanvasRenderingContext2D;
+
+  return { ctx, calls };
 }
 
 describe('PixelMorphEngine', () => {
@@ -113,5 +133,40 @@ describe('PixelMorphEngine', () => {
     expect(() => engine.update(16)).not.toThrow();
     expect(engine.text).toBe('');
     expect(engine.isTransitioning).toBe(false);
+  });
+
+  it('applies a small ornamental wobble to particles while holding, bounded by holdJitter', () => {
+    const engine = makeEngine();
+    engine.setText('Hello');
+
+    const { ctx: restCtx, calls: restPositions } = createRecordingCtx();
+    engine.render(restCtx, '#000');
+
+    // update() during 'hold' should not start a transition -- only the existing behavior.
+    engine.update(150);
+    expect(engine.isTransitioning).toBe(false);
+
+    const { ctx: jitteredCtx, calls: jitteredPositions } = createRecordingCtx();
+    engine.render(jitteredCtx, '#000');
+
+    expect(jitteredPositions).toHaveLength(restPositions.length);
+
+    let anyMoved = false;
+
+    for (let i = 0; i < restPositions.length; i++) {
+      const dx = jitteredPositions[i].x - restPositions[i].x;
+      const dy = jitteredPositions[i].y - restPositions[i].y;
+
+      if (dx !== 0 || dy !== 0) {
+        anyMoved = true;
+      }
+
+      // Ornamental texture, not motion: bounded well under a pixel, nowhere near poolJitter.
+      expect(Math.abs(dx)).toBeLessThanOrEqual(FAST_PRESET.holdJitter + 1e-9);
+      expect(dy).toBeGreaterThanOrEqual(-1e-9);
+      expect(dy).toBeLessThanOrEqual(FAST_PRESET.holdJitter * 0.4 + 1e-9);
+    }
+
+    expect(anyMoved).toBe(true);
   });
 });

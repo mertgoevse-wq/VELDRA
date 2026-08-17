@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePrefersReducedMotion } from '~/lib/hooks/usePrefersReducedMotion';
 import { PixelMorphEngine } from '~/lib/media/pixelMorph/engine';
 import { PIXEL_MORPH_PRESETS } from '~/lib/media/pixelMorph/presets';
+import { themeStore } from '~/lib/stores/theme';
 
 interface PixelMorphTextProps {
   text: string;
@@ -47,9 +48,19 @@ export function PixelMorphText({ text, preset = 'greeting', className, maxPartic
   const engineRef = useRef<PixelMorphEngine | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number | null>(null);
+  const colorRef = useRef<string>('');
 
   const prefersReducedMotion = usePrefersReducedMotion();
   const useFallback = prefersReducedMotion || isLikelyLowEndDevice();
+
+  /*
+   * Set only when a real `canvas.getContext('2d')` call returns null (context-budget
+   * exhaustion, a blocking extension, a locked-down WebView) -- distinct from the
+   * prefers-reduced-motion/low-end-device cases above, but folded into the same visible
+   * fallback below so sighted users are never left with an empty aria-hidden canvas and no
+   * text (only the sr-only mirror would otherwise still carry it).
+   */
+  const [canvasUnavailable, setCanvasUnavailable] = useState(false);
 
   /*
    * Keep the engine's target text current even while the fallback path is active, so switching
@@ -74,8 +85,11 @@ export function PixelMorphText({ text, preset = 'greeting', className, maxPartic
     const ctx = canvas.getContext('2d');
 
     if (!ctx) {
+      setCanvasUnavailable(true);
       return undefined;
     }
+
+    setCanvasUnavailable(false);
 
     const engine = new PixelMorphEngine({
       preset: PIXEL_MORPH_PRESETS[preset],
@@ -105,6 +119,18 @@ export function PixelMorphText({ text, preset = 'greeting', className, maxPartic
     const resizeObserver = new ResizeObserver(applySize);
     resizeObserver.observe(container);
 
+    /*
+     * The rendered text color only changes on a theme toggle, not every frame -- reading it via
+     * getComputedStyle() inside the RAF loop below would force a style recalc up to 60x/sec for
+     * no reason. Cache it once here and only refresh it when themeStore actually changes;
+     * `.subscribe` (unlike `.listen`) also invokes this immediately, so it doubles as the
+     * initial read.
+     */
+    const refreshColor = () => {
+      colorRef.current = getComputedStyle(container).color;
+    };
+    const unsubscribeTheme = themeStore.subscribe(refreshColor);
+
     let running = true;
 
     const frame = (timestamp: number) => {
@@ -117,7 +143,7 @@ export function PixelMorphText({ text, preset = 'greeting', className, maxPartic
       lastFrameTimeRef.current = timestamp;
 
       engine.update(dt);
-      engine.render(ctx, getComputedStyle(container).color);
+      engine.render(ctx, colorRef.current);
 
       rafRef.current = requestAnimationFrame(frame);
     };
@@ -155,6 +181,7 @@ export function PixelMorphText({ text, preset = 'greeting', className, maxPartic
       running = false;
       stop();
       resizeObserver.disconnect();
+      unsubscribeTheme();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       engineRef.current = null;
     };
@@ -165,7 +192,7 @@ export function PixelMorphText({ text, preset = 'greeting', className, maxPartic
      */
   }, [useFallback, preset, maxParticles]);
 
-  if (useFallback) {
+  if (useFallback || canvasUnavailable) {
     return (
       <p aria-live="polite" className={className}>
         {text}

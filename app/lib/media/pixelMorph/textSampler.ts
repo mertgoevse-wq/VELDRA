@@ -13,7 +13,7 @@ export interface TextSampleOptions {
  * Samples a text string into a sparse set of points covering its lit (alpha-above-threshold)
  * pixels, using an offscreen canvas as the rasterizer. This is the first of what should
  * eventually be several point-source producers sharing PixelMorphEngine's target API (see
- * engine.ts's `setTargetPoints`) -- a future image-alpha sampler for "generated images become
+ * engine.ts's `setSourcePoints`) -- a future image-alpha sampler for "generated images become
  * pixel fields" / "logos morph" would implement the same SampledPoint[] output shape from a
  * different input (an Asset's bitmap instead of a font glyph), not require a different engine.
  */

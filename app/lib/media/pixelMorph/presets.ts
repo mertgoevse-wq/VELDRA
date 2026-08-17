@@ -6,6 +6,9 @@ export interface PixelMorphPreset {
   /** Fraction of canvas height where dissolved particles settle (0 = top, 1 = bottom). */
   poolLine: number;
   poolJitter: number;
+
+  /** Amplitude (px) of the subtle ornamental wobble applied while text is held on screen. */
+  holdJitter: number;
   dissolveMs: number;
   poolMs: number;
   reformMs: number;
@@ -24,6 +27,7 @@ export const PIXEL_MORPH_PRESETS: Record<string, PixelMorphPreset> = {
     particleSize: 2,
     poolLine: 0.78,
     poolJitter: 3,
+    holdJitter: 0.6,
     dissolveMs: 550,
     poolMs: 320,
     reformMs: 650,
