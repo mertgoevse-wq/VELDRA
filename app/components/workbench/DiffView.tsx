@@ -4,7 +4,6 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import type { FileMap } from '~/lib/stores/files';
 import type { EditorDocument } from '~/components/editor/codemirror/CodeMirrorEditor';
 import { diffLines, type Change } from 'diff';
-import { getHighlighter } from 'shiki';
 import '~/styles/diff-view.css';
 import { diffFiles, extractRelativePath } from '~/utils/diff';
 import type { FileHistory } from '~/types/actions';
@@ -553,6 +552,8 @@ const getSharedHighlighter = async () => {
   if (highlighterPromise) {
     return highlighterPromise;
   }
+
+  const { getHighlighter } = await import('shiki');
 
   highlighterPromise = getHighlighter({
     themes: ['github-dark', 'github-light'],

@@ -20,17 +20,26 @@ export default class AmazonBedrockProvider extends BaseProvider {
   };
 
   staticModels: ModelInfo[] = [
+    /*
+     * These two ids are the same underlying model anthropic.ts's own static list documents as
+     * "retired 2025-10-28 and 404s" (direct API), just under Bedrock's id format. AmazonBedrock
+     * has no getDynamicModels() to self-correct like Anthropic's provider now does, so they're
+     * marked retired here rather than replaced with a guessed current Bedrock id -- an
+     * unverified id string would fail exactly the same way, just less honestly.
+     */
     {
       name: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
       label: 'Claude 3.5 Sonnet v2 (Bedrock)',
       provider: 'AmazonBedrock',
       maxTokenAllowed: 200000,
+      status: 'retired',
     },
     {
       name: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
       label: 'Claude 3.5 Sonnet (Bedrock)',
       provider: 'AmazonBedrock',
       maxTokenAllowed: 4096,
+      status: 'retired',
     },
     {
       name: 'anthropic.claude-3-sonnet-20240229-v1:0',

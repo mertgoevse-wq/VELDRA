@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MODEL_REGEX, PROVIDER_REGEX } from '~/utils/constants';
 import { Markdown } from './Markdown';
 import type {
@@ -16,7 +17,7 @@ interface UserMessageProps {
     | undefined;
 }
 
-export function UserMessage({ content, parts }: UserMessageProps) {
+export const UserMessage = memo(({ content, parts }: UserMessageProps) => {
   // Extract images from parts - look for file parts with image mime types
   const images =
     parts?.filter(
@@ -50,7 +51,7 @@ export function UserMessage({ content, parts }: UserMessageProps) {
       {textContent && <Markdown html>{textContent}</Markdown>}
     </div>
   );
-}
+});
 
 function stripMetadata(content: string) {
   const artifactRegex = /<boltArtifact\s+[^>]*>[\s\S]*?<\/boltArtifact>/gm;
