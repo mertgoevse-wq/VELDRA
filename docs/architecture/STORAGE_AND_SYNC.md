@@ -181,6 +181,20 @@ Confirmed plaintext storage locations:
 - **Device ID** (new this block): plaintext `localStorage`. Low sensitivity by design —
   it's a correlation ID, not a credential (see "Device identity" above).
 
+**Re-audited this round (2026-08-17)** — still zero call sites into `crypto.ts` (unchanged),
+plus additional plaintext locations found beyond the list above: the LLM provider API keys are
+*also* in a plaintext, non-`HttpOnly` cookie (`APIKeyManager.tsx`'s `Cookies.set('apiKeys', ...)`,
+readable via `document.cookie`), not only the `localStorage` copy; GitLab/Netlify/Vercel/Supabase
+tokens follow the same plaintext `localStorage` pattern as GitHub; and the Android-specific
+`bolt_android_api_backend_token` (`app/lib/android-api/backend-config.ts`) is plaintext in the
+WebView's `localStorage` with no Keystore protection — this last one is the single highest-value
+target for the Keystore plugin described below, since it's Android-only and already isolated
+behind one small module. Settings' "export settings" feature (`importExportService.ts`) also
+bundles every one of these plaintext secrets into a single downloadable file today — worth
+revisiting (redact known secret keys, or export only once these are encrypted at rest) once the
+Keystore work below lands, not before. None of this changes the threat model or the fix already
+scoped below — it confirms the same gap, with more precise coverage.
+
 **What this means concretely**: anyone with access to the browser profile/WebView
 storage (a shared device, a device-backup tool, a browser extension with storage
 permissions) can read every API key, the Remote Runtime token, the GitHub token, and

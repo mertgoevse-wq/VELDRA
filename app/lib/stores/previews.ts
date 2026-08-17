@@ -195,19 +195,27 @@ export class PreviewsStore {
         // Initial storage sync when preview is ready
         this._broadcastStorageSync();
 
-        let previewInfo = this.#availablePreviews.get(port);
+        const existingPreviewInfo = this.#availablePreviews.get(port);
         const previews = this.previews.get();
 
-        if (!previewInfo) {
-          previewInfo = { port, ready: true, baseUrl: stringUrl };
-          this.#availablePreviews.set(port, previewInfo);
-          previews.push(previewInfo);
-        }
+        /*
+         * Build a NEW object rather than mutating `existingPreviewInfo` in place. Preview.tsx's
+         * iframeUrl effect is keyed on `activePreview`'s object identity -- mutating the existing
+         * object left that identity unchanged across a reconnect (e.g. after a WebContainer
+         * crash+respawn assigns a new baseUrl for the same port), so the effect never re-fired and
+         * the iframe kept showing the dead page even after sessionLost cleared above.
+         */
+        const previewInfo: PreviewInfo = existingPreviewInfo
+          ? { ...existingPreviewInfo, ready: true, baseUrl: stringUrl }
+          : { port, ready: true, baseUrl: stringUrl };
 
-        previewInfo.ready = true;
-        previewInfo.baseUrl = stringUrl;
+        this.#availablePreviews.set(port, previewInfo);
+        this.previews.set(
+          existingPreviewInfo
+            ? previews.map((preview) => (preview.port === port ? previewInfo : preview))
+            : [...previews, previewInfo],
+        );
 
-        this.previews.set([...previews]);
         this.broadcastUpdate(stringUrl);
       } else if (event.type === 'port-close') {
         const { port } = event;

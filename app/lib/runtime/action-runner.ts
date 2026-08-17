@@ -292,7 +292,7 @@ export class ActionRunner {
         case 'build': {
           if (runtimeModeStore.get().mode === 'remote') {
             // Remote builds aren't a local artifact -- nothing to store for deployment.
-            await this.#runBuildActionRemote();
+            await this.#runBuildActionRemote(action);
             break;
           }
 
@@ -306,7 +306,9 @@ export class ActionRunner {
           // making the start app non blocking
 
           const runStart =
-            runtimeModeStore.get().mode === 'remote' ? this.#runStartActionRemote() : this.#runStartAction(action);
+            runtimeModeStore.get().mode === 'remote'
+              ? this.#runStartActionRemote(action)
+              : this.#runStartAction(action);
 
           runStart
             .then(() => {
@@ -572,6 +574,38 @@ export class ActionRunner {
     this.actions.setKey(id, { ...actions[id], ...newState });
   }
 
+  /**
+   * Aborts a single tracked action, if it exists and hasn't already finished. Calls the same
+   * `abort` closure `addAction()` stored on the action state -- the one that trips the action's
+   * own AbortController and marks it 'aborted' -- which is the exact mechanism the WebContainer
+   * interactive shell already invokes internally on its own abort callback
+   * (see #runShellAction/#runStartAction). Exposed publicly so callers outside this runner (the
+   * chat Stop button, via workbenchStore.abortAllActions()) can trigger a real abort instead of
+   * only WebContainer's own internal callback ever doing so.
+   */
+  abort(actionId: string) {
+    const action = this.actions.get()[actionId];
+
+    if (!action) {
+      return;
+    }
+
+    if (action.status === 'complete' || action.status === 'aborted' || action.status === 'failed') {
+      return;
+    }
+
+    action.abort();
+  }
+
+  /**
+   * Aborts every action tracked by this runner that hasn't already finished.
+   */
+  abortAll() {
+    for (const actionId of Object.keys(this.actions.get())) {
+      this.abort(actionId);
+    }
+  }
+
   async getFileHistory(filePath: string): Promise<FileHistory | null> {
     try {
       const runtime = runtimeModeStore.get();
@@ -753,7 +787,7 @@ export class ActionRunner {
    * remoteRuntimeUrl/remoteAuthToken/remoteWorkspaceId from runtimeModeStore), so this is the
    * same runtime instance the user's manual Terminal/Preview already talk to, not a second one.
    */
-  async #runBuildActionRemote(): Promise<void> {
+  async #runBuildActionRemote(action: ActionState): Promise<void> {
     await this.#syncBeforeRemoteCommand();
 
     const runtime = runtimeModeStore.get();
@@ -764,6 +798,18 @@ export class ActionRunner {
     );
 
     const started = await client.runCommand('npm run build');
+
+    /*
+     * Mirror the WebContainer path's kill-on-abort (#runShellAction/#runStartAction): stop the
+     * real remote command when this action's AbortController fires, instead of leaving it running
+     * with nothing here ever able to cancel it.
+     */
+    action.abortSignal.addEventListener('abort', () => {
+      client.stopCommand(started.commandId).catch((error) => {
+        logger.error('Failed to stop remote build command after abort', error);
+      });
+    });
+
     const result = await this.#pollRemoteCommand(client, started.commandId);
 
     if (result.status !== 'exited' || result.exitCode !== 0) {
@@ -781,7 +827,7 @@ export class ActionRunner {
    * own existing getPreviewUrl() polling independently discovers the running server and its real
    * preview URL once it's up, so there's no need to duplicate that logic here.
    */
-  async #runStartActionRemote(): Promise<void> {
+  async #runStartActionRemote(action: ActionState): Promise<void> {
     await this.#syncBeforeRemoteCommand();
 
     const runtime = runtimeModeStore.get();
@@ -799,6 +845,17 @@ export class ActionRunner {
         started.error || `Dev server exited immediately with code ${started.exitCode ?? 'unknown'}`,
       );
     }
+
+    /*
+     * Mirror the WebContainer path's kill-on-abort (#runShellAction/#runStartAction): stop the
+     * real remote dev server when this action's AbortController fires, instead of leaving it
+     * running with nothing here ever able to cancel it.
+     */
+    action.abortSignal.addEventListener('abort', () => {
+      client.stopCommand(started.commandId).catch((error) => {
+        logger.error('Failed to stop remote dev server after abort', error);
+      });
+    });
 
     /*
      * Preview.tsx only checks the remote preview's real status on mount and on a manual

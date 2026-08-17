@@ -59,6 +59,83 @@ const WINDOW_SIZES: WindowSize[] = [
   { name: '4K Display', width: 3840, height: 2160, icon: 'i-ph:monitor', hasFrame: true, frameType: 'desktop' },
 ];
 
+/*
+ * Defined at module scope (not inline inside Preview's render body) so React treats these as a
+ * stable component type across renders. When defined inline, every render of Preview created a
+ * new component type, forcing React to fully unmount/remount the resize handles on every single
+ * native pointermove during a resize-drag (handlePointerMove fires unthrottled) instead of just
+ * patching props.
+ */
+function GripIcon() {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%',
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          color: 'var(--bolt-elements-textSecondary, rgba(0,0,0,0.5))',
+          fontSize: '10px',
+          lineHeight: '5px',
+          userSelect: 'none',
+          marginLeft: '1px',
+        }}
+      >
+        ••• •••
+      </div>
+    </div>
+  );
+}
+
+function ResizeHandle({
+  side,
+  onPointerDown,
+}: {
+  side: ResizeSide;
+  onPointerDown: (e: React.PointerEvent, side: ResizeSide) => void;
+}) {
+  if (!side) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`resize-handle-${side}`}
+      onPointerDown={(e) => onPointerDown(e, side)}
+      style={{
+        position: 'absolute',
+        top: 0,
+        ...(side === 'left' ? { left: 0, marginLeft: '-7px' } : { right: 0, marginRight: '-7px' }),
+        width: '15px',
+        height: '100%',
+        cursor: 'ew-resize',
+        background: 'var(--bolt-elements-background-depth-4, rgba(0,0,0,.3))',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'background 0.2s',
+        userSelect: 'none',
+        touchAction: 'none',
+        zIndex: 10,
+      }}
+      onMouseOver={(e) =>
+        (e.currentTarget.style.background = 'var(--bolt-elements-background-depth-4, rgba(0,0,0,.3))')
+      }
+      onMouseOut={(e) =>
+        (e.currentTarget.style.background = 'var(--bolt-elements-background-depth-3, rgba(0,0,0,.15))')
+      }
+      title="Drag to resize width"
+    >
+      <GripIcon />
+    </div>
+  );
+}
+
 export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -264,6 +341,26 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
      */
   }, [refreshRemotePreview, remotePreviewConfigured, remotePreviewRefreshSignalValue]);
 
+  /*
+   * Without this, a remote dev server that the agent (not the user via Terminal) started, then
+   * later crashed, would keep showing 'running' here indefinitely -- nothing after the initial
+   * mount/signal-triggered refresh ever re-checks server-side status again. Poll on an interval
+   * while a remote preview is believed to be running, so a later crash is eventually discovered
+   * without the user having to notice and click "Refresh Preview" themselves.
+   */
+  useEffect(() => {
+    if (!remotePreviewConfigured || remotePreview?.status !== 'running') {
+      return undefined;
+    }
+
+    const REMOTE_PREVIEW_POLL_INTERVAL_MS = 12_000;
+    const interval = setInterval(() => {
+      void refreshRemotePreview({ quiet: true });
+    }, REMOTE_PREVIEW_POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [remotePreviewConfigured, remotePreview?.status, refreshRemotePreview]);
+
   const resizingState = useRef({
     isResizing: false,
     side: null as ResizeSide,
@@ -383,44 +480,6 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
       windowWidth: window.innerWidth,
       pointerId: e.pointerId,
     };
-  };
-
-  const ResizeHandle = ({ side }: { side: ResizeSide }) => {
-    if (!side) {
-      return null;
-    }
-
-    return (
-      <div
-        className={`resize-handle-${side}`}
-        onPointerDown={(e) => startResizing(e, side)}
-        style={{
-          position: 'absolute',
-          top: 0,
-          ...(side === 'left' ? { left: 0, marginLeft: '-7px' } : { right: 0, marginRight: '-7px' }),
-          width: '15px',
-          height: '100%',
-          cursor: 'ew-resize',
-          background: 'var(--bolt-elements-background-depth-4, rgba(0,0,0,.3))',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'background 0.2s',
-          userSelect: 'none',
-          touchAction: 'none',
-          zIndex: 10,
-        }}
-        onMouseOver={(e) =>
-          (e.currentTarget.style.background = 'var(--bolt-elements-background-depth-4, rgba(0,0,0,.3))')
-        }
-        onMouseOut={(e) =>
-          (e.currentTarget.style.background = 'var(--bolt-elements-background-depth-3, rgba(0,0,0,.15))')
-        }
-        title="Drag to resize width"
-      >
-        <GripIcon />
-      </div>
-    );
   };
 
   useEffect(() => {
@@ -567,30 +626,6 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
       setCurrentWidth(Math.round((containerWidth * widthPercent) / 100));
     }
   }, [isDeviceModeOn]);
-
-  const GripIcon = () => (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100%',
-        pointerEvents: 'none',
-      }}
-    >
-      <div
-        style={{
-          color: 'var(--bolt-elements-textSecondary, rgba(0,0,0,0.5))',
-          fontSize: '10px',
-          lineHeight: '5px',
-          userSelect: 'none',
-          marginLeft: '1px',
-        }}
-      >
-        ••• •••
-      </div>
-    </div>
-  );
 
   const openInNewWindow = (size: WindowSize) => {
     if (activePreview?.baseUrl) {
@@ -1433,8 +1468,8 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                 {currentWidth}px
               </div>
 
-              <ResizeHandle side="left" />
-              <ResizeHandle side="right" />
+              <ResizeHandle side="left" onPointerDown={startResizing} />
+              <ResizeHandle side="right" onPointerDown={startResizing} />
             </>
           )}
         </div>

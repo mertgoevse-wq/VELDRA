@@ -530,14 +530,8 @@ export class WorkbenchStore {
 
     for (const artifact of Object.values(artifacts)) {
       if (artifact?.runner) {
-        /*
-         * ActionRunner doesn't have an abort() method yet
-         * This is a placeholder for future abort functionality
-         * For now, we just clear the action state
-         */
         try {
-          // TODO: Implement ActionRunner.abort() when action cancellation is needed
-          console.warn(`Action abort requested for artifact ${artifact.id} but not yet implemented`);
+          artifact.runner.abortAll();
         } catch (error) {
           console.warn(`Failed to abort actions for artifact ${artifact.id}:`, error);
         }

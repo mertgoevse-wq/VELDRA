@@ -251,6 +251,96 @@ describe('file action runtime policy', () => {
   });
 });
 
+/**
+ * Covers the real ActionRunner.abort()/abortAll() the chat Stop button now calls, instead of
+ * workbenchStore.abortAllActions() only console.warn-ing (its previous, unimplemented stub).
+ */
+describe('ActionRunner.abort / abortAll (real per-action abort closure)', () => {
+  it('marks a not-yet-run action aborted and trips its AbortSignal', () => {
+    const runner = new ActionRunner(
+      () => Promise.resolve({} as never),
+      () => undefined as never,
+    );
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'pending-action',
+      action: { type: 'shell', content: 'sleep 100' },
+    } as const;
+
+    runner.addAction(action);
+    runner.abort('pending-action');
+
+    expect(runner.actions.get()['pending-action']?.status).toBe('aborted');
+    expect(runner.actions.get()['pending-action']?.abortSignal.aborted).toBe(true);
+  });
+
+  it('does not retroactively mark an already-finished action as aborted', async () => {
+    const writeFile = vi.fn(async () => undefined);
+    const runner = new ActionRunner(
+      () => Promise.reject(new Error('WebContainer unavailable')),
+      () => undefined as never,
+      undefined,
+      undefined,
+      undefined,
+      writeFile,
+    );
+
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'done-action',
+      action: { type: 'file', filePath: 'src/done.ts', content: 'export {}' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+
+    expect(runner.actions.get()['done-action']?.status).toBe('complete');
+
+    runner.abort('done-action');
+
+    expect(runner.actions.get()['done-action']?.status).toBe('complete');
+  });
+
+  it('is a safe no-op for an unknown action id', () => {
+    const runner = new ActionRunner(
+      () => Promise.resolve({} as never),
+      () => undefined as never,
+    );
+
+    expect(() => runner.abort('does-not-exist')).not.toThrow();
+  });
+
+  it('abortAll() aborts every not-yet-finished tracked action', () => {
+    const runner = new ActionRunner(
+      () => Promise.resolve({} as never),
+      () => undefined as never,
+    );
+
+    const actionA = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'action-a',
+      action: { type: 'shell', content: 'sleep 100' },
+    } as const;
+    const actionB = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'action-b',
+      action: { type: 'shell', content: 'sleep 200' },
+    } as const;
+
+    runner.addAction(actionA);
+    runner.addAction(actionB);
+
+    runner.abortAll();
+
+    expect(runner.actions.get()['action-a']?.status).toBe('aborted');
+    expect(runner.actions.get()['action-b']?.status).toBe('aborted');
+  });
+});
+
 describe('agent build/start actions on Remote Runtime (real bridge, not raw shell)', () => {
   const initialRuntime = runtimeModeStore.get();
 
@@ -424,6 +514,82 @@ describe('agent build/start actions on Remote Runtime (real bridge, not raw shel
     expect(runCommand).toHaveBeenCalledWith('npm run dev');
     expect(getCommandStatus).not.toHaveBeenCalled();
     expect(runner.actions.get()['start-action']?.status).toBe('complete');
+  });
+
+  it('stops the real remote build command via RemoteRuntimeClient.stopCommand when the action is aborted mid-flight', async () => {
+    const runCommand = vi.fn().mockResolvedValue({ commandId: 'cmd-abort-build', status: 'running' });
+    const stopCommand = vi.fn().mockResolvedValue({ commandId: 'cmd-abort-build', status: 'stopped' });
+    vi.spyOn(RemoteRuntimeClient.prototype, 'runCommand').mockImplementation(runCommand);
+    vi.spyOn(RemoteRuntimeClient.prototype, 'stopCommand').mockImplementation(stopCommand);
+
+    let resolveStatus: ((value: any) => void) | undefined;
+    const getCommandStatus = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveStatus = resolve;
+        }),
+    );
+    vi.spyOn(RemoteRuntimeClient.prototype, 'getCommandStatus').mockImplementation(getCommandStatus);
+
+    const runner = new ActionRunner(
+      () => Promise.reject(new Error('WebContainer unavailable')),
+      () => undefined as never,
+    );
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'abort-build-action',
+      action: { type: 'build', content: '' },
+    } as const;
+
+    runner.addAction(action);
+
+    const runPromise = runner.runAction(action);
+
+    // Let the sync/runCommand chain progress until pollRemoteCommand is genuinely mid-poll.
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(getCommandStatus).toHaveBeenCalled();
+
+    runner.abort('abort-build-action');
+
+    expect(stopCommand).toHaveBeenCalledWith('cmd-abort-build');
+    expect(runner.actions.get()['abort-build-action']?.status).toBe('aborted');
+
+    // Unblock the in-flight status poll so the run settles instead of hanging the test.
+    resolveStatus?.({ commandId: 'cmd-abort-build', status: 'exited', exitCode: 1, error: 'aborted' });
+    await runPromise;
+  });
+
+  it('stops the real remote dev server via RemoteRuntimeClient.stopCommand when the action is aborted mid-flight', async () => {
+    const runCommand = vi.fn().mockResolvedValue({ commandId: 'cmd-abort-start', status: 'running' });
+    const stopCommand = vi.fn().mockResolvedValue({ commandId: 'cmd-abort-start', status: 'stopped' });
+    vi.spyOn(RemoteRuntimeClient.prototype, 'runCommand').mockImplementation(runCommand);
+    vi.spyOn(RemoteRuntimeClient.prototype, 'stopCommand').mockImplementation(stopCommand);
+
+    const runner = new ActionRunner(
+      () => Promise.reject(new Error('WebContainer unavailable')),
+      () => undefined as never,
+    );
+    const action = {
+      artifactId: 'artifact',
+      messageId: 'message',
+      actionId: 'abort-start-action',
+      action: { type: 'start', content: '' },
+    } as const;
+
+    runner.addAction(action);
+    await runner.runAction(action);
+
+    /*
+     * The 'start' action's ActionState is intentionally marked 'complete' as soon as the remote
+     * dev server confirms it started (non-blocking, by design -- see #executeAction's 'start'
+     * case), well before the real long-running server process ends. Assert the abort listener
+     * itself, registered before that non-blocking chain settles, independently of ActionRunner's
+     * own (unrelated) status-based abort() guard.
+     */
+    runner.actions.get()['abort-start-action']?.abort();
+
+    expect(stopCommand).toHaveBeenCalledWith('cmd-abort-start');
   });
 
   it('triggers a real Preview refresh check once the remote dev server starts, not just on mount/manual click', async () => {
