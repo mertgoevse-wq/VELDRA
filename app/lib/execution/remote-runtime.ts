@@ -62,18 +62,46 @@ function commandToProfile(command: string, args: string[]): RemoteCommandProfile
   return profiles.find((profile) => profile === full) ?? null;
 }
 
-function createOutputStream(chunks: string[], closed: { value: boolean }): ReadableStream<string> {
-  return new ReadableStream<string>({
-    start(controller) {
-      for (const chunk of chunks) {
-        controller.enqueue(chunk);
-      }
+interface OutputStreamHandle {
+  stream: ReadableStream<string>;
+  push: (chunk: string) => void;
+  close: () => void;
+}
 
-      if (closed.value) {
+/**
+ * `start(controller)` runs synchronously during `new ReadableStream(...)`, so a controller
+ * captured only inside that callback is unreachable from code that pushes chunks arriving
+ * later (e.g. a WebSocket handler). This captures the controller in outer scope instead, so
+ * `push`/`close` work correctly for output produced after construction -- which is the only
+ * way a command's live stdout/stderr is ever delivered.
+ */
+function createOutputStream(): OutputStreamHandle {
+  let controllerRef: ReadableStreamDefaultController<string> | null = null;
+  let closeRequested = false;
+
+  const stream = new ReadableStream<string>({
+    start(controller) {
+      controllerRef = controller;
+
+      if (closeRequested) {
         controller.close();
       }
     },
   });
+
+  return {
+    stream,
+    push(chunk: string) {
+      controllerRef?.enqueue(chunk);
+    },
+    close() {
+      if (controllerRef) {
+        controllerRef.close();
+      } else {
+        closeRequested = true;
+      }
+    },
+  };
 }
 
 class RemoteSandboxProcess implements SandboxProcess {
@@ -89,10 +117,9 @@ class RemoteSandboxProcess implements SandboxProcess {
     private readonly _client: RemoteRuntimeClient,
     private readonly _commandId: string,
   ) {
-    const chunks: string[] = [];
-    const closed = { value: false };
+    const { stream, push, close } = createOutputStream();
 
-    this.output = createOutputStream(chunks, closed);
+    this.output = stream;
 
     this.exit = new Promise<number>((resolve, reject) => {
       let ws: WebSocket | null = null;
@@ -104,7 +131,7 @@ class RemoteSandboxProcess implements SandboxProcess {
         }
 
         finished = true;
-        closed.value = true;
+        close();
 
         try {
           ws?.close();
@@ -125,7 +152,7 @@ class RemoteSandboxProcess implements SandboxProcess {
             const output = event.payload.output ?? '';
 
             if (output) {
-              chunks.push(output);
+              push(output);
             }
 
             return;
@@ -153,13 +180,13 @@ class RemoteSandboxProcess implements SandboxProcess {
           .catch((error: unknown) => {
             if (!finished) {
               finished = true;
-              closed.value = true;
+              close();
               reject(error);
             }
           });
       } catch (error) {
         finished = true;
-        closed.value = true;
+        close();
         reject(error);
       }
     });

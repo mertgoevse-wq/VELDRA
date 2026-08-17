@@ -29,6 +29,15 @@ export class PreviewsStore {
 
   previews = atom<PreviewInfo[]>([]);
 
+  /**
+   * Set when the underlying sandbox session reports a fatal 'session-lost' event
+   * (WebContainer crash, or a failed listener setup). `previews` is deliberately left
+   * populated so the UI can show "last known preview, now disconnected" rather than
+   * silently reverting to a bare "unavailable" state. Cleared the next time a port
+   * actually comes back up.
+   */
+  sessionLost = atom<boolean>(false);
+
   constructor(getSession: () => Promise<SandboxSession | null>) {
     this.#getSession = getSession;
     this.#broadcastChannel = this.#maybeCreateChannel(PREVIEW_CHANNEL);
@@ -180,6 +189,9 @@ export class PreviewsStore {
         console.log('[Preview] Server ready on port:', port, url);
         this.broadcastUpdate(stringUrl);
 
+        // A port coming back up means the session is alive again, whatever sessionLost said before.
+        this.sessionLost.set(false);
+
         // Initial storage sync when preview is ready
         this._broadcastStorageSync();
 
@@ -205,6 +217,9 @@ export class PreviewsStore {
           this.#availablePreviews.delete(port);
           this.previews.set(this.previews.get().filter((preview) => preview.port !== port));
         }
+      } else if (event.type === 'session-lost') {
+        console.warn('[Preview] Sandbox session lost:', event.reason);
+        this.sessionLost.set(true);
       }
     });
   }

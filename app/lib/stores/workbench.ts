@@ -123,6 +123,20 @@ export class WorkbenchStore {
     return this.#previewsStore.previews;
   }
 
+  get previewSessionLost() {
+    return this.#previewsStore.sessionLost;
+  }
+
+  /**
+   * Broadcasts a file-change signal for every currently known preview (e.g. after an
+   * explicit save), so other tabs/windows watching the same preview refresh. Delegates to
+   * the same PreviewsStore instance `previews`/Preview.tsx actually read from -- not a
+   * second, unrelated store.
+   */
+  refreshAllPreviews() {
+    this.#previewsStore.refreshAllPreviews();
+  }
+
   get files() {
     return this.#filesStore.files;
   }

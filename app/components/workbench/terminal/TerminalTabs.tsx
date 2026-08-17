@@ -31,7 +31,17 @@ export const TerminalTabs = memo(() => {
   const showTerminal = useStore(workbenchStore.showTerminal);
   const theme = useStore(themeStore);
   const runtime = useStore(runtimeModeStore);
-  const showRemoteCommandPanel = runtime.mode === 'remote' && (runtime.isAndroid || !runtime.webContainerAvailable);
+
+  /*
+   * Remote Runtime never provides a real interactive shell (capabilities.interactiveShell is
+   * hardcoded false, app/lib/execution/remote-runtime.ts) regardless of platform or whether
+   * WebContainer happens to also be available -- e.g. remote mode explicitly selected on a
+   * desktop browser that could otherwise run WebContainer. Gating this on isAndroid/
+   * webContainerAvailable left that combination falling through to real <Terminal> tabs that
+   * would attach to a session getActiveSandboxSession() can never resolve, silently failing
+   * every attach attempt. The safe panel must show whenever remote mode is active, full stop.
+   */
+  const showRemoteCommandPanel = runtime.mode === 'remote';
   const showTerminalFallback = !runtime.capabilities.terminal || showRemoteCommandPanel;
 
   const terminalRefs = useRef<Map<number, TerminalRef>>(new Map());
@@ -530,6 +540,11 @@ export function RemoteCommandPanel({
       setActiveCommandId(undefined);
       setRunningProfile(undefined);
       appendOutput(`\n[remote] stop requested for ${activeCommandId}\n`);
+
+      // Mirror the start path: Preview must learn a manually-stopped dev server is gone too.
+      if (stoppedCommand.commandProfile.endsWith('run dev')) {
+        triggerRemotePreviewRefresh();
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to stop remote command.';
       setLastError(message);

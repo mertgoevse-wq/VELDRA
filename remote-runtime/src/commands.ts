@@ -128,6 +128,15 @@ export function isCommandProfile(value: unknown): value is CommandProfile {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(COMMAND_PROFILES, value);
 }
 
+/**
+ * Dev-server profiles are meant to run indefinitely until the user (or a future agent
+ * action) explicitly stops them -- unlike install/build, which are one-shot and should
+ * still be bounded by DEFAULT_TIMEOUT_MS in case they hang.
+ */
+function isDevServerProfile(profile: CommandProfile): boolean {
+  return profile.endsWith('run dev');
+}
+
 export function listCommandProfiles(): CommandProfile[] {
   return Object.keys(COMMAND_PROFILES) as CommandProfile[];
 }
@@ -213,15 +222,17 @@ export function startCommand(
     finishCommand(record, 'exited', emit, { exitCode, signal });
   });
 
-  record.timeout = setTimeout(() => {
-    if (record.status !== 'running') {
-      return;
-    }
+  if (!isDevServerProfile(commandProfile)) {
+    record.timeout = setTimeout(() => {
+      if (record.status !== 'running') {
+        return;
+      }
 
-    console.warn(`[RemoteRuntime] Command ${commandId} timed out after ${DEFAULT_TIMEOUT_MS}ms`);
-    terminateProcessTree(record.process);
-    finishCommand(record, 'timed-out', emit, { error: `Timed out after ${DEFAULT_TIMEOUT_MS}ms` });
-  }, DEFAULT_TIMEOUT_MS);
+      console.warn(`[RemoteRuntime] Command ${commandId} timed out after ${DEFAULT_TIMEOUT_MS}ms`);
+      terminateProcessTree(record.process);
+      finishCommand(record, 'timed-out', emit, { error: `Timed out after ${DEFAULT_TIMEOUT_MS}ms` });
+    }, DEFAULT_TIMEOUT_MS);
+  }
 
   return toPublicRecord(record);
 }

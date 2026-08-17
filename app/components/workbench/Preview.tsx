@@ -68,6 +68,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const hasSelectedPreview = useRef(false);
   const previews = useStore(workbenchStore.previews);
+  const previewSessionLost = useStore(workbenchStore.previewSessionLost);
   const activePreview = previews[activePreviewIndex];
   const [displayPath, setDisplayPath] = useState('/');
   const [iframeUrl, setIframeUrl] = useState<string | undefined>();
@@ -95,45 +96,59 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
   const hasStaticHtml = Object.keys(files).some((path) => path.endsWith('/index.html') || path === 'index.html');
   const staticRevokeRef = useRef<(() => void) | null>(null);
 
-  const rebuildStaticPreview = useCallback((options: { quiet?: boolean } = {}) => {
-    const fileMap = workbenchStore.files.get();
-    const indexPath = Object.keys(fileMap).find((path) => path.endsWith('/index.html') || path === 'index.html');
+  const rebuildStaticPreview = useCallback(
+    (options: { quiet?: boolean } = {}) => {
+      const fileMap = workbenchStore.files.get();
+      const indexPath = Object.keys(fileMap).find((path) => path.endsWith('/index.html') || path === 'index.html');
 
-    if (!indexPath) {
-      if (!options.quiet) {
-        toast.error('No index.html found in your workspace.');
-      }
+      if (!indexPath) {
+        /*
+         * The workspace that had an index.html is gone (e.g. a project switch) -- don't keep
+         * showing the previous project's static preview content under a now-false premise.
+         */
+        if (useStaticPreview) {
+          setUseStaticPreview(false);
+          staticRevokeRef.current?.();
+          staticRevokeRef.current = null;
+          setStaticUrl(null);
+        }
 
-      return;
-    }
+        if (!options.quiet) {
+          toast.error('No index.html found in your workspace.');
+        }
 
-    try {
-      const build = buildStaticPreview(fileMap, indexPath);
-
-      if (!build) {
         return;
       }
 
-      staticRevokeRef.current?.();
-      staticRevokeRef.current = build.revoke;
-      setStaticUrl(build.url);
-      setUseStaticPreview(true);
+      try {
+        const build = buildStaticPreview(fileMap, indexPath);
 
-      if (!options.quiet) {
-        toast.success('Static preview started!');
+        if (!build) {
+          return;
+        }
 
-        if (build.unresolved.length > 0) {
-          toast.warn(`Some assets couldn't be resolved: ${build.unresolved.slice(0, 3).join(', ')}`);
+        staticRevokeRef.current?.();
+        staticRevokeRef.current = build.revoke;
+        setStaticUrl(build.url);
+        setUseStaticPreview(true);
+
+        if (!options.quiet) {
+          toast.success('Static preview started!');
+
+          if (build.unresolved.length > 0) {
+            toast.warn(`Some assets couldn't be resolved: ${build.unresolved.slice(0, 3).join(', ')}`);
+          }
+        }
+      } catch (error) {
+        console.error('[Preview] Failed to build static preview', error);
+
+        if (!options.quiet) {
+          toast.error('Failed to create static preview.');
         }
       }
-    } catch (error) {
-      console.error('[Preview] Failed to build static preview', error);
-
-      if (!options.quiet) {
-        toast.error('Failed to create static preview.');
-      }
-    }
-  }, []);
+    },
+    [useStaticPreview],
+  );
 
   const handleStartStaticPreview = () => rebuildStaticPreview();
 
@@ -1125,6 +1140,20 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
         >
           {activePreview ? (
             <>
+              {previewSessionLost ? (
+                <div className="absolute top-0 left-0 right-0 z-10 bg-red-500/10 border-b border-red-500/30 px-4 py-2 flex items-center gap-1.5 text-xs text-red-400">
+                  <span className="i-ph:plug-fill text-sm shrink-0" />
+                  Preview disconnected: the sandbox session was lost. Showing the last known preview until it
+                  reconnects.
+                </div>
+              ) : (
+                !activePreview.ready && (
+                  <div className="absolute top-0 left-0 right-0 z-10 bg-accent-500/10 border-b border-accent-500/20 px-4 py-2 flex items-center gap-1.5 text-xs text-accent-400">
+                    <span className="i-ph:arrows-clockwise animate-spin text-sm shrink-0" />
+                    Rebuilding preview…
+                  </div>
+                )
+              )}
               {isDeviceModeOn && showDeviceFrameInPreview ? (
                 <div
                   className="device-wrapper"
