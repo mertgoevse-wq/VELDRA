@@ -56,7 +56,7 @@
     height: 60vh;
     z-index: 200;
     transform: translateY(100%);
-    transition: transform 0.3s ease;
+    transition: transform var(--veldra-motion-duration-sheet, 240ms) ease;
     background: var(--bolt-elements-terminals-background);
     border-top: 1px solid var(--bolt-elements-borderColor);
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
@@ -76,7 +76,7 @@
     max-width: 320px;
     z-index: 200;
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    transition: transform var(--veldra-motion-duration-sheet, 240ms) ease;
     background: var(--bolt-elements-background-depth-2);
     border-right: 1px solid var(--bolt-elements-borderColor);
     box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
@@ -297,7 +297,7 @@
     background: var(--veldra-surface-bg);
     box-shadow: var(--veldra-shadow-lg);
     backdrop-filter: blur(var(--veldra-backdrop-blur)) saturate(var(--veldra-backdrop-saturate));
-    animation: veldra-mobile-sheet-in var(--veldra-motion-duration-base) var(--veldra-motion-ease) both;
+    animation: veldra-mobile-sheet-in var(--veldra-motion-duration-sheet) var(--veldra-motion-ease) both;
   }
 
   .mobile-model-sheet-title {

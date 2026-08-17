@@ -37,7 +37,7 @@
 
 .dropdown-animation {
   opacity: 0;
-  animation: fadeMoveDown 0.15s forwards;
+  animation: fadeMoveDown var(--veldra-motion-duration-fast, 120ms) forwards;
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 

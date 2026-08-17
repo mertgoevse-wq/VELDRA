@@ -16,7 +16,19 @@
     </style>
 
 
+    <!--
+      AndroidX Core SplashScreen contract (androidx.core:core-splashscreen, see app/build.gradle):
+      on API 31+ this maps directly onto the platform SplashScreen API; on older API levels the
+      library reproduces the same look itself. It reads windowSplashScreenBackground /
+      windowSplashScreenAnimatedIcon specifically -NOT android:background, which this theme has
+      no window chrome to apply it to and which the platform SplashScreen contract never reads.
+      postSplashScreenTheme hands the Activity back to the normal app theme automatically once
+      SplashScreen.installSplashScreen(this) (MainActivity.onCreate) dismisses the splash, so
+      AppTheme.NoActionBarLaunch never stays applied past the launch moment it's meant for.
+    -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/veldra_splash</item>
+        <item name="windowSplashScreenBackground">@color/veldra_splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/veldra_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>
