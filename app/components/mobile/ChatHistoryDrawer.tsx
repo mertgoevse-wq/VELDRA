@@ -8,16 +8,48 @@ interface ChatHistoryDrawerProps {
   onClose: () => void;
 }
 
+type LoadState = 'loading' | 'ready' | 'error' | 'unavailable';
+
+/**
+ * Guards against date-fns throwing on an unparseable/corrupted timestamp (it documents
+ *  "'date' must not be Invalid Date" as a hard @throws, not a null-return).
+ */
+function formatChatTimestamp(timestamp?: string): string | null {
+  if (!timestamp) {
+    return null;
+  }
+
+  const date = new Date(timestamp);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return formatDistanceToNow(date, { addSuffix: true });
+}
+
 function ChatHistoryDrawerBase({ open, onClose }: ChatHistoryDrawerProps) {
   const [chats, setChats] = useState<ChatHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadState, setLoadState] = useState<LoadState>('loading');
 
   useEffect(() => {
-    if (!open || !db) {
-      return;
+    if (!open) {
+      return undefined;
     }
 
-    setLoading(true);
+    if (!db) {
+      /*
+       * Persistence disabled (VITE_DISABLE_PERSISTENCE) or IndexedDB failed to open -- without
+       * this branch `loading` never leaves its initial `true`, so the drawer spins forever.
+       */
+      setChats([]);
+      setLoadState('unavailable');
+
+      return undefined;
+    }
+
+    let cancelled = false;
+    setLoadState('loading');
 
     getAll(db)
       .then((list) =>
@@ -27,13 +59,25 @@ function ChatHistoryDrawerBase({ open, onClose }: ChatHistoryDrawerProps) {
           .slice(0, 30),
       )
       .then((sorted) => {
+        if (cancelled) {
+          return;
+        }
+
         setChats(sorted);
-        setLoading(false);
+        setLoadState('ready');
       })
       .catch(() => {
+        if (cancelled) {
+          return;
+        }
+
         setChats([]);
-        setLoading(false);
+        setLoadState('error');
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   const handleSelect = useCallback(
@@ -51,7 +95,12 @@ function ChatHistoryDrawerBase({ open, onClose }: ChatHistoryDrawerProps) {
   return (
     <>
       <div className="chat-history-backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="chat-history-drawer" role="dialog" aria-label="Chat history">
+      <div
+        className="chat-history-drawer"
+        role="dialog"
+        aria-label="Chat history"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
         <div className="chat-history-handle" />
         <div className="chat-history-header">
           <h2 className="chat-history-title">Recent Chats</h2>
@@ -60,28 +109,39 @@ function ChatHistoryDrawerBase({ open, onClose }: ChatHistoryDrawerProps) {
           </button>
         </div>
         <div className="chat-history-list">
-          {loading && (
+          {loadState === 'loading' && (
             <div className="chat-history-empty">
               <div className="i-svg-spinners:90-ring-with-bg text-lg" />
             </div>
           )}
-          {!loading && chats.length === 0 && (
+          {loadState === 'unavailable' && (
+            <div className="chat-history-empty">
+              <div className="i-ph:warning-circle text-2xl text-bolt-elements-textTertiary" />
+              <span className="text-sm text-bolt-elements-textSecondary">Chat history isn't available</span>
+            </div>
+          )}
+          {loadState === 'error' && (
+            <div className="chat-history-empty">
+              <div className="i-ph:warning-circle text-2xl text-bolt-elements-textTertiary" />
+              <span className="text-sm text-bolt-elements-textSecondary">Couldn't load chat history</span>
+            </div>
+          )}
+          {loadState === 'ready' && chats.length === 0 && (
             <div className="chat-history-empty">
               <div className="i-ph:chat-circle-dots text-2xl text-bolt-elements-textTertiary" />
               <span className="text-sm text-bolt-elements-textSecondary">No saved chats yet</span>
             </div>
           )}
-          {!loading &&
-            chats.map((chat) => (
-              <button key={chat.id} className="chat-history-item" onClick={() => handleSelect(chat.id)}>
-                <span className="chat-history-item-title">{chat.description}</span>
-                {chat.timestamp && (
-                  <span className="chat-history-item-time">
-                    {formatDistanceToNow(new Date(chat.timestamp), { addSuffix: true })}
-                  </span>
-                )}
-              </button>
-            ))}
+          {loadState === 'ready' &&
+            chats.map((chat) => {
+              const relativeTime = formatChatTimestamp(chat.timestamp);
+              return (
+                <button key={chat.id} className="chat-history-item" onClick={() => handleSelect(chat.id)}>
+                  <span className="chat-history-item-title">{chat.description}</span>
+                  {relativeTime && <span className="chat-history-item-time">{relativeTime}</span>}
+                </button>
+              );
+            })}
         </div>
       </div>
     </>

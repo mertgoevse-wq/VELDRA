@@ -116,7 +116,7 @@ export const Dialog = memo(({ children, className, showCloseButton = true, onClo
       <RadixDialog.Content asChild>
         <motion.div
           className={classNames(
-            'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 veldra-surface z-[9999] w-[520px] focus:outline-none',
+            'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 veldra-surface z-[9999] w-[520px] max-w-[calc(100vw-2rem)] max-h-[85vh] flex flex-col focus:outline-none',
             className,
           )}
           initial="closed"
@@ -124,17 +124,18 @@ export const Dialog = memo(({ children, className, showCloseButton = true, onClo
           exit="closed"
           variants={dialogVariants}
         >
-          <div className="flex flex-col">
-            {children}
-            {showCloseButton && (
-              <RadixDialog.Close asChild onClick={onClose}>
-                <IconButton
-                  icon="i-ph:x"
-                  className="absolute top-3 right-3 text-bolt-elements-textTertiary hover:text-bolt-elements-textSecondary"
-                />
-              </RadixDialog.Close>
-            )}
-          </div>
+          {/* flex-1 + min-h-0 is required (not just overflow-y-auto) for this region to actually
+              clamp to the parent's max-h-[85vh] and scroll, instead of visually overflowing it.
+              The close button below stays pinned to the box instead of scrolling off with it. */}
+          <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
+          {showCloseButton && (
+            <RadixDialog.Close asChild onClick={onClose}>
+              <IconButton
+                icon="i-ph:x"
+                className="absolute top-3 right-3 text-bolt-elements-textTertiary hover:text-bolt-elements-textSecondary"
+              />
+            </RadixDialog.Close>
+          )}
         </motion.div>
       </RadixDialog.Content>
     </RadixDialog.Portal>

@@ -20,15 +20,33 @@ export default function AndroidFallbackBanner() {
 
   useEffect(() => {
     if (!runtime.isAndroid || runtime.mode !== 'android-fallback') {
-      return;
+      return undefined;
     }
 
+    let cancelled = false;
+
     async function checkStatus() {
-      const status = await getAndroidFallbackPersistenceStatus();
-      setPersistenceStatus(status);
+      try {
+        const status = await getAndroidFallbackPersistenceStatus();
+
+        if (!cancelled) {
+          setPersistenceStatus(status);
+        }
+      } catch (error) {
+        /*
+         * Storage failures must stay visible (see androidPersistenceHealth's doc comment) --
+         * swallow only the promise rejection here, not the signal. The persistence-status line
+         * simply won't render; androidPersistenceHealth still surfaces its own error state above.
+         */
+        console.error('[AndroidFallbackBanner] Failed to read persistence status', error);
+      }
     }
 
     void checkStatus();
+
+    return () => {
+      cancelled = true;
+    };
   }, [runtime.isAndroid, runtime.mode]);
 
   if (!runtime.isAndroid || runtime.mode !== 'android-fallback') {
