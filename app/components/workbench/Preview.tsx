@@ -12,7 +12,12 @@ import { runtimeModeStore } from '~/lib/stores/runtime-mode';
 import { isCapacitor } from '~/lib/adapters/platform';
 import { toast } from 'react-toastify';
 import { RemoteRuntimeClient, type RemotePreviewResponse } from '~/lib/remote-runtime/RemoteRuntimeClient';
-import { buildStaticPreview } from '~/lib/preview/staticPreviewBundle';
+import {
+  buildStaticPreview,
+  describeStaticPreviewStatus,
+  parsePreviewRuntimeMessage,
+  type PreviewRuntimeMessage,
+} from '~/lib/preview/staticPreviewBundle';
 import { remotePreviewRefreshSignal } from '~/lib/stores/remotePreviewSignal';
 
 type ResizeSide = 'left' | 'right' | null;
@@ -159,6 +164,20 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
   const runtime = useStore(runtimeModeStore);
   const [useStaticPreview, setUseStaticPreview] = useState(false);
   const [staticUrl, setStaticUrl] = useState<string | null>(null);
+
+  /*
+   * What the preview document ITSELF reported after loading (staticPreviewBundle.ts injects a
+   * shim that posts uncaught errors / failed subresources / a load signal back here). A build
+   * can succeed -- a blob URL is produced, no exception thrown -- while the page is blank,
+   * because this runtime has no compiler or module resolver: a `.jsx` entry is served verbatim
+   * and throws a syntax error, a bare-specifier import fails to resolve. Reporting the browser's
+   * own observation is the only way to say whether the preview actually worked, rather than
+   * claiming success because the build step didn't throw.
+   */
+  const [staticRuntimeStatus, setStaticRuntimeStatus] = useState<PreviewRuntimeMessage | null>(null);
+
+  /** Relative refs the resolver could not find in the workspace -- kept visible, not a transient toast. */
+  const [staticUnresolved, setStaticUnresolved] = useState<string[]>([]);
   const [remotePreview, setRemotePreview] = useState<RemotePreviewResponse | null>(null);
   const [remotePreviewLoading, setRemotePreviewLoading] = useState(false);
   const [remotePreviewError, setRemotePreviewError] = useState<string | null>(null);
@@ -188,6 +207,8 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
           staticRevokeRef.current?.();
           staticRevokeRef.current = null;
           setStaticUrl(null);
+          setStaticRuntimeStatus(null);
+          setStaticUnresolved([]);
         }
 
         if (!options.quiet) {
@@ -209,13 +230,13 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
         setStaticUrl(build.url);
         setUseStaticPreview(true);
 
-        if (!options.quiet) {
-          toast.success('Static preview started!');
-
-          if (build.unresolved.length > 0) {
-            toast.warn(`Some assets couldn't be resolved: ${build.unresolved.slice(0, 3).join(', ')}`);
-          }
-        }
+        /*
+         * A fresh document is about to load, so last load's verdict no longer describes what's
+         * on screen. Clearing it means the banner shows "checking" rather than a stale pass or
+         * a stale failure until the new document actually reports back.
+         */
+        setStaticRuntimeStatus(null);
+        setStaticUnresolved(build.unresolved);
       } catch (error) {
         console.error('[Preview] Failed to build static preview', error);
 
@@ -234,7 +255,43 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
     staticRevokeRef.current?.();
     staticRevokeRef.current = null;
     setStaticUrl(null);
+    setStaticRuntimeStatus(null);
+    setStaticUnresolved([]);
   };
+
+  /*
+   * Receive the injected shim's report. Two independent checks before trusting a message:
+   * the shape marker (parsePreviewRuntimeMessage) and -- the one that actually matters --
+   * that it came from this iframe's own contentWindow, so an unrelated frame or extension
+   * cannot fabricate a preview verdict.
+   */
+  useEffect(() => {
+    if (!useStaticPreview) {
+      return undefined;
+    }
+
+    const onMessage = (event: MessageEvent) => {
+      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) {
+        return;
+      }
+
+      const message = parsePreviewRuntimeMessage(event.data);
+
+      if (!message) {
+        return;
+      }
+
+      /*
+       * An error outranks a later 'ready': module scripts throw before `load` fires, so
+       * overwriting on 'ready' would erase the very failure that explains a blank frame.
+       */
+      setStaticRuntimeStatus((current) => (current && current.kind !== 'ready' ? current : message));
+    };
+
+    window.addEventListener('message', onMessage);
+
+    return () => window.removeEventListener('message', onMessage);
+  }, [useStaticPreview, staticUrl]);
 
   /*
    * Keep the static preview live: regenerate (debounced) whenever workspace files change
@@ -453,7 +510,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
     }
 
     if (hasStaticHtml && !useStaticPreview && !activePreview && !remotePreview) {
-      const t = window.setTimeout(() => handleStartStaticPreview(), 400);
+      const t = window.setTimeout(() => rebuildStaticPreview({ quiet: true }), 400);
 
       return () => window.clearTimeout(t);
     }
@@ -1322,19 +1379,53 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
             </div>
           ) : useStaticPreview && staticUrl ? (
             <div className="flex flex-col w-full h-full relative">
-              <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-between text-xs text-amber-500">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <span className="i-ph:warning-circle-fill text-sm" />
-                  Local Static Preview: Viewing in-memory index.html. Scripts/stylesheets with relative paths may not
-                  load.
-                </span>
-                <button
-                  onClick={handleStopStaticPreview}
-                  className="px-2 py-0.5 border border-amber-500/30 hover:bg-amber-500/10 rounded transition-colors"
-                >
-                  Stop Preview
-                </button>
-              </div>
+              {(() => {
+                const status = describeStaticPreviewStatus(staticRuntimeStatus, staticUnresolved);
+                const toneClass = {
+                  pending: 'bg-bolt-elements-background-depth-2 border-bolt-elements-borderColor text-bolt-elements-textSecondary',
+                  ok: 'bg-bolt-elements-background-depth-2 border-bolt-elements-borderColor text-bolt-elements-textSecondary',
+                  warn: 'bg-amber-500/10 border-amber-500/20 text-amber-500',
+                  error: 'bg-red-500/10 border-red-500/20 text-red-400',
+                }[status.tone];
+                const toneIcon = {
+                  pending: 'i-ph:circle-dashed',
+                  ok: 'i-ph:check-circle-fill',
+                  warn: 'i-ph:warning-circle-fill',
+                  error: 'i-ph:x-circle-fill',
+                }[status.tone];
+
+                return (
+                  <div className={classNames('border-b px-4 py-2 flex items-start justify-between gap-3', toneClass)}>
+                    <span className="flex items-start gap-1.5 min-w-0">
+                      <span className={classNames(toneIcon, 'text-sm shrink-0 mt-0.5')} />
+                      <span className="min-w-0">
+                        <span className="block text-xs font-medium">{status.headline}</span>
+                        {status.detail && (
+                          <span className="block text-[11px] opacity-80 break-words font-mono mt-0.5">
+                            {status.detail}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      {status.tone === 'error' && (
+                        <button
+                          onClick={() => rebuildStaticPreview({ quiet: true })}
+                          className="px-2 py-0.5 border border-current/30 hover:bg-current/10 rounded text-xs transition-colors"
+                        >
+                          Retry
+                        </button>
+                      )}
+                      <button
+                        onClick={handleStopStaticPreview}
+                        className="px-2 py-0.5 border border-current/30 hover:bg-current/10 rounded text-xs transition-colors"
+                      >
+                        Stop
+                      </button>
+                    </span>
+                  </div>
+                );
+              })()}
               <iframe
                 ref={iframeRef}
                 title="static-preview"

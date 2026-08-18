@@ -141,10 +141,196 @@ export interface StaticPreviewBuild {
 }
 
 /**
- * Build a blob-URL preview for `indexPath`, resolving relative script/link/img/source
- * references (and, transitively, CSS url()s and relative JS imports) against `fileMap`.
+ * Marker property on every message the injected shim posts to the parent window.
+ * The parent must ALSO verify `event.source` is the preview iframe's own
+ * contentWindow -- this marker only identifies the shape, never the sender.
  */
-export function buildStaticPreview(fileMap: FileMap, indexPath: string): StaticPreviewBuild | undefined {
+export const PREVIEW_MESSAGE_MARKER = '__veldraStaticPreview';
+
+export type PreviewRuntimeMessage =
+  /** An uncaught script error or unhandled rejection, exactly as the browser reported it. */
+  | { kind: 'error'; message: string; source: string; line: number }
+  /** A subresource (script/img/link/...) failed to load. */
+  | { kind: 'resource-error'; tag: string; url: string }
+  /** The document reached `load`. `renderedNodes` counts elements actually in `<body>`. */
+  | { kind: 'ready'; renderedNodes: number };
+
+/**
+ * Injected as the first thing in the preview document's <head>.
+ *
+ * Without this, a project the resolver cannot actually run (a `.jsx` entry served
+ * verbatim as text/javascript, a bare-specifier import with no module resolver,
+ * a typo'd relative path) produces a perfectly successful *build* and a silently
+ * blank frame -- so the UI reported success for a broken result. This reports what
+ * the browser itself observed, which is the only non-speculative way to know
+ * whether the preview really worked.
+ *
+ * Deliberately contains no `<` or `>`: script text content is serialized raw by
+ * `outerHTML`, so an angle bracket here could terminate the element early.
+ */
+const PREVIEW_RUNTIME_SHIM = `
+(function () {
+  var post = function (payload) {
+    try {
+      payload.${PREVIEW_MESSAGE_MARKER} = true;
+      parent.postMessage(payload, '*');
+    } catch (e) {
+      /* preview is detached or blocked -- nothing useful to do */
+    }
+  };
+
+  addEventListener(
+    'error',
+    function (event) {
+      var el = event.target;
+
+      if (el && el !== window && el.tagName) {
+        post({ kind: 'resource-error', tag: String(el.tagName).toLowerCase(), url: String(el.src || el.href || '') });
+        return;
+      }
+
+      post({
+        kind: 'error',
+        message: String((event.error && event.error.message) || event.message || 'Script error'),
+        source: String(event.filename || ''),
+        line: Number(event.lineno) || 0,
+      });
+    },
+    true,
+  );
+
+  addEventListener('unhandledrejection', function (event) {
+    var reason = event.reason;
+    post({
+      kind: 'error',
+      message: 'Unhandled promise rejection: ' + String((reason && reason.message) || reason),
+      source: '',
+      line: 0,
+    });
+  });
+
+  addEventListener('load', function () {
+    post({ kind: 'ready', renderedNodes: document.body ? document.body.querySelectorAll('*').length : 0 });
+  });
+})();
+`;
+
+/**
+ * Validate an incoming `message` event payload as a shim message.
+ *
+ * Shape-checks only -- callers MUST separately confirm the message came from the
+ * preview iframe's own contentWindow before acting on it.
+ */
+export function parsePreviewRuntimeMessage(data: unknown): PreviewRuntimeMessage | undefined {
+  if (!data || typeof data !== 'object') {
+    return undefined;
+  }
+
+  const raw = data as Record<string, unknown>;
+
+  if (raw[PREVIEW_MESSAGE_MARKER] !== true) {
+    return undefined;
+  }
+
+  if (raw.kind === 'error') {
+    return {
+      kind: 'error',
+      message: String(raw.message ?? 'Script error'),
+      source: String(raw.source ?? ''),
+      line: Number(raw.line) || 0,
+    };
+  }
+
+  if (raw.kind === 'resource-error') {
+    return { kind: 'resource-error', tag: String(raw.tag ?? ''), url: String(raw.url ?? '') };
+  }
+
+  if (raw.kind === 'ready') {
+    return { kind: 'ready', renderedNodes: Number(raw.renderedNodes) || 0 };
+  }
+
+  return undefined;
+}
+
+export interface StaticPreviewStatus {
+  tone: 'pending' | 'ok' | 'warn' | 'error';
+  headline: string;
+  detail?: string;
+}
+
+/**
+ * Turn the shim's report into the text the preview banner shows.
+ *
+ * Every branch states only what was actually observed. In particular a loaded page with
+ * an empty body is reported as "rendered no visible content" -- a fact -- and never as a
+ * failure, because a page is free to render later from a timer or an interaction.
+ */
+export function describeStaticPreviewStatus(
+  status: PreviewRuntimeMessage | null,
+  unresolved: string[] = [],
+): StaticPreviewStatus {
+  const unresolvedDetail =
+    unresolved.length > 0
+      ? `${unresolved.length} reference${unresolved.length === 1 ? '' : 's'} not found in your project: ${unresolved
+          .slice(0, 3)
+          .join(', ')}${unresolved.length > 3 ? '…' : ''}`
+      : undefined;
+
+  if (status?.kind === 'error') {
+    return {
+      tone: 'error',
+      headline: 'The preview failed to run',
+      detail: [status.message, status.source ? `(${status.source}:${status.line})` : undefined]
+        .filter(Boolean)
+        .join(' '),
+    };
+  }
+
+  if (status?.kind === 'resource-error') {
+    return {
+      tone: 'error',
+      headline: `A ${status.tag || 'resource'} the page needs could not load`,
+      detail: status.url || unresolvedDetail,
+    };
+  }
+
+  if (status?.kind === 'ready') {
+    if (status.renderedNodes === 0) {
+      return {
+        tone: 'warn',
+        headline: 'The page loaded but rendered no visible content',
+        detail: unresolvedDetail ?? 'Nothing was found inside the document body.',
+      };
+    }
+
+    return {
+      tone: unresolvedDetail ? 'warn' : 'ok',
+      headline: 'Preview running on this device — no build step, no dev server',
+      detail: unresolvedDetail,
+    };
+  }
+
+  return { tone: 'pending', headline: 'Loading preview…', detail: unresolvedDetail };
+}
+
+export interface StaticPreviewDocument {
+  /** Complete, self-contained HTML ready to be served as the preview document. */
+  html: string;
+
+  unresolved: string[];
+
+  /** Release the object URLs created for the transitively-referenced resources. */
+  revoke: () => void;
+}
+
+/**
+ * Build the preview document as a string.
+ *
+ * Split out from `buildStaticPreview` so the produced HTML -- including the injected
+ * reporter -- can be asserted directly. A `blob:` URL cannot be read back in jsdom, so
+ * testing through the blob would mean not testing the document at all.
+ */
+export function buildStaticPreviewDocument(fileMap: FileMap, indexPath: string): StaticPreviewDocument | undefined {
   const entry = fileMap[indexPath];
 
   if (!entry || entry.type !== 'file') {
@@ -183,14 +369,36 @@ export function buildStaticPreview(fileMap: FileMap, indexPath: string): StaticP
     });
   }
 
-  const html = `<!DOCTYPE html>${doc.documentElement.outerHTML}`;
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
+  const shim = doc.createElement('script');
+  shim.textContent = PREVIEW_RUNTIME_SHIM;
+  doc.head.insertBefore(shim, doc.head.firstChild);
 
-  const revoke = () => {
-    URL.revokeObjectURL(url);
-    cache.forEach((resolved) => resolved.revoke?.());
+  return {
+    html: `<!DOCTYPE html>${doc.documentElement.outerHTML}`,
+    unresolved,
+    revoke: () => cache.forEach((resolved) => resolved.revoke?.()),
   };
+}
 
-  return { url, revoke, unresolved };
+/**
+ * Build a blob-URL preview for `indexPath`, resolving relative script/link/img/source
+ * references (and, transitively, CSS url()s and relative JS imports) against `fileMap`.
+ */
+export function buildStaticPreview(fileMap: FileMap, indexPath: string): StaticPreviewBuild | undefined {
+  const built = buildStaticPreviewDocument(fileMap, indexPath);
+
+  if (!built) {
+    return undefined;
+  }
+
+  const url = URL.createObjectURL(new Blob([built.html], { type: 'text/html' }));
+
+  return {
+    url,
+    unresolved: built.unresolved,
+    revoke: () => {
+      URL.revokeObjectURL(url);
+      built.revoke();
+    },
+  };
 }

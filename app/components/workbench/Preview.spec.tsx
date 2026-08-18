@@ -6,6 +6,19 @@ import { Preview } from './Preview';
 import { runtimeModeStore } from '~/lib/stores/runtime-mode';
 import { RemoteRuntimeClient, type RemotePreviewResponse } from '~/lib/remote-runtime/RemoteRuntimeClient';
 import { remotePreviewRefreshSignal, triggerRemotePreviewRefresh } from '~/lib/stores/remotePreviewSignal';
+import { workbenchStore } from '~/lib/stores/workbench';
+import { isCapacitor } from '~/lib/adapters/platform';
+import { PREVIEW_MESSAGE_MARKER } from '~/lib/preview/staticPreviewBundle';
+
+/*
+ * Only the platform probe is mocked, not the preview pipeline: the static-preview tests below
+ * need the Capacitor-gated auto-start branch to run, and jsdom is not Capacitor. Everything
+ * else -- buildStaticPreview, the blob document, the message listener -- stays real.
+ */
+vi.mock('~/lib/adapters/platform', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('~/lib/adapters/platform')>()),
+  isCapacitor: vi.fn(() => false),
+}));
 
 /**
  * Block 2 of the "real end-to-end creation loop" mandate: Live Preview is P0, and had zero
@@ -212,5 +225,150 @@ describe('Preview -- Remote Runtime live preview honesty', () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(screen.getByTitle('remote-preview')).toHaveAttribute('src', 'https://preview.example.com/fresh');
+  });
+});
+
+/**
+ * The Android-only static preview path, which had no component coverage at all: on
+ * `android-fallback` there is no dev server, so `staticPreviewBundle.ts`'s blob document IS
+ * the product's live preview. The build step producing a URL proves nothing about whether the
+ * page runs -- this runtime has no compiler and no module resolver -- so these tests drive the
+ * real reporter round trip (document -> postMessage -> listener -> banner) and pin the rule
+ * that no branch may claim success the frame did not actually report.
+ */
+describe('Preview -- Android static preview honesty', () => {
+  const originalState = runtimeModeStore.get();
+
+  const ANDROID_STATE = {
+    mode: 'android-fallback' as const,
+    webContainerAvailable: false,
+    isAndroid: true,
+    remoteRuntimeUrl: '',
+    remoteAuthToken: '',
+    remoteWorkspaceId: '',
+    capabilities: {
+      fileSystem: true,
+      terminal: false,
+      commandExecution: false,
+      agentBuildCommands: false,
+      packageInstall: false,
+      devServer: false,
+      preview: false,
+      persistentFileSystem: true,
+    },
+    autoDetected: true,
+  };
+
+  beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockReturnValue({
+        matches: false,
+        media: '(prefers-reduced-motion: reduce)',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      }),
+    });
+
+    // The auto-start effect is deliberately Capacitor-gated; this path only exists on Android.
+    vi.mocked(isCapacitor).mockReturnValue(true);
+    runtimeModeStore.set(ANDROID_STATE);
+    workbenchStore.files.set({
+      'index.html': {
+        type: 'file',
+        content: '<html><head><title>Dash</title></head><body><h1>Dashboard</h1></body></html>',
+        isBinary: false,
+      },
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    runtimeModeStore.set(originalState);
+    workbenchStore.files.set({});
+    vi.restoreAllMocks();
+  });
+
+  /** Post as the preview document itself -- the listener requires `source` to be its contentWindow. */
+  function reportFromPreviewDocument(iframe: HTMLIFrameElement, payload: Record<string, unknown>) {
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { [PREVIEW_MESSAGE_MARKER]: true, ...payload },
+        source: iframe.contentWindow,
+      }),
+    );
+  }
+
+  it('auto-starts a real static preview from generated files, with no click and no dev server', async () => {
+    render(<Preview />);
+
+    const iframe = (await screen.findByTitle('static-preview')) as HTMLIFrameElement;
+    expect(iframe.getAttribute('src')).toMatch(/^blob:/);
+  });
+
+  it('does not claim the preview works until the document itself reports back', async () => {
+    render(<Preview />);
+    await screen.findByTitle('static-preview');
+
+    expect(screen.getByText('Loading preview…')).toBeInTheDocument();
+    expect(screen.queryByText(/Preview running/)).not.toBeInTheDocument();
+  });
+
+  it("shows the browser's own error text when the preview document reports a real failure", async () => {
+    render(<Preview />);
+    const iframe = (await screen.findByTitle('static-preview')) as HTMLIFrameElement;
+
+    reportFromPreviewDocument(iframe, {
+      kind: 'error',
+      message: "Unexpected token '<'",
+      source: 'blob:app.jsx',
+      line: 3,
+    });
+
+    expect(await screen.findByText('The preview failed to run')).toBeInTheDocument();
+    expect(screen.getByText(/Unexpected token '<'/)).toBeInTheDocument();
+    expect(screen.queryByText(/Preview running/)).not.toBeInTheDocument();
+  });
+
+  it('reports success only after a real load that rendered content', async () => {
+    render(<Preview />);
+    const iframe = (await screen.findByTitle('static-preview')) as HTMLIFrameElement;
+
+    reportFromPreviewDocument(iframe, { kind: 'ready', renderedNodes: 12 });
+
+    expect(await screen.findByText(/Preview running/)).toBeInTheDocument();
+  });
+
+  it('keeps a reported error visible when a later load event arrives (a blank frame still has a cause)', async () => {
+    render(<Preview />);
+    const iframe = (await screen.findByTitle('static-preview')) as HTMLIFrameElement;
+
+    reportFromPreviewDocument(iframe, { kind: 'error', message: 'ReferenceError: React', source: '', line: 0 });
+    await screen.findByText('The preview failed to run');
+
+    // A module script throws before `load` fires, so 'ready' arrives second and must not erase it.
+    reportFromPreviewDocument(iframe, { kind: 'ready', renderedNodes: 0 });
+
+    await waitFor(() => expect(screen.getByText('The preview failed to run')).toBeInTheDocument());
+    expect(screen.getByText(/ReferenceError: React/)).toBeInTheDocument();
+  });
+
+  it('ignores a verdict from anything that is not the preview frame', async () => {
+    render(<Preview />);
+    await screen.findByTitle('static-preview');
+
+    // Correct shape, wrong sender: an unrelated frame or extension must not be able to fake a pass.
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { [PREVIEW_MESSAGE_MARKER]: true, kind: 'ready', renderedNodes: 99 },
+        source: window,
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByText('Loading preview…')).toBeInTheDocument());
+    expect(screen.queryByText(/Preview running/)).not.toBeInTheDocument();
   });
 });
