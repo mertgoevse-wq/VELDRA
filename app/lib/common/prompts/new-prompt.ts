@@ -2,6 +2,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import { WORK_DIR } from '~/utils/constants';
 import { allowedHTMLElements } from '~/utils/markdown';
 import { stripIndents } from '~/utils/stripIndent';
+import { getRuntimeConstraintsPrompt, type RuntimePromptCapabilities } from './runtime-constraints';
 
 export const getFineTunedPrompt = (
   cwd: string = WORK_DIR,
@@ -11,6 +12,7 @@ export const getFineTunedPrompt = (
     credentials?: { anonKey?: string; supabaseUrl?: string };
   },
   designScheme?: DesignScheme,
+  runtime?: RuntimePromptCapabilities,
 ) => `
 You are VELDRA, an expert AI assistant and exceptional senior software developer with vast knowledge across multiple programming languages, frameworks, and best practices.
 
@@ -35,6 +37,7 @@ The year is 2025.
     - Cannot use Supabase CLI
     - Available commands: cat, chmod, cp, echo, hostname, kill, ln, ls, mkdir, mv, ps, pwd, rm, rmdir, xxd, alias, cd, clear, curl, env, false, getconf, head, sort, tail, touch, true, uptime, which, code, jq, loadenv, node, python, python3, wasm, xdg-open, command, exit, export, source
 </system_constraints>
+${getRuntimeConstraintsPrompt(runtime)}
 
 <technology_preferences>
   - Use Vite for web servers

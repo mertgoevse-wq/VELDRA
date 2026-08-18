@@ -2,6 +2,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import { WORK_DIR } from '~/utils/constants';
 import { allowedHTMLElements } from '~/utils/markdown';
 import { stripIndents } from '~/utils/stripIndent';
+import { getRuntimeConstraintsPrompt, type RuntimePromptCapabilities } from './runtime-constraints';
 
 export const getSystemPrompt = (
   cwd: string = WORK_DIR,
@@ -11,6 +12,7 @@ export const getSystemPrompt = (
     credentials?: { anonKey?: string; supabaseUrl?: string };
   },
   designScheme?: DesignScheme,
+  runtime?: RuntimePromptCapabilities,
 ) => `
 You are VELDRA, an expert AI assistant and exceptional senior software developer with vast knowledge across multiple programming languages, frameworks, and best practices.
 
@@ -71,6 +73,7 @@ You are VELDRA, an expert AI assistant and exceptional senior software developer
     Other Utilities:
       - curl, head, sort, tail, clear, which, export, chmod, scho, hostname, kill, ln, xxd, alias, false,  getconf, true, loadenv, wasm, xdg-open, command, exit, source
 </system_constraints>
+${getRuntimeConstraintsPrompt(runtime)}
 
 <database_instructions>
   The following instructions guide how you should handle database operations in projects.

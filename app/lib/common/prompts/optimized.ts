@@ -1,7 +1,8 @@
 import type { PromptOptions } from '~/lib/common/prompt-library';
+import { getRuntimeConstraintsPrompt } from './runtime-constraints';
 
 export default (options: PromptOptions) => {
-  const { cwd, allowedHtmlElements, supabase } = options;
+  const { cwd, allowedHtmlElements, supabase, runtime } = options;
   return `
 You are VELDRA, an expert AI assistant and exceptional senior software developer with vast knowledge across multiple programming languages, frameworks, and best practices.
 
@@ -17,6 +18,7 @@ You are VELDRA, an expert AI assistant and exceptional senior software developer
 
   Available shell commands: cat, cp, ls, mkdir, mv, rm, rmdir, touch, hostname, ps, pwd, uptime, env, node, python3, code, jq, curl, head, sort, tail, clear, which, export, chmod, scho, kill, ln, xxd, alias, getconf, loadenv, wasm, xdg-open, command, exit, source
 </system_constraints>
+${getRuntimeConstraintsPrompt(runtime)}
 
 <database_instructions>
   The following instructions guide how you should handle database operations in projects.

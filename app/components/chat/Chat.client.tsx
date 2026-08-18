@@ -29,6 +29,8 @@ import type { TextUIPart, FileUIPart, Attachment } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
 import type { LlmErrorAlertType } from '~/types/actions';
 import { isCapacitor } from '~/lib/adapters/platform';
+import { runtimeModeStore } from '~/lib/stores/runtime-mode';
+import { toRuntimePromptCapabilities } from '~/lib/common/prompts/runtime-constraints';
 import { getAndroidApiBackendConfig } from '~/lib/android-api/backend-config';
 import { androidActiveChatId } from '~/lib/stores/androidChatSession';
 
@@ -142,6 +144,16 @@ export const ChatImpl = memo(
     const androidBackend = isCapacitor() ? getAndroidApiBackendConfig() : null;
     const androidChatNotConfigured = isCapacitor() && !androidBackend;
 
+    /*
+     * The system prompt hardcodes "you are operating in WebContainer" and steers the model to
+     * Vite + package.json + `npm install` + a `start` action -- all false on Android, where the
+     * default mode is 'android-fallback' (no shell, no installer, no dev server) and the only
+     * renderer is the static preview bundler. Sending the *real* capability flags lets the
+     * server pick truthful constraint text instead (runtime-constraints.ts); a full
+     * WebContainer session yields an empty block, so desktop behaviour is unchanged.
+     */
+    const runtimeMode = useStore(runtimeModeStore);
+
     const {
       messages,
       isLoading,
@@ -166,6 +178,7 @@ export const ChatImpl = memo(
         contextOptimization: contextOptimizationEnabled,
         chatMode,
         designScheme,
+        runtimeCapabilities: toRuntimePromptCapabilities(runtimeMode),
         supabase: {
           isConnected: supabaseConn.isConnected,
           hasSelectedProject: !!selectedProject,

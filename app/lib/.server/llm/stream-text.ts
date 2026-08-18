@@ -1,6 +1,7 @@
 import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
 import { MAX_TOKENS, PROVIDER_COMPLETION_LIMITS, isReasoningModel, type FileMap } from './constants';
 import { getSystemPrompt } from '~/lib/common/prompts/prompts';
+import type { RuntimePromptCapabilities } from '~/lib/common/prompts/runtime-constraints';
 import {
   AUTO_MODEL,
   DEFAULT_MODEL,
@@ -74,6 +75,14 @@ export async function streamText(props: {
   messageSliceId?: number;
   chatMode?: 'discuss' | 'build';
   designScheme?: DesignScheme;
+
+  /**
+   * What the caller's runtime can actually execute. Forwarded into the system prompt so it
+   * can describe the real environment instead of unconditionally claiming WebContainer --
+   * see `app/lib/common/prompts/runtime-constraints.ts`. Absent for callers that don't know
+   * (e.g. subagents), in which case the prompt is unchanged.
+   */
+  runtimeCapabilities?: RuntimePromptCapabilities;
   onModelResolved?: (model: { name: string; provider: string; automatic: boolean }) => void;
 }) {
   const {
@@ -89,6 +98,7 @@ export async function streamText(props: {
     summary,
     chatMode,
     designScheme,
+    runtimeCapabilities,
     onModelResolved,
   } = props;
   let currentModel = DEFAULT_MODEL;
@@ -193,6 +203,7 @@ export async function streamText(props: {
       allowedHtmlElements: allowedHTMLElements,
       modificationTagName: MODIFICATIONS_TAG_NAME,
       designScheme,
+      runtime: runtimeCapabilities,
       supabase: {
         isConnected: options?.supabaseConnection?.isConnected || false,
         hasSelectedProject: options?.supabaseConnection?.hasSelectedProject || false,
